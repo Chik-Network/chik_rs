@@ -1,14 +1,8 @@
 name: build - check - upload
 
 on:
-  push:
-    branches:
-    - main1
-    tags:
-    - '**'
-  pull_request:
-    branches:
-    - '**'
+  release:
+    types: [ published ]
 
 concurrency:
   # SHA is added to the end if on `main` to let all main workflows run
