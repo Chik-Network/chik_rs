@@ -26,7 +26,7 @@ jobs:
       with:
         fetch-depth: 1
 
-    - uses: chia-network/actions/setup-python@main
+    - uses: chik-network/actions/setup-python@main
       name: Install Python ${{ matrix.python-version }}
       with:
         python-version: ${{ matrix.python-version }}
@@ -44,7 +44,7 @@ jobs:
       run: |
         python -m venv venv
 
-    - uses: chia-network/actions/activate-venv@main
+    - uses: chik-network/actions/activate-venv@main
 
     - name: Install dependencies
       run: |
@@ -57,7 +57,7 @@ jobs:
       env:
         CC: gcc
       run: |
-        git clone https://github.com/Chia-Network/clvm_tools.git --branch=main --single-branch
+        git clone https://github.com/Chik-Network/clvm_tools.git --branch=main --single-branch
         python -m pip install ./clvm_tools
         python -m pip install colorama
         maturin develop --release -m wheel/Cargo.toml
@@ -83,7 +83,7 @@ jobs:
       with:
         fetch-depth: 1
 
-    - uses: chia-network/actions/setup-python@main
+    - uses: chik-network/actions/setup-python@main
       name: Install Python ${{ matrix.python-version }}
       with:
         python-version: ${{ matrix.python-version }}
@@ -97,7 +97,7 @@ jobs:
       run: |
         python -m venv venv
 
-    - uses: chia-network/actions/activate-venv@main
+    - uses: chik-network/actions/activate-venv@main
 
     - name: Install dependencies
       run: |

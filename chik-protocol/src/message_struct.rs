@@ -15,7 +15,7 @@ macro_rules! message_struct {
             }
         }
 
-        impl ChiaProtocolMessage for $name {
+        impl ChikProtocolMessage for $name {
             fn msg_type() -> ProtocolMessageTypes {
                 ProtocolMessageTypes::$name
             }

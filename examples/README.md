@@ -23,6 +23,6 @@ $ python3 dump.py
 Another thing to try is the `timeit` module.
 
 ```bash
-$ python -m timeit -s 'from chia_rs import Fullblock; blob = open("block-1519806.bin", "rb").read()' \
+$ python -m timeit -s 'from chik_rs import Fullblock; blob = open("block-1519806.bin", "rb").read()' \
     -- 'fb = Fullblock.from_bytes(blob); fb1 = bytes(fb); assert fb1 == blob'
 ```

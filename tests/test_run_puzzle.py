@@ -1,4 +1,4 @@
-from chia_rs import run_puzzle, run_chia_program, ALLOW_BACKREFS
+from chik_rs import run_puzzle, run_chik_program, ALLOW_BACKREFS
 from hashlib import sha256
 import pytest
 from run_gen import print_spend_bundle_conditions
@@ -14,10 +14,10 @@ def test_block_834752(flags: int, input_file: str) -> None:
 
     if (flags & ALLOW_BACKREFS) == 0 and "compressed" in input_file:
         with pytest.raises(OSError, match="bad encoding"):
-            cost, ret = run_chia_program(block, b"\xff\x80\x80", 11000000000, flags)
+            cost, ret = run_chik_program(block, b"\xff\x80\x80", 11000000000, flags)
         return
     else:
-        cost, ret = run_chia_program(block, b"\xff\x80\x80", 11000000000, flags)
+        cost, ret = run_chik_program(block, b"\xff\x80\x80", 11000000000, flags)
 
     ret = ret.pair[0]
     puzzles = []

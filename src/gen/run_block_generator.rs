@@ -6,7 +6,7 @@ use crate::gen::validation_error::{first, ErrorCode, ValidationErr};
 use crate::generator_rom::{CLVM_DESERIALIZER, COST_PER_BYTE, GENERATOR_ROM};
 use clvm_utils::tree_hash::tree_hash;
 use clvmr::allocator::{Allocator, NodePtr};
-use clvmr::chia_dialect::ChiaDialect;
+use clvmr::chik_dialect::ChikDialect;
 use clvmr::cost::Cost;
 use clvmr::reduction::Reduction;
 use clvmr::run_program::run_program;
@@ -66,7 +66,7 @@ pub fn run_block_generator<GenBuf: AsRef<[u8]>>(
     let args = a.new_pair(args, a.null())?;
     let args = a.new_pair(program, args)?;
 
-    let dialect = ChiaDialect::new(flags);
+    let dialect = ChikDialect::new(flags);
     let Reduction(clvm_cost, generator_output) =
         run_program(a, &dialect, generator_rom, args, cost_left)?;
 
@@ -140,7 +140,7 @@ pub fn run_block_generator2<GenBuf: AsRef<[u8]>>(
     let mut args = a.new_pair(blocks, a.null())?;
     args = a.new_pair(clvm_deserializer, args)?;
 
-    let dialect = ChiaDialect::new(flags);
+    let dialect = ChikDialect::new(flags);
 
     let Reduction(clvm_cost, mut all_spends) = run_program(a, &dialect, program, args, cost_left)?;
 

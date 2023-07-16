@@ -11,9 +11,9 @@ use libfuzzer_sys::fuzz_target;
 use pyo3::prelude::*;
 use std::convert::TryFrom;
 
-use chia_bls::secret_key::SecretKey;
-use chia_bls::signature::{sign, aggregate};
-use chia_bls::derivable_key::DerivableKey;
+use chik_bls::secret_key::SecretKey;
+use chik_bls::signature::{sign, aggregate};
+use chik_bls::derivable_key::DerivableKey;
 use pyo3::types::{PyTuple, PyBytes, PyList};
 
 fn to_bytes<'a>(obj: &'a PyAny) -> &'a [u8] {

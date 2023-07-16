@@ -290,7 +290,7 @@ fn test_invalid_aggregate_signature() {
 #[test]
 fn test_vector_2_aggregate_of_aggregates() {
     // test case from: bls-signatures/src/test.cpp
-    // "Chia test vector 2 (Augmented, aggregate of aggregates)"
+    // "Chik test vector 2 (Augmented, aggregate of aggregates)"
     let message1 = [1_u8, 2, 3, 40];
     let message2 = [5_u8, 6, 70, 201];
     let message3 = [9_u8, 10, 11, 12, 13];

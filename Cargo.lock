@@ -212,10 +212,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "chia"
+name = "chik"
 version = "0.2.9"
 dependencies = [
- "chia-protocol",
+ "chik-protocol",
  "clvm-utils",
  "clvmr",
  "hex",
@@ -227,7 +227,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "chia-bls"
+name = "chik-bls"
 version = "0.2.7"
 dependencies = [
  "anyhow",
@@ -243,22 +243,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "chia-fuzz"
+name = "chik-fuzz"
 version = "0.0.0"
 dependencies = [
- "chia",
- "chia-protocol",
+ "chik",
+ "chik-protocol",
  "clvm-utils",
  "clvmr",
  "libfuzzer-sys",
 ]
 
 [[package]]
-name = "chia-protocol"
+name = "chik-protocol"
 version = "0.2.7"
 dependencies = [
- "chia_py_streamable_macro",
- "chia_streamable_macro",
+ "chik_py_streamable_macro",
+ "chik_streamable_macro",
  "clvmr",
  "hex",
  "pyo3",
@@ -267,11 +267,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "chia-tools"
+name = "chik-tools"
 version = "0.1.16"
 dependencies = [
- "chia",
- "chia-protocol",
+ "chik",
+ "chik-protocol",
  "clap",
  "clvmr",
  "hex",
@@ -281,7 +281,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "chia_py_streamable_macro"
+name = "chik_py_streamable_macro"
 version = "0.1.4"
 dependencies = [
  "quote",
@@ -289,7 +289,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "chia_streamable_macro"
+name = "chik_streamable_macro"
 version = "0.2.4"
 dependencies = [
  "quote",
@@ -297,10 +297,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "chia_wasm"
+name = "chik_wasm"
 version = "0.2.7"
 dependencies = [
- "chia",
+ "chik",
  "js-sys",
  "wasm-bindgen",
  "wasm-bindgen-test",
@@ -386,8 +386,8 @@ dependencies = [
 name = "clvm-utils-fuzz"
 version = "0.0.0"
 dependencies = [
- "chia",
- "chia-fuzz",
+ "chik",
+ "chik-fuzz",
  "clvm-utils",
  "clvmr",
  "libfuzzer-sys",

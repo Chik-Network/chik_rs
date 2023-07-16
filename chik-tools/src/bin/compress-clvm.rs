@@ -4,7 +4,7 @@ use clvmr::Allocator;
 use std::fs::{read_to_string, File};
 use std::io::Write;
 
-/// Analyze the blocks in a chia blockchain database
+/// Analyze the blocks in a chik blockchain database
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {

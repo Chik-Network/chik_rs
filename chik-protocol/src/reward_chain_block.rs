@@ -1,7 +1,7 @@
 use crate::streamable_struct;
-use chia_streamable_macro::Streamable;
+use chik_streamable_macro::Streamable;
 
-use crate::chia_error;
+use crate::chik_error;
 use crate::Bytes32;
 use crate::G2Element;
 use crate::ProofOfSpace;
@@ -13,7 +13,7 @@ use crate::from_json_dict::FromJsonDict;
 #[cfg(feature = "py-bindings")]
 use crate::to_json_dict::ToJsonDict;
 #[cfg(feature = "py-bindings")]
-use chia_py_streamable_macro::PyStreamable;
+use chik_py_streamable_macro::PyStreamable;
 #[cfg(feature = "py-bindings")]
 use pyo3::prelude::*;
 

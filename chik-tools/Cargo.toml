@@ -1,17 +1,17 @@
 [package]
-name = "chia-tools"
+name = "chik-tools"
 version = "0.1.16"
 edition = "2021"
 license = "Apache-2.0"
-description = "Utility functions and types used by the Chia blockchain full node"
-authors = ["Arvid Norberg <arvid@chia.net>"]
-homepage = "https://github.com/Chia-Network/chia_rs/chia-tools"
-repository = "https://github.com/Chia-Network/chia_rs/chia-tools"
+description = "Utility functions and types used by the Chik blockchain full node"
+authors = ["Arvid Norberg <arvid@chiknetwork.com>"]
+homepage = "https://github.com/Chik-Network/chik_rs/chik-tools"
+repository = "https://github.com/Chik-Network/chik_rs/chik-tools"
 
 [dependencies]
-chia-protocol = { version = "=0.2.7", path = "../chia-protocol" }
+chik-protocol = { version = "=0.2.7", path = "../chik-protocol" }
 clvmr = { version = "=0.2.7", features = ["counters"] }
-chia = { version = "=0.2.9", path = ".." }
+chik = { version = "=0.2.9", path = ".." }
 sqlite = "=0.31.0"
 clap = { version = "=4.3.9", features = ["derive"] }
 zstd = "=0.12.3+zstd.1.5.2"

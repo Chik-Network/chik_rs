@@ -43,11 +43,11 @@ jobs:
             by-arch:
               arm:
                 manylinux-version: 2014
-                docker-url: ghcr.io/chia-network/build-images/centos-pypa-rust-aarch64
+                docker-url: ghcr.io/chik-network/build-images/centos-pypa-rust-aarch64
                 rustup-target: aarch64-unknown-linux-musl
               intel:
                 manylinux-version: 2014
-                docker-url: ghcr.io/chia-network/build-images/centos-pypa-rust-x86_64
+                docker-url: ghcr.io/chik-network/build-images/centos-pypa-rust-x86_64
                 rustup-target: x86_64-unknown-linux-musl
             matrix: '3.7'
           - major-dot-minor: '3.8'
@@ -55,11 +55,11 @@ jobs:
             by-arch:
               arm:
                 manylinux-version: 2014
-                docker-url: ghcr.io/chia-network/build-images/centos-pypa-rust-aarch64
+                docker-url: ghcr.io/chik-network/build-images/centos-pypa-rust-aarch64
                 rustup-target: aarch64-unknown-linux-musl
               intel:
                 manylinux-version: 2014
-                docker-url: ghcr.io/chia-network/build-images/centos-pypa-rust-x86_64
+                docker-url: ghcr.io/chik-network/build-images/centos-pypa-rust-x86_64
                 rustup-target: x86_64-unknown-linux-musl
             matrix: '3.8'
           - major-dot-minor: '3.9'
@@ -67,11 +67,11 @@ jobs:
             by-arch:
               arm:
                 manylinux-version: 2014
-                docker-url: ghcr.io/chia-network/build-images/centos-pypa-rust-aarch64
+                docker-url: ghcr.io/chik-network/build-images/centos-pypa-rust-aarch64
                 rustup-target: aarch64-unknown-linux-musl
               intel:
                 manylinux-version: 2014
-                docker-url: ghcr.io/chia-network/build-images/centos-pypa-rust-x86_64
+                docker-url: ghcr.io/chik-network/build-images/centos-pypa-rust-x86_64
                 rustup-target: x86_64-unknown-linux-musl
             matrix: '3.9'
           - major-dot-minor: '3.10'
@@ -79,11 +79,11 @@ jobs:
             by-arch:
               arm:
                 manylinux-version: 2014
-                docker-url: ghcr.io/chia-network/build-images/centos-pypa-rust-aarch64
+                docker-url: ghcr.io/chik-network/build-images/centos-pypa-rust-aarch64
                 rustup-target: aarch64-unknown-linux-musl
               intel:
                 manylinux-version: 2014
-                docker-url: ghcr.io/chia-network/build-images/centos-pypa-rust-x86_64
+                docker-url: ghcr.io/chik-network/build-images/centos-pypa-rust-x86_64
                 rustup-target: x86_64-unknown-linux-musl
             matrix: '3.10'
           - major-dot-minor: '3.11'
@@ -91,11 +91,11 @@ jobs:
             by-arch:
               arm:
                 manylinux-version: 2014
-                docker-url: ghcr.io/chia-network/build-images/centos-pypa-rust-aarch64
+                docker-url: ghcr.io/chik-network/build-images/centos-pypa-rust-aarch64
                 rustup-target: aarch64-unknown-linux-musl
               intel:
                 manylinux-version: 2014
-                docker-url: ghcr.io/chia-network/build-images/centos-pypa-rust-x86_64
+                docker-url: ghcr.io/chik-network/build-images/centos-pypa-rust-x86_64
                 rustup-target: x86_64-unknown-linux-musl
             matrix: '3.11'
         arch:
@@ -132,14 +132,14 @@ jobs:
 
     steps:
     - name: Clean workspace
-      uses: Chia-Network/actions/clean-workspace@main
+      uses: Chik-Network/actions/clean-workspace@main
 
     - name: Checkout code
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
 
-    - uses: Chia-Network/actions/setup-python@main
+    - uses: Chik-Network/actions/setup-python@main
       with:
         python-version: ${{ matrix.python.major-dot-minor }}
 
@@ -189,16 +189,16 @@ jobs:
         . .\venv\Scripts\Activate.ps1
         maturin build -i python --release -m wheel/Cargo.toml
 
-    - uses: Chia-Network/actions/create-venv@main
+    - uses: Chik-Network/actions/create-venv@main
       id: create-venv
 
-    - uses: Chia-Network/actions/activate-venv@main
+    - uses: Chik-Network/actions/activate-venv@main
       with:
         directories: ${{ steps.create-venv.outputs.activate-venv-directories }}
 
-    - name: Install chia_rs wheel
+    - name: Install chik_rs wheel
       run: |
-        pip install --no-index --find-links wheel/target/wheels/ chia_rs
+        pip install --no-index --find-links wheel/target/wheels/ chik_rs
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
@@ -216,7 +216,7 @@ jobs:
       with:
         fetch-depth: 0
 
-    - uses: Chia-Network/actions/setup-python@main
+    - uses: Chik-Network/actions/setup-python@main
 
     - name: check generated chik_rs.pyi
       run: |
@@ -228,7 +228,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Clean workspace
-      uses: Chia-Network/actions/clean-workspace@main
+      uses: Chik-Network/actions/clean-workspace@main
 
     - name: Checkout code
       uses: actions/checkout@v3
@@ -237,7 +237,7 @@ jobs:
 
     - name: cargo build
       run: |
-        cd chia-tools
+        cd chik-tools
         cargo build
 
   build-sdist:
@@ -261,14 +261,14 @@ jobs:
 
     steps:
     - name: Clean workspace
-      uses: Chia-Network/actions/clean-workspace@main
+      uses: Chik-Network/actions/clean-workspace@main
 
     - name: Checkout code
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
 
-    - uses: Chia-Network/actions/setup-python@main
+    - uses: Chik-Network/actions/setup-python@main
       with:
         python-version: ${{ matrix.python.major-dot-minor }}
 
@@ -329,7 +329,7 @@ jobs:
             toolchain: nightly
       - name: cargo-fuzz
         run: cargo +nightly install cargo-fuzz
-      - name: cargo fuzz (chia_rs)
+      - name: cargo fuzz (chik_rs)
         run: cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
       - name: cargo fuzz (chik-bls)
         env:
@@ -338,7 +338,7 @@ jobs:
           # not unloaded before exiting
           LSAN_OPTIONS: detect_leaks=0
         run: |
-          cd chia-bls
+          cd chik-bls
           python -m pip install blspy
           cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=10 || exit 255"
       - name: cargo fuzz (clvm-utils)
@@ -347,7 +347,7 @@ jobs:
           cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
       - name: cargo fuzz (chik-protocol)
         run: |
-          cd chia-protocol
+          cd chik-protocol
           cargo +nightly fuzz build
           cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
 
@@ -375,7 +375,7 @@ jobs:
         run: |
           cargo install grcov
           echo "RUSTFLAGS=-Cinstrument-coverage" >> "$GITHUB_ENV"
-          echo "LLVM_PROFILE_FILE=$(pwd)/target/chia_rs-%p-%m.profraw" >> "$GITHUB_ENV"
+          echo "LLVM_PROFILE_FILE=$(pwd)/target/chik_rs-%p-%m.profraw" >> "$GITHUB_ENV"
           echo "CARGO_TARGET_DIR=$(pwd)/target" >> "$GITHUB_ENV"
       - name: cargo test
         run: cargo test --workspace
@@ -387,7 +387,7 @@ jobs:
           rustup component add llvm-tools-preview
           python -m venv venv
           source venv/bin/activate
-          git clone https://github.com/Chia-Network/clvm_tools.git --branch=main --single-branch
+          git clone https://github.com/Chik-Network/clvm_tools.git --branch=main --single-branch
           pip install ./clvm_tools
           pip install colorama maturin pytest
           maturin develop --release -m wheel/Cargo.toml
@@ -429,14 +429,14 @@ jobs:
 
     steps:
     - name: Clean workspace
-      uses: Chia-Network/actions/clean-workspace@main
+      uses: Chik-Network/actions/clean-workspace@main
 
     - name: Checkout code
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
 
-    - uses: Chia-Network/actions/setup-python@main
+    - uses: Chik-Network/actions/setup-python@main
       with:
         python-version: ${{ matrix.python.major-dot-minor }}
 

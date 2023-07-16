@@ -1,18 +1,18 @@
 use crate::bytes::Bytes;
-use crate::chia_error::{Error, Result};
+use crate::chik_error::{Error, Result};
 use crate::streamable::Streamable;
 use clvmr::serde::serialized_length_from_bytes;
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
 
 #[cfg(feature = "py-bindings")]
-use crate::chia_error;
+use crate::chik_error;
 #[cfg(feature = "py-bindings")]
 use crate::from_json_dict::FromJsonDict;
 #[cfg(feature = "py-bindings")]
 use crate::to_json_dict::ToJsonDict;
 #[cfg(feature = "py-bindings")]
-use chia_py_streamable_macro::PyStreamable;
+use chik_py_streamable_macro::PyStreamable;
 #[cfg(feature = "py-bindings")]
 use pyo3::prelude::*;
 

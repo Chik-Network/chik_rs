@@ -3,11 +3,11 @@ use crate::gen::conditions::{
 };
 use crate::gen::flags::ALLOW_BACKREFS;
 use crate::gen::validation_error::ValidationErr;
-use chia_protocol::bytes::Bytes32;
-use chia_protocol::coin::Coin;
+use chik_protocol::bytes::Bytes32;
+use chik_protocol::coin::Coin;
 use clvm_utils::tree_hash::tree_hash;
 use clvmr::allocator::Allocator;
-use clvmr::chia_dialect::ChiaDialect;
+use clvmr::chik_dialect::ChikDialect;
 use clvmr::reduction::Reduction;
 use clvmr::run_program::run_program;
 use clvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
@@ -31,7 +31,7 @@ pub fn run_puzzle(
     let puzzle = deserialize(a, puzzle)?;
     let solution = deserialize(a, solution)?;
 
-    let dialect = ChiaDialect::new(flags);
+    let dialect = ChikDialect::new(flags);
     let Reduction(clvm_cost, conditions) = run_program(a, &dialect, puzzle, solution, max_cost)?;
 
     let mut ret = SpendBundleConditions {

@@ -1,4 +1,4 @@
-from chia_rs import Spend, SpendBundleConditions, Coin, G1Element, G2Element
+from chik_rs import Spend, SpendBundleConditions, Coin, G1Element, G2Element
 import pytest
 import copy
 

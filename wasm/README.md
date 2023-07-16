@@ -1,4 +1,4 @@
-The `chia_wasm` package has JavaScript bindings for the rust implementation of the `chia` crate in wasm.
+The `chik_wasm` package has JavaScript bindings for the rust implementation of the `chik` crate in wasm.
 
 Build
 -----

@@ -1,4 +1,4 @@
-use crate::chia_error::{Error, Result};
+use crate::chik_error::{Error, Result};
 use sha2::{Digest, Sha256};
 use std::convert::TryInto;
 use std::io::Cursor;
@@ -476,10 +476,10 @@ fn test_parse_truncated_str() {
 }
 
 #[cfg(test)]
-use chia_streamable_macro::Streamable;
+use chik_streamable_macro::Streamable;
 
 #[cfg(test)]
-use crate::chia_error;
+use crate::chik_error;
 
 #[cfg(test)]
 #[derive(Streamable, PartialEq, Debug)]

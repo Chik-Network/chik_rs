@@ -1,12 +1,12 @@
 [package]
-name = "chia_py_streamable_macro"
+name = "chik_py_streamable_macro"
 version = "0.1.4"
 edition = "2021"
 license = "Apache-2.0"
-description = "Derive macro to create python bindings for Chia types"
+description = "Derive macro to create python bindings for Chik types"
 authors = ["Arvid Norberg <arvid@libtorrent.org>"]
-homepage = "https://github.com/Chia-Network/chia_rs/chia_py_streamable_macro/"
-repository = "https://github.com/Chia-Network/chia_rs/chia_py_streamable_macro/"
+homepage = "https://github.com/Chik-Network/chik_rs/chik_py_streamable_macro/"
+repository = "https://github.com/Chik-Network/chik_rs/chik_py_streamable_macro/"
 
 [lib]
 proc-macro = true

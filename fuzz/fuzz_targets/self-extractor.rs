@@ -1,10 +1,10 @@
 #![no_main]
 
-use chia::compression::compressor::wrap_atom_with_decompression_program;
+use chik::compression::compressor::wrap_atom_with_decompression_program;
 
 use clvm_utils::tree_hash::tree_hash;
 use clvmr::allocator::Allocator;
-use clvmr::chia_dialect::ChiaDialect;
+use clvmr::chik_dialect::ChikDialect;
 use clvmr::run_program::run_program;
 use clvmr::serde::node_to_bytes_backrefs;
 use libfuzzer_sys::fuzz_target;
@@ -23,7 +23,7 @@ fn do_fuzz(data: &[u8], short_atoms: bool) {
     let self_extracting_program =
         wrap_atom_with_decompression_program(&mut allocator, serialized_program_atom).unwrap();
 
-    let dialect = &ChiaDialect::new(0);
+    let dialect = &ChikDialect::new(0);
 
     let args = allocator.null();
 

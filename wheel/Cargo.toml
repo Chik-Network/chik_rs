@@ -1,16 +1,16 @@
 [package]
-name = "chia_rs"
+name = "chik_rs"
 version = "0.2.9"
 authors = ["Richard Kiss <him@richardkiss.com>"]
 edition = "2021"
 license = "Apache-2.0"
-description = "Code useful for implementing chia consensus."
-homepage = "https://github.com/Chia-Network/chia_rs/"
-repository = "https://github.com/Chia-Network/chia_rs/"
+description = "Code useful for implementing chik consensus."
+homepage = "https://github.com/Chik-Network/chik_rs/"
+repository = "https://github.com/Chik-Network/chik_rs/"
 readme = "README.md"
 
 [lib]
-name = "chia_rs"
+name = "chik_rs"
 crate-type = ["cdylib"]
 path = "src/lib.rs"
 
@@ -18,7 +18,7 @@ path = "src/lib.rs"
 clvmr = "=0.2.7"
 hex = "=0.4.3"
 pyo3 = { version = "=0.19.0", features = ["extension-module", "multiple-pymethods"] }
-chia = { path = "..", features = ["py-bindings"] }
-chia-protocol = { path = "../chia-protocol", features = ["py-bindings"]  }
-chia_py_streamable_macro = { path = "../chia_py_streamable_macro" }
-chia_streamable_macro = { path = "../chia_streamable_macro" }
+chik = { path = "..", features = ["py-bindings"] }
+chik-protocol = { path = "../chik-protocol", features = ["py-bindings"]  }
+chik_py_streamable_macro = { path = "../chik_py_streamable_macro" }
+chik_streamable_macro = { path = "../chik_streamable_macro" }

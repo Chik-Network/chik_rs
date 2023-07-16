@@ -1,5 +1,5 @@
-from chia_rs import run_block_generator, run_block_generator2
-from chia_rs import MEMPOOL_MODE
+from chik_rs import run_block_generator, run_block_generator2
+from chik_rs import MEMPOOL_MODE
 from run_gen import print_spend_bundle_conditions
 import pytest
 

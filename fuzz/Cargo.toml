@@ -1,5 +1,5 @@
 [package]
-name = "chia-fuzz"
+name = "chik-fuzz"
 version = "0.0.0"
 authors = ["Automatically generated"]
 publish = false
@@ -12,8 +12,8 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 clvmr = "=0.2.7"
 clvm-utils = { path = "../clvm-utils" }
-chia-protocol = { path = "../chia-protocol" }
-chia = { path = ".." }
+chik-protocol = { path = "../chik-protocol" }
+chik = { path = ".." }
 
 [lib]
 name = "fuzzing_utils"

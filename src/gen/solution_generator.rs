@@ -1,4 +1,4 @@
-use chia_protocol::Coin;
+use chik_protocol::Coin;
 use clvmr::allocator::{Allocator, NodePtr};
 use clvmr::serde::{node_from_bytes_backrefs, node_to_bytes, node_to_bytes_backrefs};
 use std::io;
@@ -63,8 +63,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chia_protocol::Coin;
-    use clvmr::{run_program, ChiaDialect};
+    use chik_protocol::Coin;
+    use clvmr::{run_program, ChikDialect};
     use hex_literal::hex;
 
     const PUZZLE1: [u8; 291] = hex!(
@@ -98,7 +98,7 @@ mod tests {
     const SOLUTION2: [u8; 1] = hex!("80");
 
     fn run_generator(program: &[u8]) -> Vec<u8> {
-        let dialect = ChiaDialect::new(0);
+        let dialect = ChikDialect::new(0);
         let mut a = Allocator::new();
         let program = node_from_bytes_backrefs(&mut a, &program).expect("node_from_bytes");
         let env = a.null();

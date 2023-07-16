@@ -148,7 +148,7 @@ with open(output_file, "w") as f:
 #
 
 from typing import List, Optional, Sequence, Tuple
-from chia.types.blockchain_format.sized_bytes import bytes32
+from chik.types.blockchain_format.sized_bytes import bytes32
 
 ReadableBuffer = Union[bytes, bytearray, memoryview]
 
@@ -190,7 +190,7 @@ ELIGIBLE_FOR_DEDUP: int = ...
 
 NO_UNKNOWN_OPS: int = ...
 
-def run_chia_program(
+def run_chik_program(
     program: bytes, args: bytes, max_cost: int, flags: int
 ) -> Pair[int, LazyNode]: ...
 

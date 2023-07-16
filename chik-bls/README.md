@@ -1,4 +1,4 @@
-Library providing building blocks for a Chia wallet.
+Library providing building blocks for a Chik wallet.
 
 BIP39 mnemonic handling:
 

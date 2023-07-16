@@ -1,23 +1,23 @@
 use clap::Parser;
 
-use chia_protocol::FullBlock;
-use chia_protocol::Streamable;
+use chik_protocol::FullBlock;
+use chik_protocol::Streamable;
 use std::io::Write;
 use std::time::SystemTime;
 
 use sqlite::State;
 
-use chia::gen::conditions::parse_spends;
-use chia::gen::flags::MEMPOOL_MODE;
-use chia::gen::validation_error::ValidationErr;
-use chia::generator_rom::{COST_PER_BYTE, GENERATOR_ROM};
+use chik::gen::conditions::parse_spends;
+use chik::gen::flags::MEMPOOL_MODE;
+use chik::gen::validation_error::ValidationErr;
+use chik::generator_rom::{COST_PER_BYTE, GENERATOR_ROM};
 use clvmr::reduction::Reduction;
 use clvmr::run_program_with_counters;
 use clvmr::serde::node_from_bytes;
 use clvmr::Allocator;
-use clvmr::ChiaDialect;
+use clvmr::ChikDialect;
 
-/// Analyze the blocks in a chia blockchain database
+/// Analyze the blocks in a chik blockchain database
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -168,7 +168,7 @@ fn main() {
                 .expect("failed to allocate pair");
 
             let start_execute = SystemTime::now();
-            let dialect = ChiaDialect::new(0);
+            let dialect = ChikDialect::new(0);
             let (counters, result) = run_program_with_counters(
                 &mut a,
                 &dialect,

@@ -1,16 +1,16 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use chia::gen::conditions::{parse_conditions, ParseState, Spend, SpendBundleConditions};
-use chia_protocol::Bytes32;
-use chia_protocol::Coin;
+use chik::gen::conditions::{parse_conditions, ParseState, Spend, SpendBundleConditions};
+use chik_protocol::Bytes32;
+use chik_protocol::Coin;
 use clvm_utils::tree_hash::tree_hash;
 use clvmr::allocator::Allocator;
 use fuzzing_utils::{make_tree, BitCursor};
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use chia::gen::flags::{
+use chik::gen::flags::{
     COND_ARGS_NIL, ENABLE_ASSERT_BEFORE, ENABLE_SOFTFORK_CONDITION, NO_UNKNOWN_CONDS,
     STRICT_ARGS_COUNT,
 };

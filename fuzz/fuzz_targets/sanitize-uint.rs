@@ -1,8 +1,8 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use chia::gen::sanitize_int::{sanitize_uint, SanitizedUint};
-use chia::gen::validation_error::{ErrorCode, ValidationErr};
+use chik::gen::sanitize_int::{sanitize_uint, SanitizedUint};
+use chik::gen::validation_error::{ErrorCode, ValidationErr};
 use clvmr::allocator::Allocator;
 
 fuzz_target!(|data: &[u8]| {

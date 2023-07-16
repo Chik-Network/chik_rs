@@ -1,6 +1,6 @@
 import io
 
-from chia_rs import Fullblock
+from chik_rs import Fullblock
 
 
 def main():

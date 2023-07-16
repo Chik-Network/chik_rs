@@ -3,21 +3,21 @@ use crate::run_generator::{
     convert_spend_bundle_conds, run_block_generator, run_block_generator2, PySpend,
     PySpendBundleConditions,
 };
-use chia::allocator::make_allocator;
-use chia::gen::flags::{
+use chik::allocator::make_allocator;
+use chik::gen::flags::{
     AGG_SIG_ARGS, ALLOW_BACKREFS, COND_ARGS_NIL, ENABLE_ASSERT_BEFORE, ENABLE_SOFTFORK_CONDITION,
     LIMIT_ANNOUNCES, LIMIT_OBJECTS, MEMPOOL_MODE, NO_RELATIVE_CONDITIONS_ON_EPHEMERAL,
     NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
 };
-use chia::gen::run_puzzle::run_puzzle as native_run_puzzle;
-use chia::gen::solution_generator::solution_generator as native_solution_generator;
-use chia::gen::solution_generator::solution_generator_backrefs as native_solution_generator_backrefs;
-use chia::merkle_set::compute_merkle_set_root as compute_merkle_root_impl;
-use chia_protocol::Bytes32;
-use chia_protocol::FullBlock;
-use chia_protocol::G1Element;
-use chia_protocol::G2Element;
-use chia_protocol::{
+use chik::gen::run_puzzle::run_puzzle as native_run_puzzle;
+use chik::gen::solution_generator::solution_generator as native_solution_generator;
+use chik::gen::solution_generator::solution_generator_backrefs as native_solution_generator_backrefs;
+use chik::merkle_set::compute_merkle_set_root as compute_merkle_root_impl;
+use chik_protocol::Bytes32;
+use chik_protocol::FullBlock;
+use chik_protocol::G1Element;
+use chik_protocol::G2Element;
+use chik_protocol::{
     ChallengeBlockInfo, ChallengeChainSubSlot, ClassgroupElement, Coin, CoinSpend, CoinState,
     CoinStateUpdate, EndOfSubSlotBundle, Foliage, FoliageTransactionBlock,
     InfusedChallengeChainSubSlot, NewPeakWallet, PoolTarget, Program, ProofOfSpace,
@@ -46,11 +46,11 @@ use pyo3::types::PyTuple;
 use pyo3::{wrap_pyfunction, PyResult, Python};
 use std::convert::TryInto;
 
-use crate::run_program::{run_chia_program, serialized_length};
+use crate::run_program::{run_chik_program, serialized_length};
 
 use crate::adapt_response::eval_err_to_pyresult;
-use chia::gen::get_puzzle_and_solution::get_puzzle_and_solution_for_coin as parse_puzzle_solution;
-use chia::gen::validation_error::ValidationErr;
+use chik::gen::get_puzzle_and_solution::get_puzzle_and_solution_for_coin as parse_puzzle_solution;
+use chik::gen::validation_error::ValidationErr;
 use clvmr::allocator::NodePtr;
 use clvmr::cost::Cost;
 use clvmr::reduction::EvalErr;
@@ -58,7 +58,7 @@ use clvmr::reduction::Reduction;
 use clvmr::run_program;
 use clvmr::serde::node_to_bytes;
 use clvmr::serde::{node_from_bytes, node_from_bytes_backrefs, node_to_bytes_backrefs};
-use clvmr::ChiaDialect;
+use clvmr::ChikDialect;
 
 #[pyfunction]
 pub fn compute_merkle_set_root<'p>(
@@ -114,7 +114,7 @@ pub fn get_puzzle_and_solution_for_coin<'py>(
     };
     let program = deserialize(&mut allocator, program)?;
     let args = deserialize(&mut allocator, args)?;
-    let dialect = &ChiaDialect::new(flags);
+    let dialect = &ChikDialect::new(flags);
 
     let r = py.allow_threads(|| -> Result<(NodePtr, NodePtr), EvalErr> {
         let Reduction(_cost, result) =
@@ -181,7 +181,7 @@ fn solution_generator_backrefs<'p>(py: Python<'p>, spends: &PyAny) -> PyResult<&
 }
 
 #[pymodule]
-pub fn chia_rs(py: Python, m: &PyModule) -> PyResult<()> {
+pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     // generator functions
     m.add_function(wrap_pyfunction!(run_block_generator, m)?)?;
     m.add_function(wrap_pyfunction!(run_block_generator2, m)?)?;
@@ -191,7 +191,7 @@ pub fn chia_rs(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PySpendBundleConditions>()?;
     m.add(
         "ELIGIBLE_FOR_DEDUP",
-        chia::gen::conditions::ELIGIBLE_FOR_DEDUP,
+        chik::gen::conditions::ELIGIBLE_FOR_DEDUP,
     )?;
     m.add_class::<PySpend>()?;
 
@@ -212,7 +212,7 @@ pub fn chia_rs(py: Python, m: &PyModule) -> PyResult<()> {
     m.add("LIMIT_OBJECTS", LIMIT_OBJECTS)?;
     m.add("ALLOW_BACKREFS", ALLOW_BACKREFS)?;
 
-    // Chia classes
+    // Chik classes
     m.add_class::<Coin>()?;
     m.add_class::<G1Element>()?;
     m.add_class::<G2Element>()?;
@@ -279,7 +279,7 @@ pub fn chia_rs(py: Python, m: &PyModule) -> PyResult<()> {
 
     // facilities from clvm_rs
 
-    m.add_function(wrap_pyfunction!(run_chia_program, m)?)?;
+    m.add_function(wrap_pyfunction!(run_chik_program, m)?)?;
     m.add("NO_UNKNOWN_OPS", NO_UNKNOWN_OPS)?;
     m.add("LIMIT_HEAP", LIMIT_HEAP)?;
     m.add("ENABLE_BLS_OPS", ENABLE_BLS_OPS)?;

@@ -2,7 +2,7 @@
 
 from typing import Optional
 from run_gen import run_gen, print_spend_bundle_conditions
-from chia_rs import MEMPOOL_MODE, ALLOW_BACKREFS, SpendBundleConditions
+from chik_rs import MEMPOOL_MODE, ALLOW_BACKREFS, SpendBundleConditions
 from dataclasses import dataclass
 import sys
 import glob

@@ -1,6 +1,6 @@
 use crate::gen::flags::LIMIT_OBJECTS;
 use clvmr::allocator::Allocator;
-use clvmr::chia_dialect::LIMIT_HEAP;
+use clvmr::chik_dialect::LIMIT_HEAP;
 
 pub fn make_allocator(flags: u32) -> Allocator {
     if flags & LIMIT_HEAP != 0 {

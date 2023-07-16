@@ -1,18 +1,18 @@
 # the "wheel" crate is excluded from the workspace because pyo3 has problems with
 # "cargo test" and "cargo bench"
 [workspace]
-members = ["wasm", "chia_streamable_macro", "chia-bls", "clvm-utils", "chia-protocol", "chia_py_streamable_macro", "chia-tools", "fuzz", "clvm-utils/fuzz"]
+members = ["wasm", "chik_streamable_macro", "chik-bls", "clvm-utils", "chik-protocol", "chik_py_streamable_macro", "chik-tools", "fuzz", "clvm-utils/fuzz"]
 exclude = ["wheel"]
 
 [package]
-name = "chia"
+name = "chik"
 version = "0.2.9"
 edition = "2021"
 license = "Apache-2.0"
-description = "Utility functions and types used by the Chia blockchain full node"
-authors = ["Richard Kiss <him@richardkiss.com>", "Arvid Norberg <arvid@chia.net>"]
-homepage = "https://github.com/Chia-Network/chia_rs/"
-repository = "https://github.com/Chia-Network/chia_rs/"
+description = "Utility functions and types used by the Chik blockchain full node"
+authors = ["Richard Kiss <him@richardkiss.com>", "Arvid Norberg <arvid@chiknetwork.com>"]
+homepage = "https://github.com/Chik-Network/chik_rs/"
+repository = "https://github.com/Chik-Network/chik_rs/"
 
 [features]
 py-bindings = ["dep:pyo3"]
@@ -22,7 +22,7 @@ clvmr = "=0.2.7"
 hex = "=0.4.3"
 pyo3 = { version = ">=0.19.0", features = ["extension-module"], optional = true }
 clvm-utils = { version = "=0.2.7", path = "clvm-utils" }
-chia-protocol = { version = "=0.2.7", path = "chia-protocol" }
+chik-protocol = { version = "=0.2.7", path = "chik-protocol" }
 hex-literal = "=0.4.1"
 
 [dev-dependencies]
@@ -31,7 +31,7 @@ rstest = "=0.16.0"
 text-diff = "=0.4.0"
 
 [lib]
-name = "chia"
+name = "chik"
 crate-type = ["rlib"]
 
 [profile.release]

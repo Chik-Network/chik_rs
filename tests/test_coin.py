@@ -1,4 +1,4 @@
-from chia_rs import Coin
+from chik_rs import Coin
 from hashlib import sha256
 import copy
 import pytest

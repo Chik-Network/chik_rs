@@ -1,4 +1,4 @@
-use crate::chia_error;
+use crate::chik_error;
 use crate::streamable::{read_bytes, Streamable};
 use core::fmt::Formatter;
 use sha2::{Digest, Sha256};
@@ -32,9 +32,9 @@ impl Streamable for Bytes {
         (self.0.len() as u32).update_digest(digest);
         digest.update(&self.0);
     }
-    fn stream(&self, out: &mut Vec<u8>) -> chia_error::Result<()> {
+    fn stream(&self, out: &mut Vec<u8>) -> chik_error::Result<()> {
         if self.0.len() > u32::MAX as usize {
-            Err(chia_error::Error::SequenceTooLarge)
+            Err(chik_error::Error::SequenceTooLarge)
         } else {
             (self.0.len() as u32).stream(out)?;
             out.extend_from_slice(&self.0);
@@ -42,7 +42,7 @@ impl Streamable for Bytes {
         }
     }
 
-    fn parse(input: &mut Cursor<&[u8]>) -> chia_error::Result<Self> {
+    fn parse(input: &mut Cursor<&[u8]>) -> chik_error::Result<Self> {
         let len = u32::parse(input)?;
         Ok(Bytes(read_bytes(input, len as usize)?.to_vec()))
     }
@@ -127,12 +127,12 @@ impl<const N: usize> Streamable for BytesImpl<N> {
     fn update_digest(&self, digest: &mut Sha256) {
         digest.update(self.0);
     }
-    fn stream(&self, out: &mut Vec<u8>) -> chia_error::Result<()> {
+    fn stream(&self, out: &mut Vec<u8>) -> chik_error::Result<()> {
         out.extend_from_slice(&self.0);
         Ok(())
     }
 
-    fn parse(input: &mut Cursor<&[u8]>) -> chia_error::Result<Self> {
+    fn parse(input: &mut Cursor<&[u8]>) -> chik_error::Result<Self> {
         Ok(BytesImpl(read_bytes(input, N)?.try_into().unwrap()))
     }
 }

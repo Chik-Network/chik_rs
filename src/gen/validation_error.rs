@@ -84,7 +84,7 @@ pub fn first(a: &Allocator, n: NodePtr) -> Result<NodePtr, ValidationErr> {
     }
 }
 
-// from chia-blockchain/chia/util/errors.py
+// from chik-blockchain/chik/util/errors.py
 impl From<ErrorCode> for u32 {
     fn from(err: ErrorCode) -> u32 {
         match err {

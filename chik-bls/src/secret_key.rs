@@ -147,7 +147,7 @@ use hex::FromHex;
 #[test]
 fn test_make_key() {
     // test vectors from:
-    // from chia.util.keychain import KeyDataSecrets
+    // from chik.util.keychain import KeyDataSecrets
     // print(KeyDataSecrets.from_mnemonic(phrase)["privatekey"])
 
     // (seed, secret-key)

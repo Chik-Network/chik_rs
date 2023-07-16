@@ -1,15 +1,15 @@
 use clap::Parser;
 
-use chia_protocol::FullBlock;
-use chia_protocol::Streamable;
+use chik_protocol::FullBlock;
+use chik_protocol::Streamable;
 
 use sqlite::State;
 
-use chia::gen::conditions::NewCoin;
-use chia::gen::conditions::Spend;
-use chia::gen::conditions::SpendBundleConditions;
-use chia::gen::flags::{ALLOW_BACKREFS, MEMPOOL_MODE};
-use chia::gen::run_block_generator::{run_block_generator, run_block_generator2};
+use chik::gen::conditions::NewCoin;
+use chik::gen::conditions::Spend;
+use chik::gen::conditions::SpendBundleConditions;
+use chik::gen::flags::{ALLOW_BACKREFS, MEMPOOL_MODE};
+use chik::gen::run_block_generator::{run_block_generator, run_block_generator2};
 use clvmr::allocator::NodePtr;
 use clvmr::serde::{node_from_bytes, node_to_bytes_backrefs};
 use clvmr::Allocator;
@@ -17,7 +17,7 @@ use std::collections::HashSet;
 use std::thread::available_parallelism;
 use threadpool::ThreadPool;
 
-/// Analyze the blocks in a chia blockchain database
+/// Analyze the blocks in a chik blockchain database
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {

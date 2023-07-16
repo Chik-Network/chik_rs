@@ -31,7 +31,7 @@ use hex::FromHex;
 fn test_parse_mnemonic() {
     // test vectors from BIP39
     // https://github.com/trezor/python-mnemonic/blob/master/vectors.json
-    // The seeds are changed to account for chia using an empty passphrase
+    // The seeds are changed to account for chik using an empty passphrase
     // (whereas the trezor test vectors use "TREZOR")
 
     // phrase, entropy, seed

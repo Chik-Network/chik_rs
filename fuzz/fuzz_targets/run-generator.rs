@@ -1,6 +1,6 @@
 #![no_main]
-use chia::gen::flags::ALLOW_BACKREFS;
-use chia::gen::run_block_generator::{run_block_generator, run_block_generator2};
+use chik::gen::flags::ALLOW_BACKREFS;
+use chik::gen::run_block_generator::{run_block_generator, run_block_generator2};
 use clvmr::allocator::Allocator;
 use libfuzzer_sys::fuzz_target;
 

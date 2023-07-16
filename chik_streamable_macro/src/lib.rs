@@ -8,7 +8,7 @@ use syn::{parse_macro_input, DeriveInput, FieldsNamed, FieldsUnnamed};
 use proc_macro::TokenStream;
 
 #[proc_macro_derive(Streamable)]
-pub fn chia_streamable_macro(input: TokenStream) -> TokenStream {
+pub fn chik_streamable_macro(input: TokenStream) -> TokenStream {
     let DeriveInput { ident, data, .. } = parse_macro_input!(input);
 
     let mut fnames = Vec::<syn::Ident>::new();
@@ -50,14 +50,14 @@ pub fn chia_streamable_macro(input: TokenStream) -> TokenStream {
                     fn update_digest(&self, digest: &mut clvmr::sha2::Sha256) {
                         <u8 as Streamable>::update_digest(&(*self as u8), digest);
                     }
-                    fn stream(&self, out: &mut Vec<u8>) -> chia_error::Result<()> {
+                    fn stream(&self, out: &mut Vec<u8>) -> chik_error::Result<()> {
                         <u8 as Streamable>::stream(&(*self as u8), out)
                     }
-                    fn parse(input: &mut std::io::Cursor<&[u8]>) -> chia_error::Result<Self> {
+                    fn parse(input: &mut std::io::Cursor<&[u8]>) -> chik_error::Result<Self> {
                         let v = <u8 as Streamable>::parse(input)?;
                         match &v {
                             #(#values => Ok(#ident::#names),)*
-                            _ => Err(chia_error::Error::InvalidEnum),
+                            _ => Err(chik_error::Error::InvalidEnum),
                         }
                     }
                 }
@@ -92,11 +92,11 @@ pub fn chia_streamable_macro(input: TokenStream) -> TokenStream {
                 fn update_digest(&self, digest: &mut clvmr::sha2::Sha256) {
                     #(self.#fnames.update_digest(digest);)*
                 }
-                fn stream(&self, out: &mut Vec<u8>) -> chia_error::Result<()> {
+                fn stream(&self, out: &mut Vec<u8>) -> chik_error::Result<()> {
                     #(self.#fnames.stream(out)?;)*
                     Ok(())
                 }
-                fn parse(input: &mut std::io::Cursor<&[u8]>) -> chia_error::Result<Self> {
+                fn parse(input: &mut std::io::Cursor<&[u8]>) -> chik_error::Result<Self> {
                     Ok(#ident{ #( #fnames: <#ftypes as Streamable>::parse(input)?, )* })
                 }
             }
@@ -108,11 +108,11 @@ pub fn chia_streamable_macro(input: TokenStream) -> TokenStream {
                 fn update_digest(&self, digest: &mut clvmr::sha2::Sha256) {
                     #(self.#findices.update_digest(digest);)*
                 }
-                fn stream(&self, out: &mut Vec<u8>) -> chia_error::Result<()> {
+                fn stream(&self, out: &mut Vec<u8>) -> chik_error::Result<()> {
                     #(self.#findices.stream(out)?;)*
                     Ok(())
                 }
-                fn parse(input: &mut std::io::Cursor<&[u8]>) -> chia_error::Result<Self> {
+                fn parse(input: &mut std::io::Cursor<&[u8]>) -> chik_error::Result<Self> {
                     Ok(#ident( #( <#ftypes as Streamable>::parse(input)?, )* ))
                 }
             }

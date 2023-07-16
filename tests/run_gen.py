@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from chia_rs import run_block_generator, SpendBundleConditions, run_block_generator2
+from chik_rs import run_block_generator, SpendBundleConditions, run_block_generator2
 from time import time
 import sys
 from time import perf_counter
@@ -8,8 +8,8 @@ from typing import Optional, Tuple
 
 def run_gen(fn: str, flags: int = 0, args: Optional[str] = None, version: int = 1) -> Tuple[Optional[int], Optional[SpendBundleConditions], float]:
 
-    # constants from the main chia blockchain:
-    # https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/default_constants.py
+    # constants from the main chik blockchain:
+    # https://github.com/Chik-Network/chik-blockchain/blob/main/chik/consensus/default_constants.py
     max_cost = 11000000000
     cost_per_byte = 12000
 

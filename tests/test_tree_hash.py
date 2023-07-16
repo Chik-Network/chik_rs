@@ -1,8 +1,8 @@
-import chia_rs
+import chik_rs
 
-print("chia_rs path:", chia_rs.__file__)
+print("chik_rs path:", chik_rs.__file__)
 
-from chia_rs import tree_hash, Spend, SpendBundleConditions, Coin
+from chik_rs import tree_hash, Spend, SpendBundleConditions, Coin
 from hashlib import sha256
 import pytest
 

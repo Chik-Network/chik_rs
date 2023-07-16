@@ -2,7 +2,7 @@ use super::conditions::{NewCoin, Spend, SpendBundleConditions};
 use super::run_block_generator::{run_block_generator, run_block_generator2};
 use crate::allocator::make_allocator;
 use crate::gen::flags::{ALLOW_BACKREFS, MEMPOOL_MODE};
-use chia_protocol::{Bytes, Bytes48};
+use chik_protocol::{Bytes, Bytes48};
 use clvmr::Allocator;
 use std::iter::zip;
 use std::string::String;

@@ -19,7 +19,7 @@ use crate::gen::flags::{
     NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
 };
 use crate::gen::validation_error::check_nil;
-use chia_protocol::bytes::Bytes32;
+use chik_protocol::bytes::Bytes32;
 use clvmr::allocator::{Allocator, NodePtr, SExp};
 use clvmr::cost::Cost;
 use clvmr::sha2::{Digest, Sha256};

@@ -5,8 +5,8 @@ pub mod to_json_dict;
 
 pub mod bls;
 pub mod bytes;
-pub mod chia_error;
-pub mod chia_protocol;
+pub mod chik_error;
+pub mod chik_protocol;
 pub mod classgroup;
 pub mod coin;
 pub mod coin_spend;
@@ -31,7 +31,7 @@ pub mod weight_proof;
 // export shorter names
 pub use crate::bls::*;
 pub use crate::bytes::*;
-pub use crate::chia_protocol::*;
+pub use crate::chik_protocol::*;
 pub use crate::classgroup::*;
 pub use crate::coin::*;
 pub use crate::coin_spend::*;

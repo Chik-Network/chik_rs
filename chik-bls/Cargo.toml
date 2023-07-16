@@ -1,12 +1,12 @@
 [package]
-name = "chia-bls"
+name = "chik-bls"
 version = "0.2.7"
 edition = "2021"
 license = "Apache-2.0"
-description = "BLS signature, verification and aggregation funcions for the Chia blockchain"
-authors = ["Arvid Norberg <arvid@chia.net>"]
-homepage = "https://github.com/Chia-Network/chia_rs/chia-bls/"
-repository = "https://github.com/Chia-Network/chia_rs/chia-bls/"
+description = "BLS signature, verification and aggregation funcions for the Chik blockchain"
+authors = ["Arvid Norberg <arvid@chiknetwork.com>"]
+homepage = "https://github.com/Chik-Network/chik_rs/chik-bls/"
+repository = "https://github.com/Chik-Network/chik_rs/chik-bls/"
 
 [dependencies]
 tiny-bip39 = "1.0.0"

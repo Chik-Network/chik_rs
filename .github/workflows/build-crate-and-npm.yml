@@ -68,7 +68,7 @@ jobs:
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.cargo_registry_token }}
       run: |
-        cd chia_py_streamable_macro
+        cd chik_py_streamable_macro
         cargo publish
 
     - name: publish to crates.io if tagged (clvm-utils)
@@ -86,10 +86,10 @@ jobs:
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.cargo_registry_token }}
       run: |
-        cd chia-protocol
+        cd chik-protocol
         cargo publish
 
-    - name: publish to crates.io if tagged (chia_rs)
+    - name: publish to crates.io if tagged (chik_rs)
       continue-on-error: true
       if: startsWith(github.event.ref, 'refs/tags')
       env:

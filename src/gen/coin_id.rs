@@ -1,4 +1,4 @@
-use chia_protocol::bytes::Bytes32;
+use chik_protocol::bytes::Bytes32;
 use clvmr::allocator::{Allocator, NodePtr};
 use clvmr::sha2::{Digest, Sha256};
 
@@ -15,7 +15,7 @@ pub fn compute_coin_id(
     hasher.finalize().as_slice().into()
 }
 
-// from chia.types.blockchain_format.coin import Coin
+// from chik.types.blockchain_format.coin import Coin
 // Coin(b"abababababababababababababababab", b"11111111111111111111111111111111", 123).name()
 // <bytes32: d82ed74b945e6a140ffecda9a619c30c323cdf2053a58dae8922c0c15a87646e>
 

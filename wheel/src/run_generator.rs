@@ -1,12 +1,12 @@
-use chia_protocol::from_json_dict::FromJsonDict;
-use chia_protocol::to_json_dict::ToJsonDict;
+use chik_protocol::from_json_dict::FromJsonDict;
+use chik_protocol::to_json_dict::ToJsonDict;
 
-use chia::allocator::make_allocator;
-use chia::gen::conditions::{Spend, SpendBundleConditions};
-use chia::gen::run_block_generator::run_block_generator as native_run_block_generator;
-use chia::gen::run_block_generator::run_block_generator2 as native_run_block_generator2;
-use chia::gen::validation_error::ValidationErr;
-use chia_protocol::bytes::{Bytes, Bytes32, Bytes48};
+use chik::allocator::make_allocator;
+use chik::gen::conditions::{Spend, SpendBundleConditions};
+use chik::gen::run_block_generator::run_block_generator as native_run_block_generator;
+use chik::gen::run_block_generator::run_block_generator2 as native_run_block_generator2;
+use chik::gen::validation_error::ValidationErr;
+use chik_protocol::bytes::{Bytes, Bytes32, Bytes48};
 
 use clvmr::allocator::{Allocator, NodePtr};
 use clvmr::cost::Cost;
@@ -15,10 +15,10 @@ use pyo3::buffer::PyBuffer;
 use pyo3::prelude::*;
 use pyo3::types::PyList;
 
-use chia_protocol::chia_error;
-use chia_protocol::streamable::Streamable;
-use chia_py_streamable_macro::PyStreamable;
-use chia_streamable_macro::Streamable;
+use chik_protocol::chik_error;
+use chik_protocol::streamable::Streamable;
+use chik_py_streamable_macro::PyStreamable;
+use chik_streamable_macro::Streamable;
 
 #[pyclass(name = "Spend", get_all, frozen)]
 #[derive(Streamable, PyStreamable, Hash, Debug, Clone, Eq, PartialEq)]
