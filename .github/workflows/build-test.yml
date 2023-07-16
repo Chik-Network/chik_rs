@@ -207,7 +207,7 @@ jobs:
         path: ./wheel/target/wheels/
 
   check-typestubs:
-    name: Check chia_rs.pyi
+    name: Check chik_rs.pyi
     runs-on: ubuntu-latest
 
     steps:
@@ -218,7 +218,7 @@ jobs:
 
     - uses: Chia-Network/actions/setup-python@main
 
-    - name: check generated chia_rs.pyi
+    - name: check generated chik_rs.pyi
       run: |
         python wheel/generate_type_stubs.py
         git diff --exit-code
