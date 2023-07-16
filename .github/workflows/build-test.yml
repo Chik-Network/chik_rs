@@ -3,7 +3,7 @@ name: build - check - upload
 on:
   push:
     branches:
-    - main
+    - main1
     tags:
     - '**'
   pull_request:
@@ -224,7 +224,7 @@ jobs:
         git diff --exit-code
 
   build-tools:
-    name: build chia-tools
+    name: build chik-tools
     runs-on: ubuntu-latest
     steps:
     - name: Clean workspace
@@ -331,7 +331,7 @@ jobs:
         run: cargo +nightly install cargo-fuzz
       - name: cargo fuzz (chia_rs)
         run: cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
-      - name: cargo fuzz (chia-bls)
+      - name: cargo fuzz (chik-bls)
         env:
           # we disable leak reports here because blspy appears to be allocating
           # memory that's not freed. It might be a false positive since python is
@@ -345,7 +345,7 @@ jobs:
         run: |
           cd clvm-utils
           cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
-      - name: cargo fuzz (chia-protocol)
+      - name: cargo fuzz (chik-protocol)
         run: |
           cd chia-protocol
           cargo +nightly fuzz build

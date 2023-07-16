@@ -62,7 +62,7 @@ jobs:
         path: ./wasm/pkg/*-*.tgz
 
     # this has not been tested, so probably needs to be debugged next time a tag is created
-    - name: publish to crates.io if tagged (chia_py_streamable_macro)
+    - name: publish to crates.io if tagged (chik_py_streamable_macro)
       continue-on-error: true
       if: startsWith(github.event.ref, 'refs/tags')
       env:
@@ -80,7 +80,7 @@ jobs:
         cd clvm-utils
         cargo publish
 
-    - name: publish to crates.io if tagged (chia-protocol)
+    - name: publish to crates.io if tagged (chik-protocol)
       continue-on-error: true
       if: startsWith(github.event.ref, 'refs/tags')
       env:
