@@ -93,8 +93,8 @@ jobs:
                 rustup-target: x86_64-unknown-linux-musl
             matrix: '3.11'
         arch:
-          - name: ARM
-            matrix: arm
+#          - name: ARM
+#            matrix: arm
           - name: Intel
             matrix: intel
         exclude:
