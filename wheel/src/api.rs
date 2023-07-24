@@ -32,8 +32,8 @@ use chik_protocol::{
     SubEpochChallengeSegment, SubEpochSegments, SubSlotData, SubSlotProofs, TransactionAck,
     TransactionsInfo, VDFInfo, VDFProof,
 };
-use clvmr::serde::tree_hash_from_stream;
-use clvmr::{
+use klvmr::serde::tree_hash_from_stream;
+use klvmr::{
     ENABLE_BLS_OPS, ENABLE_BLS_OPS_OUTSIDE_GUARD, ENABLE_FIXED_DIV, ENABLE_SECP_OPS, LIMIT_HEAP,
     NO_UNKNOWN_OPS,
 };
@@ -51,14 +51,14 @@ use crate::run_program::{run_chik_program, serialized_length};
 use crate::adapt_response::eval_err_to_pyresult;
 use chik::gen::get_puzzle_and_solution::get_puzzle_and_solution_for_coin as parse_puzzle_solution;
 use chik::gen::validation_error::ValidationErr;
-use clvmr::allocator::NodePtr;
-use clvmr::cost::Cost;
-use clvmr::reduction::EvalErr;
-use clvmr::reduction::Reduction;
-use clvmr::run_program;
-use clvmr::serde::node_to_bytes;
-use clvmr::serde::{node_from_bytes, node_from_bytes_backrefs, node_to_bytes_backrefs};
-use clvmr::ChikDialect;
+use klvmr::allocator::NodePtr;
+use klvmr::cost::Cost;
+use klvmr::reduction::EvalErr;
+use klvmr::reduction::Reduction;
+use klvmr::run_program;
+use klvmr::serde::node_to_bytes;
+use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs, node_to_bytes_backrefs};
+use klvmr::ChikDialect;
 
 #[pyfunction]
 pub fn compute_merkle_set_root<'p>(
@@ -195,7 +195,7 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     )?;
     m.add_class::<PySpend>()?;
 
-    // clvm functions
+    // klvm functions
     m.add("COND_ARGS_NIL", COND_ARGS_NIL)?;
     m.add("NO_UNKNOWN_CONDS", NO_UNKNOWN_CONDS)?;
     m.add("STRICT_ARGS_COUNT", STRICT_ARGS_COUNT)?;
@@ -277,7 +277,7 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
 
     m.add_class::<FullBlock>()?;
 
-    // facilities from clvm_rs
+    // facilities from klvm_rs
 
     m.add_function(wrap_pyfunction!(run_chik_program, m)?)?;
     m.add("NO_UNKNOWN_OPS", NO_UNKNOWN_OPS)?;

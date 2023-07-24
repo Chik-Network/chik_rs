@@ -1,6 +1,6 @@
-use clvmr::allocator::Allocator;
-use clvmr::reduction::EvalErr;
-use clvmr::serde::node_to_bytes;
+use klvmr::allocator::Allocator;
+use klvmr::reduction::EvalErr;
+use klvmr::serde::node_to_bytes;
 
 use pyo3::prelude::*;
 use pyo3::types::PyDict;

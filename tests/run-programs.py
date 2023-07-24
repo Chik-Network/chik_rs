@@ -6,7 +6,7 @@ import time
 import sys
 import platform
 from colorama import init, Fore, Style
-from run import run_clvm
+from run import run_klvm
 
 init()
 ret = 0
@@ -14,14 +14,14 @@ ret = 0
 for fn in glob.glob('programs/large-atom-*.hex.invalid'):
 
     try:
-        run_clvm(fn)
+        run_klvm(fn)
         ret = 1
         print("FAILED: expected parse failure")
     except Exception as e:
         print("expected failure: %s" % e)
 
 
-for fn in glob.glob('programs/*.clvm'):
+for fn in glob.glob('programs/*.klvm'):
 
     hexname = fn[:-4] + 'hex'
     with open(hexname, 'w+') as out:

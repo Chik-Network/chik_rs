@@ -3,7 +3,7 @@ use super::run_block_generator::{run_block_generator, run_block_generator2};
 use crate::allocator::make_allocator;
 use crate::gen::flags::{ALLOW_BACKREFS, MEMPOOL_MODE};
 use chik_protocol::{Bytes, Bytes48};
-use clvmr::Allocator;
+use klvmr::Allocator;
 use std::iter::zip;
 use std::string::String;
 use text_diff::diff;

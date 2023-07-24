@@ -3,14 +3,14 @@ use crate::gen::conditions::{
 };
 use crate::gen::flags::ALLOW_BACKREFS;
 use crate::gen::validation_error::{first, ErrorCode, ValidationErr};
-use crate::generator_rom::{CLVM_DESERIALIZER, COST_PER_BYTE, GENERATOR_ROM};
-use clvm_utils::tree_hash::tree_hash;
-use clvmr::allocator::{Allocator, NodePtr};
-use clvmr::chik_dialect::ChikDialect;
-use clvmr::cost::Cost;
-use clvmr::reduction::Reduction;
-use clvmr::run_program::run_program;
-use clvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
+use crate::generator_rom::{KLVM_DESERIALIZER, COST_PER_BYTE, GENERATOR_ROM};
+use klvm_utils::tree_hash::tree_hash;
+use klvmr::allocator::{Allocator, NodePtr};
+use klvmr::chik_dialect::ChikDialect;
+use klvmr::cost::Cost;
+use klvmr::reduction::Reduction;
+use klvmr::run_program::run_program;
+use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
 
 fn subtract_cost(a: &Allocator, cost_left: &mut Cost, subtract: Cost) -> Result<(), ValidationErr> {
     if subtract > *cost_left {
@@ -67,10 +67,10 @@ pub fn run_block_generator<GenBuf: AsRef<[u8]>>(
     let args = a.new_pair(program, args)?;
 
     let dialect = ChikDialect::new(flags);
-    let Reduction(clvm_cost, generator_output) =
+    let Reduction(klvm_cost, generator_output) =
         run_program(a, &dialect, generator_rom, args, cost_left)?;
 
-    subtract_cost(a, &mut cost_left, clvm_cost)?;
+    subtract_cost(a, &mut cost_left, klvm_cost)?;
 
     // we pass in what's left of max_cost here, to fail early in case the
     // cost of a condition brings us over the cost limit
@@ -103,8 +103,8 @@ fn extract_n<const N: usize>(
 }
 
 // This has the same behavior as run_block_generator() but implements the
-// generator ROM in rust instead of using the CLVM implementation.
-// it is not backwards compatible in the CLVM cost computation (in this version
+// generator ROM in rust instead of using the KLVM implementation.
+// it is not backwards compatible in the KLVM cost computation (in this version
 // you only pay cost for the generator, the puzzles and the conditions).
 // it also does not apply the stack depth or object allocation limits the same,
 // as each puzzle run in its own environment.
@@ -120,7 +120,7 @@ pub fn run_block_generator2<GenBuf: AsRef<[u8]>>(
     let mut cost_left = max_cost;
     subtract_cost(a, &mut cost_left, byte_cost)?;
 
-    let clvm_deserializer = node_from_bytes(a, &CLVM_DESERIALIZER)?;
+    let klvm_deserializer = node_from_bytes(a, &KLVM_DESERIALIZER)?;
     let program = if (flags & ALLOW_BACKREFS) != 0 {
         node_from_bytes_backrefs(a, program)?
     } else {
@@ -138,13 +138,13 @@ pub fn run_block_generator2<GenBuf: AsRef<[u8]>>(
     // the first argument to the generator is the serializer, followed by a list
     // of the blocks it requested.
     let mut args = a.new_pair(blocks, a.null())?;
-    args = a.new_pair(clvm_deserializer, args)?;
+    args = a.new_pair(klvm_deserializer, args)?;
 
     let dialect = ChikDialect::new(flags);
 
-    let Reduction(clvm_cost, mut all_spends) = run_program(a, &dialect, program, args, cost_left)?;
+    let Reduction(klvm_cost, mut all_spends) = run_program(a, &dialect, program, args, cost_left)?;
 
-    subtract_cost(a, &mut cost_left, clvm_cost)?;
+    subtract_cost(a, &mut cost_left, klvm_cost)?;
     all_spends = first(a, all_spends)?;
 
     // at this point all_spends is a list of:
@@ -160,10 +160,10 @@ pub fn run_block_generator2<GenBuf: AsRef<[u8]>>(
         let [parent_id, puzzle, amount, solution, _spend_level_extra] =
             extract_n::<5>(a, spend, ErrorCode::InvalidCondition)?;
 
-        let Reduction(clvm_cost, conditions) =
+        let Reduction(klvm_cost, conditions) =
             run_program(a, &dialect, puzzle, solution, cost_left)?;
 
-        subtract_cost(a, &mut cost_left, clvm_cost)?;
+        subtract_cost(a, &mut cost_left, klvm_cost)?;
 
         let buf = tree_hash(a, puzzle);
         let puzzle_hash = a.new_atom(&buf)?;

@@ -10,7 +10,7 @@ repository = "https://github.com/Chik-Network/chik_rs/chik-tools"
 
 [dependencies]
 chik-protocol = { version = "=0.2.7", path = "../chik-protocol" }
-clvmr = { version = "=0.2.7", features = ["counters"] }
+klvmr = { version = "=0.2.8", features = ["counters"] }
 chik = { version = "=0.2.9", path = ".." }
 sqlite = "=0.31.0"
 clap = { version = "=4.3.9", features = ["derive"] }
@@ -29,6 +29,6 @@ test = false
 bench = false
 
 [[bin]]
-name = "compress-clvm"
+name = "compress-klvm"
 test = false
 bench = false

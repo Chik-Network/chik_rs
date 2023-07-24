@@ -34,9 +34,9 @@ set xlabel "s"
 plot "chain-resource-usage.dat" using 1:16 with dots title "block timestamp delta", \
 
 set output "block-cost-vs-time.png"
-set title "block CLVM execution time versus CLVM cost"
-set xlabel "CLVM cost (millions)"
-set ylabel "CLVM execution time (s)"
+set title "block KLVM execution time versus KLVM cost"
+set xlabel "KLVM cost (millions)"
+set ylabel "KLVM execution time (s)"
 set key off
 plot "chain-resource-usage.dat" using ($9/1000000):($13/1000000) with dots title "blocks", \
 

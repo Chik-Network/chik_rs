@@ -1,8 +1,8 @@
 use crate::gen::validation_error::{atom, check_nil, first, next, rest, ErrorCode, ValidationErr};
 use ::chik_protocol::bytes::Bytes32;
-use clvm_utils::tree_hash::tree_hash;
-use clvmr::allocator::{Allocator, NodePtr};
-use clvmr::op_utils::u64_from_bytes;
+use klvm_utils::tree_hash::tree_hash;
+use klvmr::allocator::{Allocator, NodePtr};
+use klvmr::op_utils::u64_from_bytes;
 use std::convert::AsRef;
 
 // returns parent-coin ID, amount, puzzle-reveal and solution
@@ -75,7 +75,7 @@ fn u64_to_bytes(n: u64) -> Vec<u8> {
 }
 
 #[cfg(test)]
-use clvmr::sha2::{Digest, Sha256};
+use klvmr::sha2::{Digest, Sha256};
 
 #[cfg(test)]
 fn make_dummy_id(seed: u64) -> Bytes32 {

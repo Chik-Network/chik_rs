@@ -5,12 +5,12 @@ use crate::gen::flags::ALLOW_BACKREFS;
 use crate::gen::validation_error::ValidationErr;
 use chik_protocol::bytes::Bytes32;
 use chik_protocol::coin::Coin;
-use clvm_utils::tree_hash::tree_hash;
-use clvmr::allocator::Allocator;
-use clvmr::chik_dialect::ChikDialect;
-use clvmr::reduction::Reduction;
-use clvmr::run_program::run_program;
-use clvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
+use klvm_utils::tree_hash::tree_hash;
+use klvmr::allocator::Allocator;
+use klvmr::chik_dialect::ChikDialect;
+use klvmr::reduction::Reduction;
+use klvmr::run_program::run_program;
+use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
 use std::collections::HashSet;
 use std::sync::Arc;
 
@@ -32,7 +32,7 @@ pub fn run_puzzle(
     let solution = deserialize(a, solution)?;
 
     let dialect = ChikDialect::new(flags);
-    let Reduction(clvm_cost, conditions) = run_program(a, &dialect, puzzle, solution, max_cost)?;
+    let Reduction(klvm_cost, conditions) = run_program(a, &dialect, puzzle, solution, max_cost)?;
 
     let mut ret = SpendBundleConditions {
         removal_amount: amount as u128,
@@ -74,7 +74,7 @@ pub fn run_puzzle(
         flags: ELIGIBLE_FOR_DEDUP,
     };
 
-    let mut cost_left = max_cost - clvm_cost;
+    let mut cost_left = max_cost - klvm_cost;
 
     parse_conditions(
         a,

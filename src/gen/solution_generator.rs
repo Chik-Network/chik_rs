@@ -1,6 +1,6 @@
 use chik_protocol::Coin;
-use clvmr::allocator::{Allocator, NodePtr};
-use clvmr::serde::{node_from_bytes_backrefs, node_to_bytes, node_to_bytes_backrefs};
+use klvmr::allocator::{Allocator, NodePtr};
+use klvmr::serde::{node_from_bytes_backrefs, node_to_bytes, node_to_bytes_backrefs};
 use std::io;
 
 // the tuple has the Coin, puzzle-reveal and solution
@@ -64,7 +64,7 @@ where
 mod tests {
     use super::*;
     use chik_protocol::Coin;
-    use clvmr::{run_program, ChikDialect};
+    use klvmr::{run_program, ChikDialect};
     use hex_literal::hex;
 
     const PUZZLE1: [u8; 291] = hex!(

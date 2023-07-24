@@ -6,7 +6,7 @@
   ; run -d deserialize_w_backrefs.cl > deserialize_w_backrefs.hex
   ; brun -x deserialize_w_backrefs.hex $SERIALIZED_HEX
   ; ```
-  ; Use whatever serialized clvm expression you like for `SERIALIZED_HEX`.
+  ; Use whatever serialized klvm expression you like for `SERIALIZED_HEX`.
   ; Generate it with `print(sexp.as_bin(allow_backrefs=True).hex())` in python.
   ; It works for standard serialization (without backrefs) too.
 
@@ -20,7 +20,7 @@
   (defconstant CONS_BOX_MARKER 0xFF)
 
   (defun-inline extract_from_tree (tree_path_pair)
-    ; given `tree_path_pair = `(path . tree)` return the `path`th element of `tree` using standard clvm paths
+    ; given `tree_path_pair = `(path . tree)` return the `path`th element of `tree` using standard klvm paths
     (a (q a 2 3) tree_path_pair)
   )
 
@@ -73,11 +73,11 @@
   )
 
   ; Note that we reject any serialized atom here with more than 3 bytes of
-  ; encoded length prefix, even though the Rust and Python CLVM interpreters
+  ; encoded length prefix, even though the Rust and Python KLVM interpreters
   ; and deserializers support more.
   ; This allows 4 + 8 + 8 = 20 bits = 1MB atoms
   ; Also note that this does not limit intermediate atom length. Those limits
-  ; are implemented in the clvm interpreters theselves
+  ; are implemented in the klvm interpreters theselves
   (defun get_bitcount (input_bits input_file)
     ; return `(string_length . input_file_new_start_point)`
     (if (>s input_bits MAX_ONE_BYTE)

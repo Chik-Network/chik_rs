@@ -20,9 +20,9 @@ use crate::gen::flags::{
 };
 use crate::gen::validation_error::check_nil;
 use chik_protocol::bytes::Bytes32;
-use clvmr::allocator::{Allocator, NodePtr, SExp};
-use clvmr::cost::Cost;
-use clvmr::sha2::{Digest, Sha256};
+use klvmr::allocator::{Allocator, NodePtr, SExp};
+use klvmr::cost::Cost;
+use klvmr::sha2::{Digest, Sha256};
 use std::cmp::{max, min};
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
@@ -544,7 +544,7 @@ pub struct SpendBundleConditions {
     pub before_seconds_absolute: Option<u64>,
 
     // the cost of conditions (when returned by parse_spends())
-    // run_block_generator() will include CLVM cost and byte cost (making this
+    // run_block_generator() will include KLVM cost and byte cost (making this
     // the total cost)
     pub cost: u64,
 
@@ -1223,9 +1223,9 @@ use crate::gen::flags::ENABLE_ASSERT_BEFORE;
 #[cfg(test)]
 use crate::gen::flags::ENABLE_SOFTFORK_CONDITION;
 #[cfg(test)]
-use clvmr::number::Number;
+use klvmr::number::Number;
 #[cfg(test)]
-use clvmr::serde::node_to_bytes;
+use klvmr::serde::node_to_bytes;
 #[cfg(test)]
 use hex::FromHex;
 #[cfg(test)]
@@ -1377,7 +1377,7 @@ fn parse_list(
     callback: &Option<Box<dyn Fn(&mut Allocator) -> NodePtr>>,
 ) -> NodePtr {
     // all substitutions are allocated up-front in order to have them all use
-    // the same atom in the CLVM structure. This is to cover cases where
+    // the same atom in the KLVM structure. This is to cover cases where
     // conditions may be deduplicated based on the NodePtr value, when they
     // shouldn't be. The AggSig conditions are stored with NodePtr values, but
     // should never be deduplicated.

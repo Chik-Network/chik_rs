@@ -1,4 +1,4 @@
-use clvmr::sha2::{Digest, Sha256};
+use klvmr::sha2::{Digest, Sha256};
 
 fn get_bit(val: &[u8; 32], bit: u8) -> u8 {
     ((val[(bit / 8) as usize] & (0x80 >> (bit & 7))) != 0).into()

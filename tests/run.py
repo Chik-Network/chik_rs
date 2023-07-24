@@ -2,7 +2,7 @@
 
 from chik_rs import run_chik_program
 
-def run_clvm(fn, env=None):
+def run_klvm(fn, env=None):
 
     program_data = bytes.fromhex(open(fn, 'r').read())
     if env is not None:
@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     try:
         start = time()
-        cost, result = run_clvm(sys.argv[1], sys.argv[2])
+        cost, result = run_klvm(sys.argv[1], sys.argv[2])
         duration = time() - start;
         print(f"cost: {cost}")
         print(f"execution time: {duration:.2f}s")

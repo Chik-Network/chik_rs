@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import os
-from clvm import KEYWORD_TO_ATOM
+from klvm import KEYWORD_TO_ATOM
 
 def recursive_cons(filename, num):
     with open(filename, 'w+') as f:
@@ -174,41 +174,41 @@ try:
 except:
     pass
 
-binary_recurse('programs/recursive-cat.clvm', 'concat', '"ABCDEF"', 29)
-binary_recurse('programs/recursive-mul.clvm', '*', '0x7ffffffffffffffffffffffffffffffffffffffffffff', 100)
-binary_recurse('programs/recursive-add.clvm', '+', '0x7ffffffffffffffffffffffffffffffffffffffffffffffff', 5000000)
-binary_recurse('programs/recursive-sub.clvm', '-', '0x7ffffffffffffffffffffffffffffffffffffffffffffffff', 5000000)
-unary_recurse('programs/recursive-div.clvm', '/', 13, 1000000)
-unary_recurse('programs/recursive-lsh.clvm', 'lsh', 65535, 10000)
-unary_recurse('programs/recursive-ash.clvm', 'ash', 65535, 10000)
-unary_recurse('programs/recursive-pubkey.clvm', 'pubkey_for_exp', '', 10000)
-unary_recurse('programs/recursive-not.clvm', 'lognot', '', 10000000)
-many_args('programs/args-mul.clvm', '*', 10000)
-many_args('programs/args-add.clvm', '+', 10000)
-many_args('programs/args-sub.clvm', '-', 10000)
-many_args('programs/args-sha.clvm', 'sha256', 10000)
-many_args('programs/args-cat.clvm', 'concat', 10000)
-many_args('programs/args-any.clvm', 'any', 300000)
-many_args('programs/args-all.clvm', 'all', 300000)
-many_args('programs/args-and.clvm', 'logand', 10000)
-many_args('programs/args-or.clvm', 'logior', 10000)
-many_args('programs/args-xor.clvm', 'logxor', 10000)
-many_args_point('programs/args-point_add.clvm', 'point_add', 12000)
-many_args('programs/args-unknown-1.clvm', '0x7fffffff00', 5000)
-many_args('programs/args-unknown-2.clvm', '0x7ff40', 3000)
-many_args('programs/args-unknown-3.clvm', '0x7ff80', 3000)
-many_args('programs/args-unknown-4.clvm', '0x7ffc0', 3000)
-unary_recurse('programs/args-unknown-5.clvm', '0x7ff00', '0xffffffffffffff', 3000000)
-unary_recurse('programs/args-unknown-6.clvm', '0x001', '0xfffffffffffff', 30000000)
-unary_recurse('programs/args-unknown-7.clvm', '0x041', '0xfffffffffffff', 30000000)
-unary_recurse('programs/args-unknown-8.clvm', '0x081', '0xfffffffffffff', 30000000)
-unary_recurse('programs/args-unknown-9.clvm', '0x0c1', '0xfffffffffffff', 30000000)
-recursive_cons('programs/recursive-cons.clvm', 10000000)
+binary_recurse('programs/recursive-cat.klvm', 'concat', '"ABCDEF"', 29)
+binary_recurse('programs/recursive-mul.klvm', '*', '0x7ffffffffffffffffffffffffffffffffffffffffffff', 100)
+binary_recurse('programs/recursive-add.klvm', '+', '0x7ffffffffffffffffffffffffffffffffffffffffffffffff', 5000000)
+binary_recurse('programs/recursive-sub.klvm', '-', '0x7ffffffffffffffffffffffffffffffffffffffffffffffff', 5000000)
+unary_recurse('programs/recursive-div.klvm', '/', 13, 1000000)
+unary_recurse('programs/recursive-lsh.klvm', 'lsh', 65535, 10000)
+unary_recurse('programs/recursive-ash.klvm', 'ash', 65535, 10000)
+unary_recurse('programs/recursive-pubkey.klvm', 'pubkey_for_exp', '', 10000)
+unary_recurse('programs/recursive-not.klvm', 'lognot', '', 10000000)
+many_args('programs/args-mul.klvm', '*', 10000)
+many_args('programs/args-add.klvm', '+', 10000)
+many_args('programs/args-sub.klvm', '-', 10000)
+many_args('programs/args-sha.klvm', 'sha256', 10000)
+many_args('programs/args-cat.klvm', 'concat', 10000)
+many_args('programs/args-any.klvm', 'any', 300000)
+many_args('programs/args-all.klvm', 'all', 300000)
+many_args('programs/args-and.klvm', 'logand', 10000)
+many_args('programs/args-or.klvm', 'logior', 10000)
+many_args('programs/args-xor.klvm', 'logxor', 10000)
+many_args_point('programs/args-point_add.klvm', 'point_add', 12000)
+many_args('programs/args-unknown-1.klvm', '0x7fffffff00', 5000)
+many_args('programs/args-unknown-2.klvm', '0x7ff40', 3000)
+many_args('programs/args-unknown-3.klvm', '0x7ff80', 3000)
+many_args('programs/args-unknown-4.klvm', '0x7ffc0', 3000)
+unary_recurse('programs/args-unknown-5.klvm', '0x7ff00', '0xffffffffffffff', 3000000)
+unary_recurse('programs/args-unknown-6.klvm', '0x001', '0xfffffffffffff', 30000000)
+unary_recurse('programs/args-unknown-7.klvm', '0x041', '0xfffffffffffff', 30000000)
+unary_recurse('programs/args-unknown-8.klvm', '0x081', '0xfffffffffffff', 30000000)
+unary_recurse('programs/args-unknown-9.klvm', '0x0c1', '0xfffffffffffff', 30000000)
+recursive_cons('programs/recursive-cons.klvm', 10000000)
 
 # this program attempts to wrap around a 64 bit cost counter
-softfork_wrap('programs/softfork-1.clvm', '0x00ffffffffffffff45')
+softfork_wrap('programs/softfork-1.klvm', '0x00ffffffffffffff45')
 # this program attempts to wrap around a 32 bit cost counter
-softfork_wrap('programs/softfork-2.clvm', '0x00ffffff45')
+softfork_wrap('programs/softfork-2.klvm', '0x00ffffff45')
 
 # tests that try to trick a parser into allocating too much memory
 serialized_atom_overflow('programs/large-atom-1.hex.invalid', 0xffffffff)

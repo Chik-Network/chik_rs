@@ -1,4 +1,4 @@
-use clvmr::MEMPOOL_MODE as CLVM_MEMPOOL_MODE;
+use klvmr::MEMPOOL_MODE as KLVM_MEMPOOL_MODE;
 
 // flags controlling to condition parsing
 
@@ -48,7 +48,7 @@ pub const LIMIT_ANNOUNCES: u32 = 0x1000000;
 // contain back-references
 pub const ALLOW_BACKREFS: u32 = 0x2000000;
 
-pub const MEMPOOL_MODE: u32 = CLVM_MEMPOOL_MODE
+pub const MEMPOOL_MODE: u32 = KLVM_MEMPOOL_MODE
     | NO_UNKNOWN_CONDS
     | COND_ARGS_NIL
     | STRICT_ARGS_COUNT

@@ -1,7 +1,7 @@
 use crate::bytes::Bytes;
 use crate::chik_error::{Error, Result};
 use crate::streamable::Streamable;
-use clvmr::serde::serialized_length_from_bytes;
+use klvmr::serde::serialized_length_from_bytes;
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
 

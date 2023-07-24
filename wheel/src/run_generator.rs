@@ -8,8 +8,8 @@ use chik::gen::run_block_generator::run_block_generator2 as native_run_block_gen
 use chik::gen::validation_error::ValidationErr;
 use chik_protocol::bytes::{Bytes, Bytes32, Bytes48};
 
-use clvmr::allocator::{Allocator, NodePtr};
-use clvmr::cost::Cost;
+use klvmr::allocator::{Allocator, NodePtr};
+use klvmr::cost::Cost;
 
 use pyo3::buffer::PyBuffer;
 use pyo3::prelude::*;

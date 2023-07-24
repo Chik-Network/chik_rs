@@ -23,7 +23,7 @@ streamable_struct! (TransactionsInfo {
     generator_refs_root: Bytes32, // sha256 of the concatenation of the generator ref list entries
     aggregated_signature: G2Element,
     fees: u64, // This only includes user fees, not block rewards
-    cost: u64, // This is the total cost of this block, including CLVM cost, cost of program size and conditions
+    cost: u64, // This is the total cost of this block, including KLVM cost, cost of program size and conditions
     reward_claims_incorporated: Vec<Coin>, // These can be in any order
 });
 

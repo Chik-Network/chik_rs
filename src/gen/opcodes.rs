@@ -1,7 +1,7 @@
 use crate::gen::flags::ENABLE_ASSERT_BEFORE;
 use crate::gen::flags::ENABLE_SOFTFORK_CONDITION;
-use clvmr::allocator::{Allocator, NodePtr, SExp};
-use clvmr::cost::Cost;
+use klvmr::allocator::{Allocator, NodePtr, SExp};
+use klvmr::cost::Cost;
 
 pub type ConditionOpcode = u16;
 

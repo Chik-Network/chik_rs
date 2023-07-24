@@ -1,6 +1,6 @@
 use super::sanitize_int::{sanitize_uint, SanitizedUint};
 use super::validation_error::{atom, ErrorCode, ValidationErr};
-use clvmr::allocator::{Allocator, NodePtr};
+use klvmr::allocator::{Allocator, NodePtr};
 
 pub fn sanitize_hash(
     a: &Allocator,

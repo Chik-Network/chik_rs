@@ -11,11 +11,11 @@ use chik::gen::conditions::parse_spends;
 use chik::gen::flags::MEMPOOL_MODE;
 use chik::gen::validation_error::ValidationErr;
 use chik::generator_rom::{COST_PER_BYTE, GENERATOR_ROM};
-use clvmr::reduction::Reduction;
-use clvmr::run_program_with_counters;
-use clvmr::serde::node_from_bytes;
-use clvmr::Allocator;
-use clvmr::ChikDialect;
+use klvmr::reduction::Reduction;
+use klvmr::run_program_with_counters;
+use klvmr::serde::node_from_bytes;
+use klvmr::Allocator;
+use klvmr::ChikDialect;
 
 /// Analyze the blocks in a chik blockchain database
 #[derive(Parser, Debug)]
@@ -178,12 +178,12 @@ fn main() {
             );
             let execute_timing = start_execute.elapsed().expect("failed to get system time");
 
-            let Reduction(clvm_cost, generator_output) = result.expect("block generator failed");
+            let Reduction(klvm_cost, generator_output) = result.expect("block generator failed");
 
             let start_conditions = SystemTime::now();
             // we pass in what's left of max_cost here, to fail early in case the
             // cost of a condition brings us over the cost limit
-            let conds = match parse_spends(&a, generator_output, ti.cost - clvm_cost, MEMPOOL_MODE)
+            let conds = match parse_spends(&a, generator_output, ti.cost - klvm_cost, MEMPOOL_MODE)
             {
                 Err(ValidationErr(_, _)) => {
                     panic!("failed to parse conditions in block {height}");
@@ -194,7 +194,7 @@ fn main() {
                 .elapsed()
                 .expect("failed to get system time");
 
-            assert!(clvm_cost + byte_cost + conds.cost == ti.cost);
+            assert!(klvm_cost + byte_cost + conds.cost == ti.cost);
             output
                 .write_fmt(format_args!(
                     "{} val_stack: {} \
@@ -204,7 +204,7 @@ fn main() {
                 pairs: {} \
                 heap: {} \
                 block_cost: {} \
-                clvm_cost: {} \
+                klvm_cost: {} \
                 cond_cost: {} \
                 parse_time: {} \
                 ref_lookup_time: {} \
@@ -221,7 +221,7 @@ fn main() {
                     counters.pair_count,
                     counters.heap_size,
                     ti.cost,
-                    clvm_cost,
+                    klvm_cost,
                     conds.cost,
                     parse_timing.as_micros(),
                     ref_lookup_timing.as_micros(),

@@ -47,7 +47,7 @@ pub fn chik_streamable_macro(input: TokenStream) -> TokenStream {
             }
             let ret = quote! {
                 impl Streamable for #ident {
-                    fn update_digest(&self, digest: &mut clvmr::sha2::Sha256) {
+                    fn update_digest(&self, digest: &mut klvmr::sha2::Sha256) {
                         <u8 as Streamable>::update_digest(&(*self as u8), digest);
                     }
                     fn stream(&self, out: &mut Vec<u8>) -> chik_error::Result<()> {
@@ -89,7 +89,7 @@ pub fn chik_streamable_macro(input: TokenStream) -> TokenStream {
     if !fnames.is_empty() {
         let ret = quote! {
             impl Streamable for #ident {
-                fn update_digest(&self, digest: &mut clvmr::sha2::Sha256) {
+                fn update_digest(&self, digest: &mut klvmr::sha2::Sha256) {
                     #(self.#fnames.update_digest(digest);)*
                 }
                 fn stream(&self, out: &mut Vec<u8>) -> chik_error::Result<()> {
@@ -105,7 +105,7 @@ pub fn chik_streamable_macro(input: TokenStream) -> TokenStream {
     } else if !findices.is_empty() {
         let ret = quote! {
             impl Streamable for #ident {
-                fn update_digest(&self, digest: &mut clvmr::sha2::Sha256) {
+                fn update_digest(&self, digest: &mut klvmr::sha2::Sha256) {
                     #(self.#findices.update_digest(digest);)*
                 }
                 fn stream(&self, out: &mut Vec<u8>) -> chik_error::Result<()> {

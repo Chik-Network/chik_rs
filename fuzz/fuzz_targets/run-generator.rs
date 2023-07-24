@@ -1,7 +1,7 @@
 #![no_main]
 use chik::gen::flags::ALLOW_BACKREFS;
 use chik::gen::run_block_generator::{run_block_generator, run_block_generator2};
-use clvmr::allocator::Allocator;
+use klvmr::allocator::Allocator;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {

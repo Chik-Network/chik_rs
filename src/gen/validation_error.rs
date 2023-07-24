@@ -1,5 +1,5 @@
-use clvmr::allocator::{Allocator, NodePtr, SExp};
-use clvmr::reduction::EvalErr;
+use klvmr::allocator::{Allocator, NodePtr, SExp};
+use klvmr::reduction::EvalErr;
 
 #[cfg(feature = "py-bindings")]
 use pyo3::exceptions;
