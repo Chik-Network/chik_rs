@@ -216,10 +216,10 @@ name = "chik"
 version = "0.2.9"
 dependencies = [
  "chik-protocol",
- "klvm-utils",
- "klvmr",
  "hex",
  "hex-literal",
+ "klvm-utils",
+ "klvmr",
  "num-traits",
  "pyo3",
  "rstest 0.16.0",
@@ -259,8 +259,8 @@ version = "0.2.7"
 dependencies = [
  "chik_py_streamable_macro",
  "chik_streamable_macro",
- "klvmr",
  "hex",
+ "klvmr",
  "pyo3",
  "rstest 0.17.0",
  "sha2 0.9.9",
@@ -273,8 +273,8 @@ dependencies = [
  "chik",
  "chik-protocol",
  "clap",
- "klvmr",
  "hex",
+ "klvmr",
  "sqlite",
  "threadpool",
  "zstd",
@@ -374,43 +374,6 @@ name = "clap_lex"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2da6da31387c7e4ef160ffab6d5e7f00c42626fe39aea70a7b0f1773f7dd6c1b"
-
-[[package]]
-name = "klvm-utils"
-version = "0.2.7"
-dependencies = [
- "klvmr",
-]
-
-[[package]]
-name = "klvm-utils-fuzz"
-version = "0.0.0"
-dependencies = [
- "chik",
- "chik-fuzz",
- "klvm-utils",
- "klvmr",
- "libfuzzer-sys",
-]
-
-[[package]]
-name = "klvmr"
-version = "0.2.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "284ea099bca1662f9dd4543d6d360f477946031b96310b47c0019c770bc0220b"
-dependencies = [
- "bls12_381",
- "getrandom",
- "group 0.13.0",
- "hex",
- "k256",
- "lazy_static",
- "num-bigint",
- "num-integer",
- "num-traits",
- "p256",
- "sha2 0.9.9",
-]
 
 [[package]]
 name = "colorchoice"
@@ -990,6 +953,43 @@ checksum = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
 dependencies = [
  "winapi 0.2.8",
  "winapi-build",
+]
+
+[[package]]
+name = "klvm-utils"
+version = "0.2.7"
+dependencies = [
+ "klvmr",
+]
+
+[[package]]
+name = "klvm-utils-fuzz"
+version = "0.0.0"
+dependencies = [
+ "chik",
+ "chik-fuzz",
+ "klvm-utils",
+ "klvmr",
+ "libfuzzer-sys",
+]
+
+[[package]]
+name = "klvmr"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "284ea099bca1662f9dd4543d6d360f477946031b96310b47c0019c770bc0220b"
+dependencies = [
+ "bls12_381",
+ "getrandom",
+ "group 0.13.0",
+ "hex",
+ "k256",
+ "lazy_static",
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "p256",
+ "sha2 0.9.9",
 ]
 
 [[package]]
