@@ -4,9 +4,9 @@ use libfuzzer_sys::fuzz_target;
 use chik::gen::conditions::{parse_conditions, ParseState, Spend, SpendBundleConditions};
 use chik_protocol::Bytes32;
 use chik_protocol::Coin;
+use fuzzing_utils::{make_tree, BitCursor};
 use klvm_utils::tree_hash::tree_hash;
 use klvmr::allocator::Allocator;
-use fuzzing_utils::{make_tree, BitCursor};
 use std::collections::HashSet;
 use std::sync::Arc;
 

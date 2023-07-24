@@ -2,8 +2,8 @@
 use libfuzzer_sys::fuzz_target;
 
 use chik::gen::conditions::parse_spends;
-use klvmr::allocator::Allocator;
 use fuzzing_utils::{make_tree, BitCursor};
+use klvmr::allocator::Allocator;
 
 use chik::gen::flags::{COND_ARGS_NIL, ENABLE_ASSERT_BEFORE, NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT};
 

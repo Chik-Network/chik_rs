@@ -1,9 +1,9 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
+use fuzzing_utils::{make_tree, BitCursor};
 use klvm_utils::tree_hash::tree_hash;
 use klvmr::allocator::Allocator;
-use fuzzing_utils::{make_tree, BitCursor};
 
 fuzz_target!(|data: &[u8]| {
     let mut a = Allocator::new();

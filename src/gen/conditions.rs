@@ -1223,11 +1223,11 @@ use crate::gen::flags::ENABLE_ASSERT_BEFORE;
 #[cfg(test)]
 use crate::gen::flags::ENABLE_SOFTFORK_CONDITION;
 #[cfg(test)]
+use hex::FromHex;
+#[cfg(test)]
 use klvmr::number::Number;
 #[cfg(test)]
 use klvmr::serde::node_to_bytes;
-#[cfg(test)]
-use hex::FromHex;
 #[cfg(test)]
 use num_traits::Num;
 #[cfg(test)]

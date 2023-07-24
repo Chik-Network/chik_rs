@@ -1,8 +1,8 @@
 #![no_main]
 use chik::gen::conditions::{process_single_spend, ParseState, SpendBundleConditions};
 use chik::gen::flags::{COND_ARGS_NIL, NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT};
-use klvmr::allocator::Allocator;
 use fuzzing_utils::{make_tree, BitCursor};
+use klvmr::allocator::Allocator;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
