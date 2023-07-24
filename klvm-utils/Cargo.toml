@@ -1,0 +1,12 @@
+[package]
+name = "klvm-utils"
+version = "0.2.7"
+edition = "2021"
+license = "Apache-2.0"
+description = "Utility functions for processing klvm programs and structures"
+authors = ["Arvid Norberg <arvid@chiknetwork.com>"]
+homepage = "https://github.com/Chik-Network/chik_rs/"
+repository = "https://github.com/Chik-Network/chik_rs/klvm-utils"
+
+[dependencies]
+klvmr = "0.2.8"
