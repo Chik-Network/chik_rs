@@ -1,8 +1,15 @@
 name: build - check - upload
 
 on:
-  release:
-    types: [ published ]
+  push:
+    branches:
+      #- main
+      - dev
+    tags:
+      - '**'
+  pull_request:
+      branches:
+        - '**'
 
 concurrency:
   # SHA is added to the end if on `main` to let all main workflows run
@@ -448,13 +455,13 @@ jobs:
         if [ -n "$SECRET" ]; then HAS_SECRET='true' ; fi
         echo "HAS_SECRET=${HAS_SECRET}" >>$GITHUB_OUTPUT
       env:
-        SECRET: "${{ secrets.test_pypi_password }}"
+        SECRET: "${{ secrets.pypi_password }}"
 
     - name: Install twine
       run: pip install twine
 
     - name: Publish distribution to PyPI
-      if: startsWith(github.event.ref, 'refs/tags') && steps.check_secrets.outputs.HAS_SECRET
+      if: steps.check_secrets.outputs.HAS_SECRET
       env:
         TWINE_USERNAME: __token__
         TWINE_NON_INTERACTIVE: 1
