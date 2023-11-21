@@ -13,6 +13,7 @@ members = [
     "chik-tools",
     "chik-traits",
     "chik-wallet",
+    "chik-wallet/fuzz",
     "klvm-derive",
     "klvm-traits",
     "klvm-utils",
@@ -37,7 +38,7 @@ py-bindings = ["dep:pyo3"]
 
 [dependencies]
 klvmr = "=0.3.0"
-hex = "=0.4.3"
+hex = "0.4.3"
 pyo3 = { version = ">=0.19.0", optional = true }
 klvm-utils = { version = "=0.2.12", path = "klvm-utils" }
 chik-traits = { version = "=0.2.13", path = "chik-traits" }
@@ -45,7 +46,7 @@ klvm-traits = { version = "=0.2.12", path = "klvm-traits" }
 klvm-derive = { version = "=0.2.12", path = "klvm-derive" }
 chik-protocol = { version = "=0.2.13", path = "chik-protocol" }
 chik-wallet = { version = "=0.2.12", path = "chik-wallet" }
-hex-literal = "=0.4.1"
+hex-literal = "0.4.1"
 thiserror = "1.0.44"
 
 [dev-dependencies]

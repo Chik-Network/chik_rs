@@ -351,6 +351,11 @@ jobs:
           cd chik-protocol
           cargo +nightly fuzz build
           cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
+      - name: cargo fuzz (chik-wallet)
+        run: |
+          cd chik-wallet
+          cargo +nightly fuzz build
+          cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
 
   unit_tests:
     runs-on: ${{ matrix.os }}
