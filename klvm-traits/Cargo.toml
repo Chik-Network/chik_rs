@@ -1,0 +1,24 @@
+[package]
+name = "klvm-traits"
+version = "0.2.12"
+edition = "2021"
+license = "Apache-2.0"
+description = "Traits for encoding and decoding KLVM objects."
+authors = ["Brandon Haggstrom <b.haggstrom@chiknetwork.com>"]
+homepage = "https://github.com/Chik-Network/chik_rs/klvm-traits/"
+repository = "https://github.com/Chik-Network/chik_rs/klvm-traits/"
+
+[package.metadata.docs.rs]
+features = ["derive"]
+
+[features]
+derive = ["dep:klvm-derive"]
+
+[dependencies]
+klvm-derive = { version = "0.2.12", path = "../klvm-derive", optional = true }
+klvmr = "0.3.0"
+num-bigint = "0.4.3"
+thiserror = "1.0.44"
+
+[dev-dependencies]
+hex = "0.4.3"

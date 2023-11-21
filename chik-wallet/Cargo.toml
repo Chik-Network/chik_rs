@@ -1,0 +1,14 @@
+[package]
+name = "chik-wallet"
+version = "0.2.12"
+edition = "2021"
+license = "Apache-2.0"
+description = "Chik primitives needed for building wallets."
+authors = ["Brandon Haggstrom <b.haggstrom@chiknetwork.com>"]
+homepage = "https://github.com/Chik-Network/chik_rs/chik-wallet/"
+repository = "https://github.com/Chik-Network/chik_rs/chik-wallet/"
+
+[dependencies]
+klvmr = "0.3.0"
+hex-literal = "0.4.1"
+klvm-utils = { version = "0.2.12", path = "../klvm-utils" }

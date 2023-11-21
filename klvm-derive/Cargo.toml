@@ -1,0 +1,17 @@
+[package]
+name = "klvm-derive"
+version = "0.2.12"
+edition = "2021"
+license = "Apache-2.0"
+description = "Derive macros for implementing KLVM traits."
+authors = ["Brandon Haggstrom <b.haggstrom@chiknetwork.com>"]
+homepage = "https://github.com/Chik-Network/chik_rs/klvm-derive/"
+repository = "https://github.com/Chik-Network/chik_rs/klvm-derive/"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0.66"
+quote = "1.0.32"
+syn = "2.0.28"

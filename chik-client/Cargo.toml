@@ -1,0 +1,18 @@
+[package]
+name = "chik-client"
+version = "0.2.13"
+edition = "2021"
+license = "Apache-2.0"
+description = "Chik light client and async peer connections."
+authors = ["Brandon Haggstrom <b.haggstrom@chiknetwork.com>"]
+homepage = "https://github.com/Chik-Network/chik_rs/chik-client/"
+repository = "https://github.com/Chik-Network/chik_rs/chik-client/"
+
+[dependencies]
+chik-protocol = { version = "0.2.13", path = "../chik-protocol" }
+chik-traits = { version = "0.2.13", path = "../chik-traits" }
+tokio = { version = "1.32.0", features = ["rt", "sync"] }
+tokio-tungstenite = "0.20.0"
+futures-util = "0.3.28"
+tungstenite = "0.20.1"
+thiserror = "1.0.47"
