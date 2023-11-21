@@ -1,8 +1,7 @@
 use klvmr::allocator::{Allocator, NodePtr, SExp};
 use klvmr::reduction::EvalErr;
+use thiserror::Error;
 
-#[cfg(feature = "py-bindings")]
-use pyo3::exceptions;
 #[cfg(feature = "py-bindings")]
 use pyo3::PyErr;
 
@@ -54,25 +53,30 @@ pub enum ErrorCode {
     TooManyAnnouncements,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
+#[error("validation error: {1:?}")]
 pub struct ValidationErr(pub NodePtr, pub ErrorCode);
 
 impl From<EvalErr> for ValidationErr {
     fn from(v: EvalErr) -> Self {
-        ValidationErr(v.0, ErrorCode::GeneratorRuntimeError)
+        if v.1 == "cost exceeded" {
+            ValidationErr(v.0, ErrorCode::CostExceeded)
+        } else {
+            ValidationErr(v.0, ErrorCode::GeneratorRuntimeError)
+        }
     }
 }
 
 impl From<std::io::Error> for ValidationErr {
     fn from(_: std::io::Error) -> Self {
-        ValidationErr(-1, ErrorCode::GeneratorRuntimeError)
+        ValidationErr(NodePtr(-1), ErrorCode::GeneratorRuntimeError)
     }
 }
 
 #[cfg(feature = "py-bindings")]
 impl std::convert::From<ValidationErr> for PyErr {
     fn from(err: ValidationErr) -> PyErr {
-        exceptions::PyValueError::new_err(("ValidationError", u32::from(err.1)))
+        pyo3::exceptions::PyValueError::new_err(("ValidationError", u32::from(err.1)))
     }
 }
 
@@ -146,7 +150,7 @@ pub fn rest(a: &Allocator, n: NodePtr) -> Result<NodePtr, ValidationErr> {
 pub fn next(a: &Allocator, n: NodePtr) -> Result<Option<(NodePtr, NodePtr)>, ValidationErr> {
     match a.sexp(n) {
         SExp::Pair(left, right) => Ok(Some((left, right))),
-        SExp::Atom() => {
+        SExp::Atom => {
             // this is expected to be a valid list terminator
             if a.atom_len(n) == 0 {
                 Ok(None)
@@ -159,7 +163,7 @@ pub fn next(a: &Allocator, n: NodePtr) -> Result<Option<(NodePtr, NodePtr)>, Val
 
 pub fn atom(a: &Allocator, n: NodePtr, code: ErrorCode) -> Result<&[u8], ValidationErr> {
     match a.sexp(n) {
-        SExp::Atom() => Ok(a.atom(n)),
+        SExp::Atom => Ok(a.atom(n)),
         _ => Err(ValidationErr(n, code)),
     }
 }

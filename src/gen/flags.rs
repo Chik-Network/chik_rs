@@ -20,9 +20,6 @@ pub const COND_ARGS_NIL: u32 = 0x40000;
 // currently supported for those conditions. This is meant for mempool-mode
 pub const STRICT_ARGS_COUNT: u32 = 0x80000;
 
-// When set, support the new ASSERT_BEFORE_* conditions
-pub const ENABLE_ASSERT_BEFORE: u32 = 0x100000;
-
 // disallow relative height- and time conditions on ephemeral spends
 pub const NO_RELATIVE_CONDITIONS_ON_EPHEMERAL: u32 = 0x200000;
 
@@ -48,9 +45,14 @@ pub const LIMIT_ANNOUNCES: u32 = 0x1000000;
 // contain back-references
 pub const ALLOW_BACKREFS: u32 = 0x2000000;
 
+// When set, the "flags" field of the Spend objects will be set depending on
+// what features are detected of the spends
+pub const ANALYZE_SPENDS: u32 = 0x4000000;
+
 pub const MEMPOOL_MODE: u32 = KLVM_MEMPOOL_MODE
     | NO_UNKNOWN_CONDS
     | COND_ARGS_NIL
     | STRICT_ARGS_COUNT
     | NO_RELATIVE_CONDITIONS_ON_EPHEMERAL
-    | LIMIT_ANNOUNCES;
+    | LIMIT_ANNOUNCES
+    | ANALYZE_SPENDS;

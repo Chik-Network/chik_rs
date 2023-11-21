@@ -1,8 +1,6 @@
-use chik_protocol::from_json_dict::FromJsonDict;
-use chik_protocol::to_json_dict::ToJsonDict;
-
 use chik::allocator::make_allocator;
-use chik::gen::conditions::{Spend, SpendBundleConditions};
+use chik::gen::conditions::{EmptyVisitor, MempoolVisitor, Spend, SpendBundleConditions};
+use chik::gen::flags::ANALYZE_SPENDS;
 use chik::gen::run_block_generator::run_block_generator as native_run_block_generator;
 use chik::gen::run_block_generator::run_block_generator2 as native_run_block_generator2;
 use chik::gen::validation_error::ValidationErr;
@@ -15,13 +13,14 @@ use pyo3::buffer::PyBuffer;
 use pyo3::prelude::*;
 use pyo3::types::PyList;
 
-use chik_protocol::chik_error;
-use chik_protocol::streamable::Streamable;
-use chik_py_streamable_macro::PyStreamable;
+use chik_py_streamable_macro::{PyJsonDict, PyStreamable};
 use chik_streamable_macro::Streamable;
 
+#[cfg(feature = "py-bindings")]
+use chik_traits::{FromJsonDict, ToJsonDict};
+
 #[pyclass(name = "Spend", get_all, frozen)]
-#[derive(Streamable, PyStreamable, Hash, Debug, Clone, Eq, PartialEq)]
+#[derive(Streamable, PyJsonDict, PyStreamable, Hash, Debug, Clone, Eq, PartialEq)]
 pub struct PySpend {
     pub coin_id: Bytes32,
     pub parent_id: Bytes32,
@@ -45,7 +44,7 @@ pub struct PySpend {
 }
 
 #[pyclass(name = "SpendBundleConditions", get_all, frozen)]
-#[derive(Streamable, PyStreamable, Hash, Debug, Clone, Eq, PartialEq)]
+#[derive(Streamable, PyJsonDict, PyStreamable, Hash, Debug, Clone, Eq, PartialEq)]
 pub struct PySpendBundleConditions {
     pub spends: Vec<PySpend>,
     pub reserve_fee: u64,
@@ -168,19 +167,27 @@ pub fn run_block_generator(
     let program =
         unsafe { std::slice::from_raw_parts(program.buf_ptr() as *const u8, program.len_bytes()) };
 
-    match native_run_block_generator(&mut allocator, program, &refs, max_cost, flags) {
-        Ok(spend_bundle_conds) => {
-            // everything was successful
-            Ok((
-                None,
-                Some(convert_spend_bundle_conds(&allocator, spend_bundle_conds)),
-            ))
-        }
-        Err(ValidationErr(_, error_code)) => {
-            // a validation error occurred
-            Ok((Some(error_code.into()), None))
-        }
-    }
+    let run_block = if (flags & ANALYZE_SPENDS) == 0 {
+        native_run_block_generator::<_, EmptyVisitor>
+    } else {
+        native_run_block_generator::<_, MempoolVisitor>
+    };
+
+    Ok(
+        match run_block(&mut allocator, program, &refs, max_cost, flags) {
+            Ok(spend_bundle_conds) => {
+                // everything was successful
+                (
+                    None,
+                    Some(convert_spend_bundle_conds(&allocator, spend_bundle_conds)),
+                )
+            }
+            Err(ValidationErr(_, error_code)) => {
+                // a validation error occurred
+                (Some(error_code.into()), None)
+            }
+        },
+    )
 }
 
 #[pyfunction]
@@ -211,17 +218,25 @@ pub fn run_block_generator2(
     let program =
         unsafe { std::slice::from_raw_parts(program.buf_ptr() as *const u8, program.len_bytes()) };
 
-    match native_run_block_generator2(&mut allocator, program, &refs, max_cost, flags) {
-        Ok(spend_bundle_conds) => {
-            // everything was successful
-            Ok((
-                None,
-                Some(convert_spend_bundle_conds(&allocator, spend_bundle_conds)),
-            ))
-        }
-        Err(ValidationErr(_, error_code)) => {
-            // a validation error occurred
-            Ok((Some(error_code.into()), None))
-        }
-    }
+    let run_block = if (flags & ANALYZE_SPENDS) == 0 {
+        native_run_block_generator2::<_, EmptyVisitor>
+    } else {
+        native_run_block_generator2::<_, MempoolVisitor>
+    };
+
+    Ok(
+        match run_block(&mut allocator, program, &refs, max_cost, flags) {
+            Ok(spend_bundle_conds) => {
+                // everything was successful
+                (
+                    None,
+                    Some(convert_spend_bundle_conds(&allocator, spend_bundle_conds)),
+                )
+            }
+            Err(ValidationErr(_, error_code)) => {
+                // a validation error occurred
+                (Some(error_code.into()), None)
+            }
+        },
+    )
 }

@@ -2,7 +2,7 @@
 
 use chik::compression::compressor::wrap_atom_with_decompression_program;
 
-use klvm_utils::tree_hash::tree_hash;
+use klvm_utils::tree_hash;
 use klvmr::allocator::Allocator;
 use klvmr::chik_dialect::ChikDialect;
 use klvmr::run_program::run_program;

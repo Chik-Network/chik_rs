@@ -1,20 +1,18 @@
-use crate::gen::conditions::{
-    parse_conditions, ParseState, Spend, SpendBundleConditions, ELIGIBLE_FOR_DEDUP,
-};
+use crate::gen::conditions::{parse_conditions, ParseState, Spend, SpendBundleConditions};
 use crate::gen::flags::ALLOW_BACKREFS;
+use crate::gen::spend_visitor::SpendVisitor;
 use crate::gen::validation_error::ValidationErr;
 use chik_protocol::bytes::Bytes32;
 use chik_protocol::coin::Coin;
-use klvm_utils::tree_hash::tree_hash;
+use klvm_utils::tree_hash;
 use klvmr::allocator::Allocator;
 use klvmr::chik_dialect::ChikDialect;
 use klvmr::reduction::Reduction;
 use klvmr::run_program::run_program;
 use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
-use std::collections::HashSet;
 use std::sync::Arc;
 
-pub fn run_puzzle(
+pub fn run_puzzle<V: SpendVisitor>(
     a: &mut Allocator,
     puzzle: &[u8],
     solution: &[u8],
@@ -51,28 +49,14 @@ pub fn run_puzzle(
         .into(),
     );
 
-    let spend = Spend {
-        parent_id: a.new_atom(parent_id)?,
-        coin_amount: amount,
-        puzzle_hash: a.new_atom(&puzzle_hash)?,
+    let mut spend = Spend::new(
+        a.new_atom(parent_id)?,
+        amount,
+        a.new_atom(&puzzle_hash)?,
         coin_id,
-        height_relative: None,
-        seconds_relative: None,
-        before_height_relative: None,
-        before_seconds_relative: None,
-        birth_height: None,
-        birth_seconds: None,
-        create_coin: HashSet::new(),
-        agg_sig_me: Vec::new(),
-        agg_sig_parent: Vec::new(),
-        agg_sig_puzzle: Vec::new(),
-        agg_sig_amount: Vec::new(),
-        agg_sig_puzzle_amount: Vec::new(),
-        agg_sig_parent_amount: Vec::new(),
-        agg_sig_parent_puzzle: Vec::new(),
-        // assume it's eligible until we see an agg-sig condition
-        flags: ELIGIBLE_FOR_DEDUP,
-    };
+    );
+
+    let mut visitor = V::new_spend(&mut spend);
 
     let mut cost_left = max_cost - klvm_cost;
 
@@ -84,6 +68,7 @@ pub fn run_puzzle(
         conditions,
         flags,
         &mut cost_left,
+        &mut visitor,
     )?;
     ret.cost = max_cost - cost_left;
     Ok(ret)

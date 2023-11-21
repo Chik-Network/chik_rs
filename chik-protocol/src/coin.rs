@@ -1,21 +1,14 @@
-use crate::bytes::Bytes32;
-use crate::chik_error;
-use crate::streamable::Streamable;
 use crate::streamable_struct;
+use crate::{bytes::Bytes32, BytesImpl};
 use chik_streamable_macro::Streamable;
+use klvm_traits::{destructure_list, klvm_list, match_list, FromKlvm, ToKlvm};
+use klvmr::allocator::NodePtr;
+use klvmr::Allocator;
 use sha2::{Digest, Sha256};
 use std::convert::TryInto;
 
 #[cfg(feature = "py-bindings")]
-use crate::from_json_dict::FromJsonDict;
-#[cfg(feature = "py-bindings")]
-use crate::to_json_dict::ToJsonDict;
-#[cfg(feature = "py-bindings")]
-use chik_py_streamable_macro::PyStreamable;
-#[cfg(feature = "py-bindings")]
 use pyo3::prelude::*;
-#[cfg(feature = "py-bindings")]
-use pyo3::types::PyBytes;
 
 streamable_struct!(Coin {
     parent_coin_info: Bytes32,
@@ -55,14 +48,33 @@ impl Coin {
 #[cfg(feature = "py-bindings")]
 #[cfg_attr(feature = "py-bindings", pymethods)]
 impl Coin {
-    fn name<'p>(&self, py: Python<'p>) -> PyResult<&'p PyBytes> {
-        Ok(PyBytes::new(py, &self.coin_id()))
+    fn name<'p>(&self, py: pyo3::Python<'p>) -> pyo3::PyResult<&'p pyo3::types::PyBytes> {
+        Ok(pyo3::types::PyBytes::new(py, &self.coin_id()))
+    }
+}
+
+impl ToKlvm for Coin {
+    fn to_klvm(&self, a: &mut Allocator) -> klvm_traits::Result<NodePtr> {
+        klvm_list!(self.parent_coin_info, self.puzzle_hash, self.amount).to_klvm(a)
+    }
+}
+
+impl FromKlvm for Coin {
+    fn from_klvm(a: &Allocator, ptr: NodePtr) -> klvm_traits::Result<Self> {
+        let destructure_list!(parent_coin_info, puzzle_hash, amount) =
+            <match_list!(BytesImpl<32>, BytesImpl<32>, u64)>::from_klvm(a, ptr)?;
+        Ok(Coin {
+            parent_coin_info,
+            puzzle_hash,
+            amount,
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use klvmr::serde::{node_from_bytes, node_to_bytes};
     use rstest::rstest;
 
     #[rstest]
@@ -96,5 +108,18 @@ mod tests {
         sha256.update(puzzle_hash);
         sha256.update(bytes);
         assert_eq!(c.coin_id(), &sha256.finalize() as &[u8]);
+    }
+
+    #[test]
+    fn coin_roundtrip() {
+        let a = &mut Allocator::new();
+        let expected = "ffa09e144397decd2b831551f9710c17ae776d9c5a3ae5283c5f9747263fd1255381ffa0eff07522495060c066f66f32acc2a77e3a3e737aca8baea4d1a64ea4cdc13da9ff0180";
+        let expected_bytes = hex::decode(expected).unwrap();
+
+        let ptr = node_from_bytes(a, &expected_bytes).unwrap();
+        let coin = Coin::from_klvm(a, ptr).unwrap();
+
+        let round_trip = coin.to_klvm(a).unwrap();
+        assert_eq!(expected, hex::encode(node_to_bytes(a, round_trip).unwrap()));
     }
 }

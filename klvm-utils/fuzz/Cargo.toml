@@ -10,9 +10,10 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-klvmr = "=0.2.8"
+klvmr = "=0.3.0"
 chik-fuzz = { path = "../../fuzz" }
 klvm-utils = { path = ".." }
+klvm-traits = { path = "../../klvm-traits" }
 chik = { path = "../.." }
 
 [[bin]]
@@ -23,8 +24,8 @@ doc = false
 bench = false
 
 [[bin]]
-name = "uncurry"
-path = "fuzz_targets/uncurry.rs"
+name = "curry"
+path = "fuzz_targets/curry.rs"
 test = false
 doc = false
 bench = false

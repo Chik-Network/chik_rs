@@ -1,11 +1,4 @@
-#[cfg(feature = "py-bindings")]
-pub mod from_json_dict;
-#[cfg(feature = "py-bindings")]
-pub mod to_json_dict;
-
-pub mod bls;
 pub mod bytes;
-pub mod chik_error;
 pub mod chik_protocol;
 pub mod classgroup;
 pub mod coin;
@@ -23,13 +16,16 @@ pub mod proof_of_space;
 pub mod reward_chain_block;
 pub mod slots;
 pub mod spend_bundle;
-pub mod streamable;
+pub mod sub_epoch_summary;
+pub mod unfinished_block;
 pub mod vdf;
 pub mod wallet_protocol;
 pub mod weight_proof;
 
+#[cfg(feature = "py-bindings")]
+pub mod lazy_node;
+
 // export shorter names
-pub use crate::bls::*;
 pub use crate::bytes::*;
 pub use crate::chik_protocol::*;
 pub use crate::classgroup::*;
@@ -47,7 +43,11 @@ pub use crate::proof_of_space::*;
 pub use crate::reward_chain_block::*;
 pub use crate::slots::*;
 pub use crate::spend_bundle::*;
-pub use crate::streamable::*;
+pub use crate::sub_epoch_summary::*;
+pub use crate::unfinished_block::*;
 pub use crate::vdf::*;
 pub use crate::wallet_protocol::*;
 pub use crate::weight_proof::*;
+
+#[cfg(feature = "py-bindings")]
+pub use crate::lazy_node::*;

@@ -1,6 +1,6 @@
 [package]
 name = "chik-tools"
-version = "0.1.16"
+version = "0.2.12"
 edition = "2021"
 license = "Apache-2.0"
 description = "Utility functions and types used by the Chik blockchain full node"
@@ -9,14 +9,23 @@ homepage = "https://github.com/Chik-Network/chik_rs/chik-tools"
 repository = "https://github.com/Chik-Network/chik_rs/chik-tools"
 
 [dependencies]
-chik-protocol = { version = "=0.2.7", path = "../chik-protocol" }
-klvmr = { version = "=0.2.8", features = ["counters"] }
-chik = { version = "=0.2.9", path = ".." }
+chik-protocol = { version = "0.2.13", path = "../chik-protocol" }
+chik-traits = { path = "../chik-traits" }
+klvm-utils = { path = "../klvm-utils" }
+klvm-traits = { path = "../klvm-traits" }
+chik-wallet = { version = "=0.2.12", path = "../chik-wallet" }
+klvmr = { version = "=0.3.0", features = ["counters"] }
+chik = { version = "0.2.13", path = ".." }
 sqlite = "=0.31.0"
 clap = { version = "=4.3.9", features = ["derive"] }
-zstd = "=0.12.3+zstd.1.5.2"
+zstd = "=0.12.3"
 threadpool = "=1.8.1"
 hex = "=0.4.3"
+hex-literal = "=0.4.1"
+
+[lib]
+name = "chik_tools"
+crate-type = ["rlib"]
 
 [[bin]]
 name = "analyze-chain"
@@ -30,5 +39,20 @@ bench = false
 
 [[bin]]
 name = "compress-klvm"
+test = false
+bench = false
+
+[[bin]]
+name = "gen-corpus"
+test = false
+bench = false
+
+[[bin]]
+name = "run-spend"
+test = false
+bench = false
+
+[[bin]]
+name = "fast-forward-spend"
 test = false
 bench = false

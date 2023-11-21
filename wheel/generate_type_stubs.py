@@ -19,18 +19,25 @@ def transform_type(m: str) -> str:
     return f"{n}:{t}"
 
 
-def print_class(f: Any, name: str, members: List[str], extra: Optional[str] = None):
+def print_class(f: Any, name: str, members: List[str], extra: Optional[List[str]] = None):
 
     # f-strings don't allow backslashes, which makes it a bit tricky to
     # manipulate strings with newlines
     nl = "\n"
+    def add_indent(x):
+        return '\n    ' + x
+
+    init_args = ''.join([(',\n        ' + transform_type(x)) for x in members])
+
+    if extra is not None:
+        members.extend(extra)
+    members = ''.join(map(add_indent, members));
+
     f.write(
         f"""
-class {name}:
-    {(nl + '    ').join(members)}{nl + extra if extra else ''}
+class {name}:{members}
     def __init__(
-        self,
-        {(',' + nl + '        ').join(map(transform_type, members))}
+        self{init_args}
     ) -> None: ...
     def __hash__(self) -> int: ...
     def __str__(self) -> str: ...
@@ -48,6 +55,7 @@ class {name}:
     def to_json_dict(self) -> Dict[str, Any]: ...
     @staticmethod
     def from_json_dict(o: Dict[str, Any]) -> {name}: ...
+    def replace(self, **kwargs) -> {name}: ...
 """
     )
 
@@ -132,11 +140,54 @@ def parse_rust_source(filename: str) -> List[Tuple[str, List[str]]]:
     return ret
 
 
-extra_members = {"Coin": "    def name(self) -> bytes32: ..."}
+extra_members = {
+    "Coin": [
+        "def name(self) -> bytes32: ...",
+    ],
+    "ClassgroupElement": [
+        "@staticmethod\n    def create(bytes) -> ClassgroupElement: ...",
+        "@staticmethod\n    def get_default_element() -> ClassgroupElement: ...",
+        "@staticmethod\n    def get_size() -> int: ...",
+    ],
+    "UnfinishedBlock": [
+        "prev_header_hash: bytes32",
+        "partial_hash: bytes32",
+        "def is_transaction_block(self) -> bool: ...",
+        "total_iters: int",
+    ],
+    "FullBlock": [
+        "prev_header_hash: bytes32",
+        "header_hash: bytes32",
+        "def is_transaction_block(self) -> bool: ...",
+        "total_iters: int",
+        "height: int",
+        "weight: int",
+        "def get_included_reward_coins(self) -> Set[Coin]: ...",
+        "def is_fully_compactified(self) -> bool: ...",
+    ],
+    "HeaderBlock": [
+        "prev_header_hash: bytes32",
+        "header_hash: bytes32",
+        "height: int",
+        "weight: int",
+        "header_hash: bytes32",
+        "total_iters: int",
+        "log_string: str",
+        "is_transaction_block: bool",
+        "first_in_sub_slots: bool",
+    ],
+    "RewardChainBlock": [
+        "def get_unfinished(self) -> RewardChainBlockUnfinished: ...",
+    ],
+    "SubSlotData": [
+        "def is_end_of_slot(self) -> bool: ...",
+        "def is_challenge(self) -> bool: ...",
+    ],
+}
 
 classes = []
 for f in sorted(glob(str(input_dir / "*.rs"))):
-    if f.endswith("bytes.rs"):
+    if f.endswith("bytes.rs") or f.endswith("lazy_node.rs"):
         continue
     classes.extend(parse_rust_source(f))
 
@@ -157,6 +208,9 @@ def solution_generator_backrefs(spends: Sequence[Tuple[Coin, bytes, bytes]]) -> 
 
 def compute_merkle_set_root(items: Sequence[bytes]) -> bytes: ...
 
+def supports_fast_forward(spend: CoinSpend) -> bool : ...
+def fast_forward_singleton(spend: CoinSpend, new_coin: Coin, new_parent: Coin) -> bytes: ...
+
 def run_block_generator(
     program: ReadableBuffer, args: List[ReadableBuffer], max_cost: int, flags: int
 ) -> Tuple[Optional[int], Optional[SpendBundleConditions]]: ...
@@ -175,7 +229,6 @@ STRICT_ARGS_COUNT: int = ...
 LIMIT_ANNOUNCES: int = ...
 AGG_SIG_ARGS: int = ...
 LIMIT_HEAP: int = ...
-ENABLE_ASSERT_BEFORE: int = ...
 ENABLE_SOFTFORK_CONDITION: int = ...
 MEMPOOL_MODE: int = ...
 NO_RELATIVE_CONDITIONS_ON_EPHEMERAL: int = ...
@@ -187,6 +240,7 @@ ENABLE_FIXED_DIV: int = ...
 ALLOW_BACKREFS: int = ...
 
 ELIGIBLE_FOR_DEDUP: int = ...
+ELIGIBLE_FOR_FF: int = ...
 
 NO_UNKNOWN_OPS: int = ...
 
@@ -201,8 +255,64 @@ class LazyNode:
 def serialized_length(program: ReadableBuffer) -> int: ...
 def tree_hash(program: ReadableBuffer) -> bytes32: ...
 def get_puzzle_and_solution_for_coin(program: ReadableBuffer, args: ReadableBuffer, max_cost: int, find_parent: bytes32, find_amount: int, find_ph: bytes32, flags: int) -> Tuple[bytes, bytes]: ...
+
+class AugSchemeMPL:
+    @staticmethod
+    def sign(pk: PrivateKey, msg: bytes, prepend_pk: G1Element = None) -> G2Element: ...
+    @staticmethod
+    def aggregate(sigs: Sequence[G2Element]) -> G2Element: ...
+    @staticmethod
+    def verify(pk: G1Element, msg: bytes, sig: G2Element) -> bool: ...
+    @staticmethod
+    def aggregate_verify(pks: Sequence[G1Element], msgs: Sequence[bytes], sig: G2Element) -> bool: ...
+    @staticmethod
+    def key_gen(seed: bytes) -> PrivateKey: ...
+    @staticmethod
+    def g2_from_message(msg: bytes) -> G2Element: ...
+    @staticmethod
+    def derive_child_sk(pk: PrivateKey, index: int) -> PrivateKey: ...
+    @staticmethod
+    def derive_child_sk_unhardened(pk: PrivateKey, index: int) -> PrivateKey: ...
+    @staticmethod
+    def derive_child_pk_unhardened(pk: G1Element, index: int) -> G1Element: ...
 """
     )
+
+    print_class(f, "G1Element", [], [
+        "SIZE: ClassVar[int] = ...",
+        "def __new__(cls) -> G1Element: ...",
+        "def get_fingerprint(self) -> int: ...",
+        "def pair(self, other: G2Element) -> GTElement: ...",
+        "@staticmethod",
+        "def from_bytes_unchecked(b: bytes) -> G1Element: ...",
+        "@staticmethod",
+        "def generator() -> G1Element: ...",
+        "def __add__(self, other: G1Element) -> G1Element: ...",
+        "def __iadd__(self, other: G1Element) -> G1Element: ...",
+    ])
+    print_class(f, "G2Element", [], [
+        "SIZE: ClassVar[int] = ...",
+        "def __new__(cls) -> G2Element: ...",
+        "@staticmethod",
+        "def from_bytes_unchecked(b: bytes) -> G2Element: ...",
+        "def pair(self, other: G1Element) -> GTElement: ...",
+        "@staticmethod",
+        "def generator() -> G2Element: ...",
+        "def __add__(self, other: G2Element) -> G2Element: ...",
+        "def __iadd__(self, other: G2Element) -> G2Element: ...",
+        ])
+    print_class(f, "GTElement", [], [
+        "SIZE: ClassVar[int] = ...",
+        "@staticmethod",
+        "def from_bytes_unchecked(b: bytes) -> GTElement: ...",
+        "def __mul__(self, rhs: GTElement) -> GTElement: ...",
+        "def __imul__(self, rhs: GTElement) -> GTElement : ...",
+        ])
+    print_class(f, "PrivateKey", [], [
+        "PRIVATE_KEY_SIZE: ClassVar[int] = ...",
+        "def sign_g2(self, msg: bytes, dst: bytes) -> G2Element: ...",
+        "def get_g1(self) -> G1Element: ...",
+        ])
 
     print_class(f, "Spend",
         [

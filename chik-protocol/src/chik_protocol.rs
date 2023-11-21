@@ -1,24 +1,15 @@
 use chik_streamable_macro::Streamable;
 
-use crate::chik_error;
 use crate::message_struct;
 use crate::streamable_struct;
 use crate::Bytes;
-use crate::Streamable;
 
 #[cfg(feature = "py-bindings")]
-use crate::from_json_dict::FromJsonDict;
-#[cfg(feature = "py-bindings")]
-use crate::to_json_dict::ToJsonDict;
-#[cfg(feature = "py-bindings")]
-use chik_py_streamable_macro::PyStreamable;
-#[cfg(feature = "py-bindings")]
-use pyo3::prelude::*;
-#[cfg(feature = "py-bindings")]
-use std::io::Cursor;
+use chik_py_streamable_macro::{PyJsonDict, PyStreamable};
 
 #[repr(u8)]
-#[cfg_attr(feature = "py-bindings", derive(PyStreamable))]
+#[cfg_attr(feature = "py-bindings", derive(PyJsonDict, PyStreamable))]
+#[cfg_attr(fuzzing, derive(arbitrary::Arbitrary))]
 #[derive(Streamable, Hash, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ProtocolMessageTypes {
     // Shared protocol (all services)
@@ -137,7 +128,8 @@ pub trait ChikProtocolMessage {
 }
 
 #[repr(u8)]
-#[cfg_attr(feature = "py-bindings", derive(PyStreamable))]
+#[cfg_attr(feature = "py-bindings", derive(PyJsonDict, PyStreamable))]
+#[cfg_attr(fuzzing, derive(arbitrary::Arbitrary))]
 #[derive(Streamable, Hash, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum NodeType {
     FullNode = 1,

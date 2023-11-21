@@ -1,18 +1,20 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use chik::gen::conditions::{parse_conditions, ParseState, Spend, SpendBundleConditions};
+use chik::gen::conditions::{
+    parse_conditions, MempoolVisitor, ParseState, Spend, SpendBundleConditions,
+};
+use chik::gen::spend_visitor::SpendVisitor;
 use chik_protocol::Bytes32;
 use chik_protocol::Coin;
 use fuzzing_utils::{make_tree, BitCursor};
-use klvm_utils::tree_hash::tree_hash;
+use klvm_utils::tree_hash;
 use klvmr::allocator::Allocator;
 use std::collections::HashSet;
 use std::sync::Arc;
 
 use chik::gen::flags::{
-    COND_ARGS_NIL, ENABLE_ASSERT_BEFORE, ENABLE_SOFTFORK_CONDITION, NO_UNKNOWN_CONDS,
-    STRICT_ARGS_COUNT,
+    COND_ARGS_NIL, ENABLE_SOFTFORK_CONDITION, NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
 };
 
 fuzz_target!(|data: &[u8]| {
@@ -38,12 +40,12 @@ fuzz_target!(|data: &[u8]| {
 
     for flags in &[
         0,
-        ENABLE_ASSERT_BEFORE | COND_ARGS_NIL,
-        ENABLE_ASSERT_BEFORE | STRICT_ARGS_COUNT,
+        COND_ARGS_NIL,
+        STRICT_ARGS_COUNT,
         NO_UNKNOWN_CONDS,
         ENABLE_SOFTFORK_CONDITION,
     ] {
-        let coin_spend = Spend {
+        let mut coin_spend = Spend {
             parent_id: a.new_atom(&parent_id).expect("atom failed"),
             coin_amount: amount,
             puzzle_hash: a.new_atom(&puzzle_hash).expect("atom failed"),
@@ -64,6 +66,7 @@ fuzz_target!(|data: &[u8]| {
             agg_sig_parent_puzzle: Vec::new(),
             flags: 0_u32,
         };
+        let mut visitor = MempoolVisitor::new_spend(&mut coin_spend);
         let mut max_cost: u64 = 3300000000;
         let _ret = parse_conditions(
             &a,
@@ -73,6 +76,7 @@ fuzz_target!(|data: &[u8]| {
             input,
             *flags,
             &mut max_cost,
+            &mut visitor,
         );
     }
 });

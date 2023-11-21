@@ -2,9 +2,10 @@ use crate::gen::conditions::{
     parse_spends, process_single_spend, validate_conditions, ParseState, SpendBundleConditions,
 };
 use crate::gen::flags::ALLOW_BACKREFS;
+use crate::gen::spend_visitor::SpendVisitor;
 use crate::gen::validation_error::{first, ErrorCode, ValidationErr};
 use crate::generator_rom::{COST_PER_BYTE, GENERATOR_ROM, KLVM_DESERIALIZER};
-use klvm_utils::tree_hash::tree_hash;
+use klvm_utils::tree_hash;
 use klvmr::allocator::{Allocator, NodePtr};
 use klvmr::chik_dialect::ChikDialect;
 use klvmr::cost::Cost;
@@ -35,7 +36,7 @@ fn subtract_cost(a: &Allocator, cost_left: &mut Cost, subtract: Cost) -> Result<
 // the only reason we need to pass in the allocator is because the returned
 // SpendBundleConditions contains NodePtr fields. If that's changed, we could
 // create the allocator inside this functions as well.
-pub fn run_block_generator<GenBuf: AsRef<[u8]>>(
+pub fn run_block_generator<GenBuf: AsRef<[u8]>, V: SpendVisitor>(
     a: &mut Allocator,
     program: &[u8],
     block_refs: &[GenBuf],
@@ -74,17 +75,17 @@ pub fn run_block_generator<GenBuf: AsRef<[u8]>>(
 
     // we pass in what's left of max_cost here, to fail early in case the
     // cost of a condition brings us over the cost limit
-    let mut result = parse_spends(a, generator_output, cost_left, flags)?;
+    let mut result = parse_spends::<V>(a, generator_output, cost_left, flags)?;
     result.cost += max_cost - cost_left;
     Ok(result)
 }
 
-fn extract_n<const N: usize>(
+pub fn extract_n<const N: usize>(
     a: &Allocator,
     mut n: NodePtr,
     e: ErrorCode,
 ) -> Result<[NodePtr; N], ValidationErr> {
-    let mut ret: [NodePtr; N] = [0; N];
+    let mut ret: [NodePtr; N] = [NodePtr(0); N];
     let mut counter = 0;
     assert!(N > 0);
     while let Some((item, rest)) = a.next(n) {
@@ -108,7 +109,7 @@ fn extract_n<const N: usize>(
 // you only pay cost for the generator, the puzzles and the conditions).
 // it also does not apply the stack depth or object allocation limits the same,
 // as each puzzle run in its own environment.
-pub fn run_block_generator2<GenBuf: AsRef<[u8]>>(
+pub fn run_block_generator2<GenBuf: AsRef<[u8]>, V: SpendVisitor>(
     a: &mut Allocator,
     program: &[u8],
     block_refs: &[GenBuf],
@@ -168,7 +169,7 @@ pub fn run_block_generator2<GenBuf: AsRef<[u8]>>(
         let buf = tree_hash(a, puzzle);
         let puzzle_hash = a.new_atom(&buf)?;
 
-        process_single_spend(
+        process_single_spend::<V>(
             a,
             &mut ret,
             &mut state,
@@ -179,6 +180,9 @@ pub fn run_block_generator2<GenBuf: AsRef<[u8]>>(
             flags,
             &mut cost_left,
         )?;
+    }
+    if a.atom_len(all_spends) != 0 {
+        return Err(ValidationErr(all_spends, ErrorCode::GeneratorRuntimeError));
     }
 
     validate_conditions(a, &ret, state, a.null(), flags)?;

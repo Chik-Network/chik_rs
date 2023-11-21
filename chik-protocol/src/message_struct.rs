@@ -1,8 +1,9 @@
 #[macro_export]
 macro_rules! message_struct {
     ($name:ident {$($field:ident: $t:ty $(,)? )*}) => {
-        #[cfg_attr(feature = "py-bindings", pyclass(get_all, frozen), derive(PyStreamable))]
+        #[cfg_attr(feature = "py-bindings", pyo3::pyclass(get_all, frozen), derive(chik_py_streamable_macro::PyJsonDict, chik_py_streamable_macro::PyStreamable))]
         #[derive(Streamable, Hash, Debug, Clone, Eq, PartialEq)]
+        #[cfg_attr(fuzzing, derive(arbitrary::Arbitrary))]
         pub struct $name {
             $(pub $field: $t),*
         }
@@ -16,8 +17,8 @@ macro_rules! message_struct {
         }
 
         impl ChikProtocolMessage for $name {
-            fn msg_type() -> ProtocolMessageTypes {
-                ProtocolMessageTypes::$name
+            fn msg_type() -> $crate::ProtocolMessageTypes {
+                $crate::ProtocolMessageTypes::$name
             }
         }
     }
@@ -26,8 +27,9 @@ macro_rules! message_struct {
 #[macro_export]
 macro_rules! streamable_struct {
     ($name:ident {$($field:ident: $t:ty $(,)? )*}) => {
-        #[cfg_attr(feature = "py-bindings", pyclass(get_all, frozen), derive(PyStreamable))]
+        #[cfg_attr(feature = "py-bindings", pyo3::pyclass(get_all, frozen), derive(chik_py_streamable_macro::PyJsonDict, chik_py_streamable_macro::PyStreamable))]
         #[derive(Streamable, Hash, Debug, Clone, Eq, PartialEq)]
+        #[cfg_attr(fuzzing, derive(arbitrary::Arbitrary))]
         pub struct $name {
             $(pub $field: $t),*
         }

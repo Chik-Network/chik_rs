@@ -5,7 +5,7 @@ use chik::gen::conditions::parse_args;
 use fuzzing_utils::{make_tree, BitCursor};
 use klvmr::allocator::Allocator;
 
-use chik::gen::flags::{COND_ARGS_NIL, ENABLE_ASSERT_BEFORE, STRICT_ARGS_COUNT};
+use chik::gen::flags::{COND_ARGS_NIL, STRICT_ARGS_COUNT};
 
 use chik::gen::opcodes::{
     AGG_SIG_ME, AGG_SIG_UNSAFE, ASSERT_COIN_ANNOUNCEMENT, ASSERT_HEIGHT_ABSOLUTE,
@@ -18,11 +18,7 @@ use chik::gen::opcodes::{
 fuzz_target!(|data: &[u8]| {
     let mut a = Allocator::new();
     let input = make_tree(&mut a, &mut BitCursor::new(data), false);
-    for flags in &[
-        0,
-        ENABLE_ASSERT_BEFORE | COND_ARGS_NIL,
-        ENABLE_ASSERT_BEFORE | STRICT_ARGS_COUNT,
-    ] {
+    for flags in &[0, COND_ARGS_NIL, STRICT_ARGS_COUNT] {
         for op in &[
             AGG_SIG_ME,
             AGG_SIG_UNSAFE,

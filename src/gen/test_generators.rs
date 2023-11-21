@@ -1,8 +1,9 @@
-use super::conditions::{NewCoin, Spend, SpendBundleConditions};
+use super::conditions::{MempoolVisitor, NewCoin, Spend, SpendBundleConditions};
 use super::run_block_generator::{run_block_generator, run_block_generator2};
 use crate::allocator::make_allocator;
 use crate::gen::flags::{ALLOW_BACKREFS, MEMPOOL_MODE};
 use chik_protocol::{Bytes, Bytes48};
+use klvmr::allocator::NodePtr;
 use klvmr::Allocator;
 use std::iter::zip;
 use std::string::String;
@@ -67,7 +68,7 @@ fn print_conditions(a: &Allocator, c: &SpendBundleConditions) -> String {
         let mut create_coin: Vec<&NewCoin> = s.create_coin.iter().collect();
         create_coin.sort_by_key(|cc| (cc.puzzle_hash, cc.amount));
         for cc in create_coin {
-            if cc.hint != -1 {
+            if cc.hint != NodePtr(-1) {
                 ret += &format!(
                     "  CREATE_COIN: ph: {} amount: {} hint: {}\n",
                     hex::encode(cc.puzzle_hash),
@@ -106,10 +107,10 @@ fn print_conditions(a: &Allocator, c: &SpendBundleConditions) -> String {
 fn print_diff(output: &str, expected: &str) {
     println!("\x1b[102m \x1b[0m - output from test");
     println!("\x1b[101m \x1b[0m - expected output");
-    for diff in diff(expected, &output, "\n").1 {
+    for diff in diff(expected, output, "\n").1 {
         match diff {
             Difference::Same(s) => {
-                let lines: Vec<&str> = s.split("\n").collect();
+                let lines: Vec<&str> = s.split('\n').collect();
                 if lines.len() <= 6 {
                     for l in &lines {
                         println!(" {l}");
@@ -126,14 +127,14 @@ fn print_diff(output: &str, expected: &str) {
             }
             Difference::Rem(s) => {
                 println!("\x1b[91m");
-                for l in s.split("\n") {
+                for l in s.split('\n') {
                     println!("-{l}");
                 }
                 println!("\x1b[0m");
             }
             Difference::Add(s) => {
                 println!("\x1b[92m");
-                for l in s.split("\n") {
+                for l in s.split('\n') {
                     println!("+{l}");
                 }
                 println!("\x1b[0m");
@@ -142,7 +143,6 @@ fn print_diff(output: &str, expected: &str) {
     }
 }
 
-#[cfg(test)]
 #[rstest]
 #[case("block-225758")]
 #[case("assert-puzzle-announce-fail")]
@@ -191,7 +191,7 @@ fn run_generator(#[case] name: &str) {
     let filename = format!("generator-tests/{name}.txt");
     println!("file: {filename}");
     let test_file = read_to_string(filename).expect("test file not found");
-    let (generator, expected) = test_file.split_once("\n").expect("invalid test file");
+    let (generator, expected) = test_file.split_once('\n').expect("invalid test file");
     let generator = hex::decode(generator).expect("invalid hex encoded generator");
 
     let expected = match expected.split_once("STRICT:\n") {
@@ -210,30 +210,43 @@ fn run_generator(#[case] name: &str) {
     for (flags, expected) in zip(&[ALLOW_BACKREFS, ALLOW_BACKREFS | MEMPOOL_MODE], expected) {
         println!("flags: {:x}", flags);
         let mut a = make_allocator(*flags);
-        let (expected_cost, output) =
-            match run_block_generator(&mut a, &generator, &block_refs, 11000000000, *flags) {
-                Ok(conditions) => (conditions.cost, print_conditions(&a, &conditions)),
-                Err(code) => (0, format!("FAILED: {}\n", u32::from(code.1))),
-            };
+        let conds = run_block_generator::<_, MempoolVisitor>(
+            &mut a,
+            &generator,
+            &block_refs,
+            11000000000,
+            *flags,
+        );
 
-        let output_hard_fork =
-            match run_block_generator2(&mut a, &generator, &block_refs, 11000000000, *flags) {
-                Ok(mut conditions) => {
-                    // in the hard fork, the cost of running the genrator +
-                    // puzzles should never be higher than before the hard-fork
-                    // but it's likely less.
-                    assert!(conditions.cost <= expected_cost);
-                    assert!(conditions.cost > 0);
-                    // update the cost we print here, just to be compatible with
-                    // the test cases we have. We've already ensured the cost is
-                    // lower
-                    conditions.cost = expected_cost;
-                    print_conditions(&a, &conditions)
-                }
-                Err(code) => {
-                    format!("FAILED: {}\n", u32::from(code.1))
-                }
-            };
+        let (expected_cost, output) = match conds {
+            Ok(conditions) => (conditions.cost, print_conditions(&a, &conditions)),
+            Err(code) => (0, format!("FAILED: {}\n", u32::from(code.1))),
+        };
+
+        let conds = run_block_generator2::<_, MempoolVisitor>(
+            &mut a,
+            &generator,
+            &block_refs,
+            11000000000,
+            *flags,
+        );
+        let output_hard_fork = match conds {
+            Ok(mut conditions) => {
+                // in the hard fork, the cost of running the genrator +
+                // puzzles should never be higher than before the hard-fork
+                // but it's likely less.
+                assert!(conditions.cost <= expected_cost);
+                assert!(conditions.cost > 0);
+                // update the cost we print here, just to be compatible with
+                // the test cases we have. We've already ensured the cost is
+                // lower
+                conditions.cost = expected_cost;
+                print_conditions(&a, &conditions)
+            }
+            Err(code) => {
+                format!("FAILED: {}\n", u32::from(code.1))
+            }
+        };
 
         if output != output_hard_fork {
             print_diff(&output, &output_hard_fork);
@@ -241,7 +254,7 @@ fn run_generator(#[case] name: &str) {
         }
 
         if output != expected {
-            print_diff(&output, &expected);
+            print_diff(&output, expected);
             panic!("mismatching generator output");
         }
     }

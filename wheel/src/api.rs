@@ -4,8 +4,9 @@ use crate::run_generator::{
     PySpendBundleConditions,
 };
 use chik::allocator::make_allocator;
+use chik::gen::conditions::MempoolVisitor;
 use chik::gen::flags::{
-    AGG_SIG_ARGS, ALLOW_BACKREFS, COND_ARGS_NIL, ENABLE_ASSERT_BEFORE, ENABLE_SOFTFORK_CONDITION,
+    AGG_SIG_ARGS, ALLOW_BACKREFS, ANALYZE_SPENDS, COND_ARGS_NIL, ENABLE_SOFTFORK_CONDITION,
     LIMIT_ANNOUNCES, LIMIT_OBJECTS, MEMPOOL_MODE, NO_RELATIVE_CONDITIONS_ON_EPHEMERAL,
     NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
 };
@@ -15,12 +16,10 @@ use chik::gen::solution_generator::solution_generator_backrefs as native_solutio
 use chik::merkle_set::compute_merkle_set_root as compute_merkle_root_impl;
 use chik_protocol::Bytes32;
 use chik_protocol::FullBlock;
-use chik_protocol::G1Element;
-use chik_protocol::G2Element;
 use chik_protocol::{
     ChallengeBlockInfo, ChallengeChainSubSlot, ClassgroupElement, Coin, CoinSpend, CoinState,
-    CoinStateUpdate, EndOfSubSlotBundle, Foliage, FoliageTransactionBlock,
-    InfusedChallengeChainSubSlot, NewPeakWallet, PoolTarget, Program, ProofOfSpace,
+    CoinStateUpdate, EndOfSubSlotBundle, Foliage, FoliageBlockData, FoliageTransactionBlock,
+    HeaderBlock, InfusedChallengeChainSubSlot, NewPeakWallet, PoolTarget, Program, ProofOfSpace,
     PuzzleSolutionResponse, RegisterForCoinUpdates, RegisterForPhUpdates, RejectAdditionsRequest,
     RejectBlockHeaders, RejectHeaderBlocks, RejectHeaderRequest, RejectPuzzleSolution,
     RejectRemovalsRequest, RequestAdditions, RequestBlockHeader, RequestBlockHeaders,
@@ -29,8 +28,8 @@ use chik_protocol::{
     RespondChildren, RespondFeeEstimates, RespondHeaderBlocks, RespondPuzzleSolution,
     RespondRemovals, RespondSesInfo, RespondToCoinUpdates, RespondToPhUpdates, RewardChainBlock,
     RewardChainBlockUnfinished, RewardChainSubSlot, SendTransaction, SpendBundle,
-    SubEpochChallengeSegment, SubEpochSegments, SubSlotData, SubSlotProofs, TransactionAck,
-    TransactionsInfo, VDFInfo, VDFProof,
+    SubEpochChallengeSegment, SubEpochSegments, SubEpochSummary, SubSlotData, SubSlotProofs,
+    TransactionAck, TransactionsInfo, UnfinishedBlock, VDFInfo, VDFProof,
 };
 use klvmr::serde::tree_hash_from_stream;
 use klvmr::{
@@ -38,17 +37,21 @@ use klvmr::{
     NO_UNKNOWN_OPS,
 };
 use pyo3::buffer::PyBuffer;
+use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3::types::PyAny;
 use pyo3::types::PyBytes;
+use pyo3::types::PyList;
 use pyo3::types::PyModule;
 use pyo3::types::PyTuple;
 use pyo3::{wrap_pyfunction, PyResult, Python};
 use std::convert::TryInto;
+use std::iter::zip;
 
 use crate::run_program::{run_chik_program, serialized_length};
 
 use crate::adapt_response::eval_err_to_pyresult;
+use chik::fast_forward::fast_forward_singleton as native_ff;
 use chik::gen::get_puzzle_and_solution::get_puzzle_and_solution_for_coin as parse_puzzle_solution;
 use chik::gen::validation_error::ValidationErr;
 use klvmr::allocator::NodePtr;
@@ -59,6 +62,10 @@ use klvmr::run_program;
 use klvmr::serde::node_to_bytes;
 use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
 use klvmr::ChikDialect;
+
+use chik_bls::{
+    hash_to_g2 as native_hash_to_g2, DerivableKey, GTElement, PublicKey, SecretKey, Signature,
+};
 
 #[pyfunction]
 pub fn compute_merkle_set_root<'p>(
@@ -83,9 +90,10 @@ pub fn tree_hash(py: Python, blob: PyBuffer<u8>) -> PyResult<&PyBytes> {
     Ok(PyBytes::new(py, &tree_hash_from_stream(&mut input)?))
 }
 
+#[allow(clippy::too_many_arguments)]
 #[pyfunction]
-pub fn get_puzzle_and_solution_for_coin<'py>(
-    py: Python<'py>,
+pub fn get_puzzle_and_solution_for_coin(
+    py: Python<'_>,
     program: PyBuffer<u8>,
     args: PyBuffer<u8>,
     max_cost: Cost,
@@ -93,7 +101,7 @@ pub fn get_puzzle_and_solution_for_coin<'py>(
     find_amount: u64,
     find_ph: Bytes32,
     flags: u32,
-) -> PyResult<(&'py PyBytes, &'py PyBytes)> {
+) -> PyResult<(&PyBytes, &PyBytes)> {
     let mut allocator = make_allocator(LIMIT_HEAP);
 
     if !program.is_c_contiguous() {
@@ -153,12 +161,18 @@ fn run_puzzle(
     flags: u32,
 ) -> PyResult<PySpendBundleConditions> {
     let mut a = make_allocator(LIMIT_HEAP);
-    let conds = native_run_puzzle(&mut a, puzzle, solution, parent_id, amount, max_cost, flags)?;
+    let conds = native_run_puzzle::<MempoolVisitor>(
+        &mut a, puzzle, solution, parent_id, amount, max_cost, flags,
+    )?;
     Ok(convert_spend_bundle_conds(&a, conds))
 }
 
-fn convert_list_of_tuples(spends: &PyAny) -> PyResult<Vec<(Coin, &[u8], &[u8])>> {
-    let mut native_spends = Vec::<(Coin, &[u8], &[u8])>::new();
+// this is like a CoinSpend but with references to the puzzle and solution,
+// rather than owning them
+type CoinSpendRef<'a> = (Coin, &'a [u8], &'a [u8]);
+
+fn convert_list_of_tuples(spends: &PyAny) -> PyResult<Vec<CoinSpendRef>> {
+    let mut native_spends = Vec::<CoinSpendRef>::new();
     for s in spends.iter()? {
         let tuple = s?.downcast::<PyTuple>()?;
         let coin = tuple.get_item(0)?.extract::<Coin>()?;
@@ -184,6 +198,137 @@ fn solution_generator_backrefs<'p>(py: Python<'p>, spends: &PyAny) -> PyResult<&
     ))
 }
 
+#[pyclass]
+struct AugSchemeMPL {}
+
+#[pymethods]
+impl AugSchemeMPL {
+    #[staticmethod]
+    #[pyo3(signature = (pk,msg,prepend_pk=None))]
+    pub fn sign(pk: &SecretKey, msg: &[u8], prepend_pk: Option<&PublicKey>) -> Signature {
+        match prepend_pk {
+            Some(prefix) => {
+                let mut aug_msg = prefix.to_bytes().to_vec();
+                aug_msg.extend_from_slice(msg);
+                chik_bls::sign_raw(pk, aug_msg)
+            }
+            None => chik_bls::sign(pk, msg),
+        }
+    }
+
+    #[staticmethod]
+    pub fn aggregate(sigs: &PyList) -> PyResult<Signature> {
+        let mut ret = Signature::default();
+        for p2 in sigs {
+            ret += &p2.extract::<Signature>()?;
+        }
+        Ok(ret)
+    }
+
+    #[staticmethod]
+    pub fn verify(pk: &PublicKey, msg: &[u8], sig: &Signature) -> bool {
+        chik_bls::verify(sig, pk, msg)
+    }
+
+    #[staticmethod]
+    pub fn aggregate_verify(pks: &PyList, msgs: &PyList, sig: &Signature) -> PyResult<bool> {
+        let mut data = Vec::<(PublicKey, Vec<u8>)>::new();
+        if pks.len() != msgs.len() {
+            return Err(PyRuntimeError::new_err(
+                "aggregate_verify expects the same number of public keys as messages",
+            ));
+        }
+        for (pk, msg) in zip(pks, msgs) {
+            let pk = pk.extract::<PublicKey>()?;
+            let msg = msg.extract::<Vec<u8>>()?;
+            data.push((pk, msg));
+        }
+
+        Ok(chik_bls::aggregate_verify(sig, data))
+    }
+
+    #[staticmethod]
+    pub fn g2_from_message(msg: &[u8]) -> Signature {
+        native_hash_to_g2(msg)
+    }
+
+    #[staticmethod]
+    pub fn derive_child_sk(sk: &SecretKey, index: u32) -> SecretKey {
+        sk.derive_hardened(index)
+    }
+
+    #[staticmethod]
+    pub fn derive_child_sk_unhardened(sk: &SecretKey, index: u32) -> SecretKey {
+        sk.derive_unhardened(index)
+    }
+
+    #[staticmethod]
+    pub fn derive_child_pk_unhardened(pk: &PublicKey, index: u32) -> PublicKey {
+        pk.derive_unhardened(index)
+    }
+
+    #[staticmethod]
+    pub fn key_gen(seed: &[u8]) -> PyResult<SecretKey> {
+        if seed.len() < 32 {
+            return Err(PyRuntimeError::new_err(
+                "Seed size must be at leat 32 bytes",
+            ));
+        }
+        Ok(SecretKey::from_seed(seed))
+    }
+}
+
+#[pyfunction]
+fn supports_fast_forward(spend: &CoinSpend) -> bool {
+    // the test function just attempts the rebase onto a dummy parent coin
+    let new_parent = Coin {
+        parent_coin_info: [0_u8; 32].into(),
+        puzzle_hash: spend.coin.puzzle_hash,
+        amount: spend.coin.amount,
+    };
+    let new_coin = Coin {
+        parent_coin_info: new_parent.coin_id().into(),
+        puzzle_hash: spend.coin.puzzle_hash,
+        amount: spend.coin.amount,
+    };
+
+    let mut a = make_allocator(LIMIT_HEAP);
+    let Ok(puzzle) = node_from_bytes(&mut a, spend.puzzle_reveal.as_slice()) else {
+        return false;
+    };
+    let Ok(solution) = node_from_bytes(&mut a, spend.solution.as_slice()) else {
+        return false;
+    };
+
+    native_ff(
+        &mut a,
+        puzzle,
+        solution,
+        &spend.coin,
+        &new_coin,
+        &new_parent,
+    )
+    .is_ok()
+}
+
+#[pyfunction]
+fn fast_forward_singleton<'p>(
+    py: Python<'p>,
+    spend: &CoinSpend,
+    new_coin: &Coin,
+    new_parent: &Coin,
+) -> PyResult<&'p PyBytes> {
+    let mut a = make_allocator(LIMIT_HEAP);
+    let puzzle = node_from_bytes(&mut a, spend.puzzle_reveal.as_slice())?;
+    let solution = node_from_bytes(&mut a, spend.solution.as_slice())?;
+
+    let new_solution = native_ff(&mut a, puzzle, solution, &spend.coin, new_coin, new_parent)?;
+    Ok(PyBytes::new(
+        py,
+        node_to_bytes(&a, new_solution)?.as_slice(),
+    ))
+}
+
 #[pymodule]
 pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     // generator functions
@@ -192,11 +337,14 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(run_puzzle, m)?)?;
     m.add_function(wrap_pyfunction!(solution_generator, m)?)?;
     m.add_function(wrap_pyfunction!(solution_generator_backrefs, m)?)?;
+    m.add_function(wrap_pyfunction!(supports_fast_forward, m)?)?;
+    m.add_function(wrap_pyfunction!(fast_forward_singleton, m)?)?;
     m.add_class::<PySpendBundleConditions>()?;
     m.add(
         "ELIGIBLE_FOR_DEDUP",
         chik::gen::conditions::ELIGIBLE_FOR_DEDUP,
     )?;
+    m.add("ELIGIBLE_FOR_FF", chik::gen::conditions::ELIGIBLE_FOR_FF)?;
     m.add_class::<PySpend>()?;
 
     // klvm functions
@@ -205,7 +353,6 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     m.add("STRICT_ARGS_COUNT", STRICT_ARGS_COUNT)?;
     m.add("LIMIT_ANNOUNCES", LIMIT_ANNOUNCES)?;
     m.add("AGG_SIG_ARGS", AGG_SIG_ARGS)?;
-    m.add("ENABLE_ASSERT_BEFORE", ENABLE_ASSERT_BEFORE)?;
     m.add("ENABLE_FIXED_DIV", ENABLE_FIXED_DIV)?;
     m.add("ENABLE_SOFTFORK_CONDITION", ENABLE_SOFTFORK_CONDITION)?;
     m.add(
@@ -215,16 +362,16 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     m.add("MEMPOOL_MODE", MEMPOOL_MODE)?;
     m.add("LIMIT_OBJECTS", LIMIT_OBJECTS)?;
     m.add("ALLOW_BACKREFS", ALLOW_BACKREFS)?;
+    m.add("ANALYZE_SPENDS", ANALYZE_SPENDS)?;
 
     // Chik classes
     m.add_class::<Coin>()?;
-    m.add_class::<G1Element>()?;
-    m.add_class::<G2Element>()?;
     m.add_class::<PoolTarget>()?;
     m.add_class::<ClassgroupElement>()?;
     m.add_class::<EndOfSubSlotBundle>()?;
     m.add_class::<TransactionsInfo>()?;
     m.add_class::<FoliageTransactionBlock>()?;
+    m.add_class::<FoliageBlockData>()?;
     m.add_class::<Foliage>()?;
     m.add_class::<ProofOfSpace>()?;
     m.add_class::<RewardChainBlockUnfinished>()?;
@@ -242,6 +389,8 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<SubSlotData>()?;
     m.add_class::<SubEpochChallengeSegment>()?;
     m.add_class::<SubEpochSegments>()?;
+    m.add_class::<SubEpochSummary>()?;
+    m.add_class::<UnfinishedBlock>()?;
 
     // wallet protocol
     m.add_class::<RequestPuzzleSolution>()?;
@@ -266,6 +415,7 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<RequestHeaderBlocks>()?;
     m.add_class::<RejectHeaderBlocks>()?;
     m.add_class::<RespondHeaderBlocks>()?;
+    m.add_class::<HeaderBlock>()?;
     m.add_class::<CoinState>()?;
     m.add_class::<RegisterForPhUpdates>()?;
     m.add_class::<RespondToPhUpdates>()?;
@@ -295,6 +445,14 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(compute_merkle_set_root, m)?)?;
     m.add_function(wrap_pyfunction!(tree_hash, m)?)?;
     m.add_function(wrap_pyfunction!(get_puzzle_and_solution_for_coin, m)?)?;
+
+    // facilities from chik-bls
+
+    m.add_class::<PublicKey>()?;
+    m.add_class::<Signature>()?;
+    m.add_class::<GTElement>()?;
+    m.add_class::<SecretKey>()?;
+    m.add_class::<AugSchemeMPL>()?;
 
     compression::add_submodule(py, m)?;
 
