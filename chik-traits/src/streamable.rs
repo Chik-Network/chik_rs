@@ -115,12 +115,9 @@ impl<T: Streamable> Streamable for Vec<T> {
     fn parse(input: &mut Cursor<&[u8]>) -> Result<Self> {
         let len = u32::parse(input)?;
 
-        let mut ret = if std::mem::size_of::<T>() == 0 {
-            Vec::<T>::new()
-        } else {
-            let limit = 2 * 1024 * 1024 / std::mem::size_of::<T>();
-            Vec::<T>::with_capacity(std::cmp::min(limit, len as usize))
-        };
+        // TODO: pre-allocate capacity, but we'd need safe-guards for overflow
+        // attacks
+        let mut ret = Vec::<T>::new();
         for _ in 0..len {
             ret.push(T::parse(input)?);
         }
@@ -172,16 +169,6 @@ impl Streamable for bool {
             1 => Ok(true),
             _ => Err(Error::InvalidBool),
         }
-    }
-}
-
-impl Streamable for () {
-    fn update_digest(&self, _digest: &mut Sha256) {}
-    fn stream(&self, _out: &mut Vec<u8>) -> Result<()> {
-        Ok(())
-    }
-    fn parse(_input: &mut Cursor<&[u8]>) -> Result<Self> {
-        Ok(())
     }
 }
 
@@ -367,12 +354,6 @@ fn test_parse_list_list_3() {
         0, 0, 0, 3, 0, 0, 0, 1, 1, 2, 3, 4, 0, 0, 0, 1, 1, 3, 3, 7, 0, 0, 0, 1, 0, 0, 4, 2,
     ];
     from_bytes::<Vec<Vec<u32>>>(buf, vec![vec![0x01020304], vec![0x01030307], vec![0x402]]);
-}
-
-#[test]
-fn test_parse_list_empty() {
-    let buf: &[u8] = &[0, 0, 0, 3];
-    from_bytes::<Vec<()>>(buf, vec![(), (), ()]);
 }
 
 #[test]
@@ -682,12 +663,6 @@ fn test_stream_list() {
         &out,
         &[0, 0, 0, 3, 1, 3, 3, 7, 0, 0, 0, 42, 0xff, 0xff, 0xff, 0xff]
     );
-}
-
-#[test]
-fn test_stream_list_of_empty() {
-    let out = stream(&vec![(), (), ()]);
-    assert_eq!(&out, &[0, 0, 0, 3]);
 }
 
 #[test]

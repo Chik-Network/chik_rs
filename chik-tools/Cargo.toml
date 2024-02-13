@@ -15,7 +15,7 @@ klvm-utils = { path = "../klvm-utils" }
 klvm-traits = { path = "../klvm-traits" }
 chik-wallet = { version = "=0.2.12", path = "../chik-wallet" }
 klvmr = { version = "=0.3.0", features = ["counters"] }
-chik = { version = "0.2.13", path = ".." }
+chik = { version = "0.2.15", path = ".." }
 sqlite = "=0.31.0"
 clap = { version = "=4.3.9", features = ["derive"] }
 zstd = "=0.12.3"

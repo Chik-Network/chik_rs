@@ -1,7 +1,3 @@
-mod derive_synthetic;
-mod proof;
-mod puzzles;
+mod primitives;
 
-pub use derive_synthetic::*;
-pub use proof::*;
-pub use puzzles::*;
+pub use primitives::*;

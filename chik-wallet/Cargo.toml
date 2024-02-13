@@ -10,17 +10,5 @@ repository = "https://github.com/Chik-Network/chik_rs/chik-wallet/"
 
 [dependencies]
 klvmr = "0.3.0"
-sha2 = "0.10.8"
-num-bigint = "0.4.3"
 hex-literal = "0.4.1"
 klvm-utils = { version = "0.2.12", path = "../klvm-utils" }
-klvm-traits = { version = "0.2.12", path = "../klvm-traits" }
-chik-bls = { version = "0.2.12", path = "../chik-bls" }
-chik-protocol = { version = "0.2.12", path = "../chik-protocol" }
-arbitrary = "=1.3.0"
-
-[dev-dependencies]
-hex = "0.4.3"
-
-[lib]
-crate-type = ["rlib"]

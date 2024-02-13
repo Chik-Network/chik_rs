@@ -184,6 +184,9 @@ jobs:
 
     - name: Build Windows with maturin on Python ${{ matrix.python }}
       if: matrix.os.matrix == 'windows'
+      env:
+        CC: 'clang'
+        CFLAGS: "-D__BLST_PORTABLE__"
       run: |
         py -${{ matrix.python.major-dot-minor }} -m venv venv
         . .\venv\Scripts\Activate.ps1
@@ -349,11 +352,6 @@ jobs:
       - name: cargo fuzz (chik-protocol)
         run: |
           cd chik-protocol
-          cargo +nightly fuzz build
-          cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
-      - name: cargo fuzz (chik-wallet)
-        run: |
-          cd chik-wallet
           cargo +nightly fuzz build
           cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
 

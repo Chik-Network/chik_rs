@@ -42,9 +42,9 @@ pub fn to_klvm(mut ast: DeriveInput) -> TokenStream {
 
     // `list_macro` encodes a nested tuple containing each of the struct field values within.
     let list_macro = match args.repr {
-        Repr::List => quote!( #crate_name::klvm_list ),
+        Repr::ProperList => quote!( #crate_name::klvm_list ),
         Repr::Tuple => quote!( #crate_name::klvm_tuple ),
-        Repr::Curry => quote!( #crate_name::klvm_curried_args ),
+        Repr::CurriedArgs => quote!( #crate_name::klvm_curried_args ),
     };
 
     add_trait_bounds(&mut ast.generics, parse_quote!(#crate_name::ToKlvm));
