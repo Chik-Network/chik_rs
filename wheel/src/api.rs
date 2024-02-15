@@ -7,36 +7,35 @@ use chik::allocator::make_allocator;
 use chik::gen::conditions::MempoolVisitor;
 use chik::gen::flags::{
     AGG_SIG_ARGS, ALLOW_BACKREFS, ANALYZE_SPENDS, COND_ARGS_NIL, ENABLE_SOFTFORK_CONDITION,
-    MEMPOOL_MODE, NO_RELATIVE_CONDITIONS_ON_EPHEMERAL, NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
+    LIMIT_OBJECTS, MEMPOOL_MODE, NO_RELATIVE_CONDITIONS_ON_EPHEMERAL, NO_UNKNOWN_CONDS,
+    STRICT_ARGS_COUNT,
 };
 use chik::gen::run_puzzle::run_puzzle as native_run_puzzle;
 use chik::gen::solution_generator::solution_generator as native_solution_generator;
 use chik::gen::solution_generator::solution_generator_backrefs as native_solution_generator_backrefs;
 use chik::merkle_set::compute_merkle_set_root as compute_merkle_root_impl;
+use chik_protocol::Bytes32;
+use chik_protocol::FullBlock;
 use chik_protocol::{
-    BlockRecord, Bytes32, ChallengeBlockInfo, ChallengeChainSubSlot, ClassgroupElement, Coin,
-    CoinSpend, CoinState, CoinStateUpdate, EndOfSubSlotBundle, Foliage, FoliageBlockData,
-    FoliageTransactionBlock, FullBlock, HeaderBlock, InfusedChallengeChainSubSlot, NewCompactVDF,
-    NewPeak, NewPeakWallet, NewSignagePointOrEndOfSubSlot, NewTransaction, NewUnfinishedBlock,
-    PoolTarget, Program, ProofBlockHeader, ProofOfSpace, PuzzleSolutionResponse, RecentChainData,
-    RegisterForCoinUpdates, RegisterForPhUpdates, RejectAdditionsRequest, RejectBlock,
-    RejectBlockHeaders, RejectBlocks, RejectHeaderBlocks, RejectHeaderRequest,
-    RejectPuzzleSolution, RejectRemovalsRequest, RequestAdditions, RequestBlock,
-    RequestBlockHeader, RequestBlockHeaders, RequestBlocks, RequestChildren, RequestCompactVDF,
-    RequestFeeEstimates, RequestHeaderBlocks, RequestMempoolTransactions, RequestPeers,
-    RequestProofOfWeight, RequestPuzzleSolution, RequestRemovals, RequestSesInfo,
-    RequestSignagePointOrEndOfSubSlot, RequestTransaction, RequestUnfinishedBlock,
-    RespondAdditions, RespondBlock, RespondBlockHeader, RespondBlockHeaders, RespondBlocks,
-    RespondChildren, RespondCompactVDF, RespondEndOfSubSlot, RespondFeeEstimates,
-    RespondHeaderBlocks, RespondPeers, RespondProofOfWeight, RespondPuzzleSolution,
-    RespondRemovals, RespondSesInfo, RespondSignagePoint, RespondToCoinUpdates, RespondToPhUpdates,
-    RespondTransaction, RespondUnfinishedBlock, RewardChainBlock, RewardChainBlockUnfinished,
-    RewardChainSubSlot, SendTransaction, SpendBundle, SubEpochChallengeSegment, SubEpochData,
-    SubEpochSegments, SubEpochSummary, SubSlotData, SubSlotProofs, TimestampedPeerInfo,
-    TransactionAck, TransactionsInfo, UnfinishedBlock, VDFInfo, VDFProof, WeightProof,
+    ChallengeBlockInfo, ChallengeChainSubSlot, ClassgroupElement, Coin, CoinSpend, CoinState,
+    CoinStateUpdate, EndOfSubSlotBundle, Foliage, FoliageBlockData, FoliageTransactionBlock,
+    HeaderBlock, InfusedChallengeChainSubSlot, NewPeakWallet, PoolTarget, Program, ProofOfSpace,
+    PuzzleSolutionResponse, RegisterForCoinUpdates, RegisterForPhUpdates, RejectAdditionsRequest,
+    RejectBlockHeaders, RejectHeaderBlocks, RejectHeaderRequest, RejectPuzzleSolution,
+    RejectRemovalsRequest, RequestAdditions, RequestBlockHeader, RequestBlockHeaders,
+    RequestChildren, RequestFeeEstimates, RequestHeaderBlocks, RequestPuzzleSolution,
+    RequestRemovals, RequestSesInfo, RespondAdditions, RespondBlockHeader, RespondBlockHeaders,
+    RespondChildren, RespondFeeEstimates, RespondHeaderBlocks, RespondPuzzleSolution,
+    RespondRemovals, RespondSesInfo, RespondToCoinUpdates, RespondToPhUpdates, RewardChainBlock,
+    RewardChainBlockUnfinished, RewardChainSubSlot, SendTransaction, SpendBundle,
+    SubEpochChallengeSegment, SubEpochSegments, SubEpochSummary, SubSlotData, SubSlotProofs,
+    TransactionAck, TransactionsInfo, UnfinishedBlock, VDFInfo, VDFProof,
 };
 use klvmr::serde::tree_hash_from_stream;
-use klvmr::{ENABLE_BLS_OPS_OUTSIDE_GUARD, ENABLE_FIXED_DIV, LIMIT_HEAP, NO_UNKNOWN_OPS};
+use klvmr::{
+    ENABLE_BLS_OPS, ENABLE_BLS_OPS_OUTSIDE_GUARD, ENABLE_FIXED_DIV, ENABLE_SECP_OPS, LIMIT_HEAP,
+    NO_UNKNOWN_OPS,
+};
 use pyo3::buffer::PyBuffer;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
@@ -360,6 +359,7 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
         NO_RELATIVE_CONDITIONS_ON_EPHEMERAL,
     )?;
     m.add("MEMPOOL_MODE", MEMPOOL_MODE)?;
+    m.add("LIMIT_OBJECTS", LIMIT_OBJECTS)?;
     m.add("ALLOW_BACKREFS", ALLOW_BACKREFS)?;
     m.add("ANALYZE_SPENDS", ANALYZE_SPENDS)?;
 
@@ -386,17 +386,10 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<VDFInfo>()?;
     m.add_class::<VDFProof>()?;
     m.add_class::<SubSlotData>()?;
-    m.add_class::<SubEpochData>()?;
     m.add_class::<SubEpochChallengeSegment>()?;
     m.add_class::<SubEpochSegments>()?;
     m.add_class::<SubEpochSummary>()?;
     m.add_class::<UnfinishedBlock>()?;
-    m.add_class::<FullBlock>()?;
-    m.add_class::<BlockRecord>()?;
-    m.add_class::<WeightProof>()?;
-    m.add_class::<RecentChainData>()?;
-    m.add_class::<ProofBlockHeader>()?;
-    m.add_class::<TimestampedPeerInfo>()?;
 
     // wallet protocol
     m.add_class::<RequestPuzzleSolution>()?;
@@ -435,39 +428,17 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<RequestFeeEstimates>()?;
     m.add_class::<RespondFeeEstimates>()?;
 
-    // full node protocol
-    m.add_class::<NewPeak>()?;
-    m.add_class::<NewTransaction>()?;
-    m.add_class::<RequestTransaction>()?;
-    m.add_class::<RespondTransaction>()?;
-    m.add_class::<RequestProofOfWeight>()?;
-    m.add_class::<RespondProofOfWeight>()?;
-    m.add_class::<RequestBlock>()?;
-    m.add_class::<RejectBlock>()?;
-    m.add_class::<RequestBlocks>()?;
-    m.add_class::<RespondBlocks>()?;
-    m.add_class::<RejectBlocks>()?;
-    m.add_class::<RespondBlock>()?;
-    m.add_class::<NewUnfinishedBlock>()?;
-    m.add_class::<RequestUnfinishedBlock>()?;
-    m.add_class::<RespondUnfinishedBlock>()?;
-    m.add_class::<NewSignagePointOrEndOfSubSlot>()?;
-    m.add_class::<RequestSignagePointOrEndOfSubSlot>()?;
-    m.add_class::<RespondSignagePoint>()?;
-    m.add_class::<RespondEndOfSubSlot>()?;
-    m.add_class::<RequestMempoolTransactions>()?;
-    m.add_class::<NewCompactVDF>()?;
-    m.add_class::<RequestCompactVDF>()?;
-    m.add_class::<RespondCompactVDF>()?;
-    m.add_class::<RequestPeers>()?;
-    m.add_class::<RespondPeers>()?;
+    m.add_class::<FullBlock>()?;
 
     // facilities from klvm_rs
 
     m.add_function(wrap_pyfunction!(run_chik_program, m)?)?;
     m.add("NO_UNKNOWN_OPS", NO_UNKNOWN_OPS)?;
     m.add("LIMIT_HEAP", LIMIT_HEAP)?;
+    m.add("ENABLE_BLS_OPS", ENABLE_BLS_OPS)?;
+    m.add("ENABLE_SECP_OPS", ENABLE_SECP_OPS)?;
     m.add("ENABLE_BLS_OPS_OUTSIDE_GUARD", ENABLE_BLS_OPS_OUTSIDE_GUARD)?;
+    m.add("LIMIT_OBJECTS", LIMIT_OBJECTS)?;
 
     m.add_function(wrap_pyfunction!(serialized_length, m)?)?;
     m.add_function(wrap_pyfunction!(compute_merkle_set_root, m)?)?;

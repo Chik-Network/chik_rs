@@ -1,9 +1,9 @@
 use chik_protocol::Bytes32;
-use hex_literal::hex;
 use klvm_traits::{
-    klvm_list, match_list, match_tuple, FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder, Raw,
+    klvm_list, match_list, match_tuple, KlvmDecoder, KlvmEncoder, FromKlvm, FromKlvmError, Raw,
     ToKlvm, ToKlvmError,
 };
+use hex_literal::hex;
 
 use crate::singleton::SingletonStruct;
 
@@ -112,7 +112,7 @@ mod tests {
     #[test]
     fn did_solution() {
         let a = &mut Allocator::new();
-        let did_solution = DidSolution::InnerSpend(a.nil());
+        let did_solution = DidSolution::InnerSpend(a.null());
         let ptr = did_solution.to_klvm(a).unwrap();
         let roundtrip = DidSolution::from_klvm(a, ptr).unwrap();
         assert_eq!(did_solution, roundtrip);

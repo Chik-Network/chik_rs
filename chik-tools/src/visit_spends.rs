@@ -10,7 +10,7 @@ use klvmr::reduction::Reduction;
 use klvmr::run_program::run_program;
 use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
 use klvmr::Allocator;
-use rusqlite::Connection;
+use sqlite::State;
 
 pub fn iterate_tx_blocks(
     db: &str,
@@ -18,7 +18,7 @@ pub fn iterate_tx_blocks(
     max_height: Option<u32>,
     callback: impl Fn(u32, FullBlock, Vec<Vec<u8>>),
 ) {
-    let connection = Connection::open(db).expect("failed to open database file");
+    let connection = sqlite::open(db).expect("failed to open database file");
 
     let mut statement = connection
         .prepare(
@@ -28,29 +28,33 @@ pub fn iterate_tx_blocks(
         ORDER BY height",
         )
         .expect("failed to prepare SQL statement enumerating blocks");
+    statement
+        .bind((1, start_height as i64))
+        .expect("failed to bind start-height to SQL statement");
 
     let mut block_ref_lookup = connection
         .prepare("SELECT block FROM full_blocks WHERE height=? and in_main_chain=1")
         .expect("failed to prepare SQL statement looking up ref-blocks");
 
-    let mut rows = statement
-        .query([start_height])
-        .expect("failed to query blocks");
-    while let Ok(Some(row)) = rows.next() {
-        let height = row.get::<_, u32>(0).expect("missing height");
+    while let Ok(State::Row) = statement.next() {
+        let height: u32 = statement
+            .read::<i64, _>(0)
+            .expect("missing height")
+            .try_into()
+            .expect("invalid height in block record");
         if let Some(h) = max_height {
             if height > h {
                 break;
             }
         }
 
-        let block_buffer: Vec<u8> = row.get(1).expect("invalid block blob");
+        let block_buffer = statement.read::<Vec<u8>, _>(1).expect("invalid block blob");
 
         let block_buffer =
             zstd::stream::decode_all(&mut std::io::Cursor::<Vec<u8>>::new(block_buffer))
                 .expect("failed to decompress block");
-        let block =
-            FullBlock::from_bytes_unchecked(&block_buffer).expect("failed to parse FullBlock");
+        let block = FullBlock::parse(&mut std::io::Cursor::<&[u8]>::new(&block_buffer))
+            .expect("failed to parse FullBlock");
 
         if block.transactions_info.is_none() {
             continue;
@@ -61,24 +65,26 @@ pub fn iterate_tx_blocks(
 
         let mut block_refs = Vec::<Vec<u8>>::new();
         for height in &block.transactions_generator_ref_list {
-            let mut rows = block_ref_lookup
-                .query(rusqlite::params![height])
+            block_ref_lookup
+                .reset()
+                .expect("sqlite reset statement failed");
+            block_ref_lookup
+                .bind((1, *height as i64))
                 .expect("failed to look up ref-block");
 
-            let row = rows
+            block_ref_lookup
                 .next()
-                .expect("failed to fetch block-ref row")
-                .expect("get None block-ref row");
-            let ref_block = row
-                .get::<_, Vec<u8>>(0)
+                .expect("failed to fetch block-ref row");
+            let ref_block = block_ref_lookup
+                .read::<Vec<u8>, _>(0)
                 .expect("failed to lookup block reference");
 
             let ref_block =
                 zstd::stream::decode_all(&mut std::io::Cursor::<Vec<u8>>::new(ref_block))
                     .expect("failed to decompress block");
 
-            let ref_block =
-                FullBlock::from_bytes_unchecked(&ref_block).expect("failed to parse ref-block");
+            let ref_block = FullBlock::parse(&mut std::io::Cursor::<&[u8]>::new(&ref_block))
+                .expect("failed to parse ref-block");
             let ref_gen = ref_block
                 .transactions_generator
                 .expect("block ref has no generator");
@@ -89,22 +95,19 @@ pub fn iterate_tx_blocks(
     }
 }
 
-pub fn visit_spends<
-    GenBuf: AsRef<[u8]>,
-    F: FnMut(&mut Allocator, Bytes32, u64, NodePtr, NodePtr),
->(
+pub fn visit_spends<GenBuf: AsRef<[u8]>, F: Fn(&mut Allocator, Bytes32, u64, NodePtr, NodePtr)>(
     a: &mut Allocator,
     program: &[u8],
     block_refs: &[GenBuf],
     max_cost: u64,
-    mut callback: F,
+    callback: F,
 ) -> Result<(), ValidationErr> {
     let klvm_deserializer = node_from_bytes(a, &KLVM_DESERIALIZER)?;
     let program = node_from_bytes_backrefs(a, program)?;
 
     // iterate in reverse order since we're building a linked list from
     // the tail
-    let mut blocks = a.nil();
+    let mut blocks = a.null();
     for g in block_refs.iter().rev() {
         let ref_gen = a.new_atom(g.as_ref())?;
         blocks = a.new_pair(ref_gen, blocks)?;
@@ -112,7 +115,7 @@ pub fn visit_spends<
 
     // the first argument to the generator is the serializer, followed by a list
     // of the blocks it requested.
-    let mut args = a.new_pair(blocks, a.nil())?;
+    let mut args = a.new_pair(blocks, a.null())?;
     args = a.new_pair(klvm_deserializer, args)?;
 
     let dialect = ChikDialect::new(0);

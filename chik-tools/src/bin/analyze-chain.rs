@@ -5,7 +5,7 @@ use chik_traits::Streamable;
 use std::io::Write;
 use std::time::SystemTime;
 
-use rusqlite::Connection;
+use sqlite::State;
 
 use chik::gen::conditions::{parse_spends, MempoolVisitor};
 use chik::gen::flags::MEMPOOL_MODE;
@@ -41,7 +41,7 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let connection = Connection::open(args.file).expect("failed to open database file");
+    let connection = sqlite::open(args.file).expect("failed to open database file");
 
     let mut statement = connection
         .prepare(
@@ -51,6 +51,12 @@ fn main() {
         ORDER BY height",
         )
         .expect("failed to prepare SQL statement enumerating blocks");
+    statement
+        .bind((1, args.start as i64))
+        .expect("failed to bind start height to sql query");
+    statement
+        .bind((2, args.end as i64))
+        .expect("failed to bind start height to sql query");
 
     let mut block_ref_lookup = connection
         .prepare("SELECT block FROM full_blocks WHERE height=? and in_main_chain=1")
@@ -61,26 +67,27 @@ fn main() {
 
     // We only create a single allocator, load it with the generator ROM and
     // then we keep reusing it
-    let mut a = Allocator::new_limited(500000000);
+    let mut a = Allocator::new_limited(500000000, 62500000, 62500000);
     let generator_rom =
         node_from_bytes(&mut a, &GENERATOR_ROM).expect("failed to parse generator ROM");
     let allocator_checkpoint = a.checkpoint();
 
     let mut prev_timestamp = 0;
 
-    let mut rows = statement
-        .query([args.start, args.end])
-        .expect("failed to query blocks");
-    while let Ok(Some(row)) = rows.next() {
-        let height: u32 = row.get::<_, u32>(0).expect("missing height");
-        let block_buffer: Vec<u8> = row.get(1).expect("invalid block blob");
+    while let Ok(State::Row) = statement.next() {
+        let height: u32 = statement
+            .read::<i64, _>(0)
+            .expect("missing height")
+            .try_into()
+            .expect("invalid height in block record");
+        let block_buffer = statement.read::<Vec<u8>, _>(1).expect("invalid block blob");
 
         let start_parse = SystemTime::now();
         let block_buffer =
             zstd::stream::decode_all(&mut std::io::Cursor::<Vec<u8>>::new(block_buffer))
                 .expect("failed to decompress block");
-        let block =
-            FullBlock::from_bytes_unchecked(&block_buffer).expect("failed to parse FullBlock");
+        let block = FullBlock::parse(&mut std::io::Cursor::<&[u8]>::new(&block_buffer))
+            .expect("failed to parse FullBlock");
 
         let ti = match block.transactions_info {
             Some(ti) => ti,
@@ -110,30 +117,32 @@ fn main() {
 
             let parse_timing = start_parse.elapsed().expect("failed to get system time");
 
-            let mut args = a.nil();
+            let mut args = a.null();
 
             let start_ref_lookup = SystemTime::now();
             // iterate in reverse order since we're building a linked list from
             // the tail
             for height in block.transactions_generator_ref_list.iter().rev() {
-                let mut rows = block_ref_lookup
-                    .query(rusqlite::params![height])
+                block_ref_lookup
+                    .reset()
+                    .expect("sqlite reset statement failed");
+                block_ref_lookup
+                    .bind((1, *height as i64))
                     .expect("failed to look up ref-block");
 
-                let row = rows
+                block_ref_lookup
                     .next()
-                    .expect("failed to fetch block-ref row")
-                    .expect("get None block-ref row");
-                let ref_block = row
-                    .get::<_, Vec<u8>>(0)
+                    .expect("failed to fetch block-ref row");
+                let ref_block = block_ref_lookup
+                    .read::<Vec<u8>, _>(0)
                     .expect("failed to lookup block reference");
 
                 let ref_block =
                     zstd::stream::decode_all(&mut std::io::Cursor::<Vec<u8>>::new(ref_block))
                         .expect("failed to decompress block");
 
-                let ref_block =
-                    FullBlock::from_bytes_unchecked(&ref_block).expect("failed to parse ref-block");
+                let ref_block = FullBlock::parse(&mut std::io::Cursor::<&[u8]>::new(&ref_block))
+                    .expect("failed to parse ref-block");
                 let ref_gen = match ref_block.transactions_generator {
                     None => {
                         panic!("block ref has no generator");
@@ -152,8 +161,8 @@ fn main() {
 
             let byte_cost = program.len() as u64 * COST_PER_BYTE;
 
-            args = a.new_pair(args, a.nil()).expect("failed to allocate pair");
-            let args = a.new_pair(args, a.nil()).expect("failed to allocate pair");
+            args = a.new_pair(args, a.null()).expect("failed to allocate pair");
+            let args = a.new_pair(args, a.null()).expect("failed to allocate pair");
             let args = a
                 .new_pair(generator, args)
                 .expect("failed to allocate pair");

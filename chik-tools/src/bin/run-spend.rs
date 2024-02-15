@@ -2,12 +2,13 @@ use chik::gen::conditions::Condition;
 use chik_protocol::Bytes32;
 use chik_traits::Streamable;
 use clap::Parser;
-use hex_literal::hex;
+use klvm_traits::ToNodePtr;
 use klvm_traits::{FromKlvm, ToKlvm};
 use klvm_utils::tree_hash;
 use klvm_utils::CurriedProgram;
-use klvmr::ToNodePtr;
 use klvmr::{allocator::NodePtr, Allocator};
+use hex_literal::hex;
+use std::io::Cursor;
 
 /// Run a puzzle given a solution and print the resulting conditions
 #[derive(Parser, Debug)]
@@ -237,7 +238,7 @@ fn main() {
 
     let mut a = Allocator::new();
     let spend = read(args.spend).expect("spend file not found");
-    let spend = CoinSpend::from_bytes(&spend).expect("parse CoinSpend");
+    let spend = CoinSpend::parse(&mut Cursor::new(spend.as_slice())).expect("parse CoinSpend");
 
     let puzzle = spend
         .puzzle_reveal

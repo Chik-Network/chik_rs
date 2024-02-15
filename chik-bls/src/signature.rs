@@ -1,6 +1,7 @@
 use crate::{Error, GTElement, PublicKey, Result, SecretKey};
 use blst::*;
 use chik_traits::{read_bytes, Streamable};
+use klvm_traits::{KlvmDecoder, KlvmEncoder, FromKlvm, FromKlvmError, ToKlvm, ToKlvmError};
 use sha2::{Digest, Sha256};
 use std::borrow::Borrow;
 use std::convert::AsRef;
@@ -143,15 +144,10 @@ impl Streamable for Signature {
         Ok(())
     }
 
-    fn parse<const TRUSTED: bool>(
-        input: &mut Cursor<&[u8]>,
-    ) -> chik_traits::chik_error::Result<Self> {
-        let input = read_bytes(input, 96)?.try_into().unwrap();
-        if TRUSTED {
-            Ok(Self::from_bytes_unchecked(input)?)
-        } else {
-            Ok(Self::from_bytes(input)?)
-        }
+    fn parse(input: &mut Cursor<&[u8]>) -> chik_traits::chik_error::Result<Self> {
+        Ok(Self::from_bytes(
+            read_bytes(input, 96)?.try_into().unwrap(),
+        )?)
     }
 }
 
@@ -254,6 +250,30 @@ impl FromJsonDict for Signature {
     }
 }
 
+impl<N> FromKlvm<N> for Signature {
+    fn from_klvm(
+        decoder: &impl KlvmDecoder<Node = N>,
+        node: N,
+    ) -> std::result::Result<Self, FromKlvmError> {
+        let bytes = decoder.decode_atom(&node)?;
+        let error = Err(FromKlvmError::WrongAtomLength {
+            expected: 96,
+            found: bytes.len(),
+        });
+        let bytes = bytes.try_into().or(error)?;
+        Self::from_bytes(bytes).map_err(|error| FromKlvmError::Custom(error.to_string()))
+    }
+}
+
+impl<N> ToKlvm<N> for Signature {
+    fn to_klvm(
+        &self,
+        encoder: &mut impl KlvmEncoder<Node = N>,
+    ) -> std::result::Result<N, ToKlvmError> {
+        encoder.encode_atom(&self.to_bytes())
+    }
+}
+
 #[cfg(feature = "py-bindings")]
 #[pymethods]
 impl Signature {
@@ -263,6 +283,12 @@ impl Signature {
     #[new]
     pub fn init() -> Self {
         Self::default()
+    }
+
+    #[staticmethod]
+    #[pyo3(name = "from_bytes_unchecked")]
+    pub fn py_from_bytes_unchecked(bytes: [u8; Self::SIZE]) -> Result<Signature> {
+        Self::from_bytes_unchecked(&bytes)
     }
 
     #[pyo3(name = "pair")]
@@ -506,6 +532,7 @@ pub fn sign<Msg: AsRef<[u8]>>(sk: &SecretKey, msg: Msg) -> Signature {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use klvmr::Allocator;
     use hex::FromHex;
     use rand::rngs::StdRng;
     use rand::{Rng, SeedableRng};
@@ -1035,6 +1062,29 @@ mod tests {
         assert_eq!(
             format!("{:?}", sig),
             format!("<G2Element {}>", hex::encode(data))
+        );
+    }
+
+    #[test]
+    fn test_to_from_klvm() {
+        let mut a = Allocator::new();
+        let bytes = hex::decode("b45825c0ee7759945c0189b4c38b7e54231ebadc83a851bec3bb7cf954a124ae0cc8e8e5146558332ea152f63bf8846e04826185ef60e817f271f8d500126561319203f9acb95809ed20c193757233454be1562a5870570941a84605bd2c9c9a").expect("hex::decode()");
+        let ptr = a.new_atom(&bytes).expect("new_atom");
+
+        let sig = Signature::from_klvm(&a, ptr).expect("from_klvm");
+        assert_eq!(&sig.to_bytes()[..], &bytes[..]);
+
+        let sig_ptr = sig.to_klvm(&mut a).expect("to_klvm");
+        assert!(a.atom_eq(sig_ptr, ptr));
+    }
+
+    #[test]
+    fn test_from_klvm_failure() {
+        let mut a = Allocator::new();
+        let ptr = a.new_pair(a.one(), a.one()).expect("new_pair");
+        assert_eq!(
+            Signature::from_klvm(&a, ptr).unwrap_err(),
+            FromKlvmError::ExpectedAtom
         );
     }
 

@@ -29,11 +29,6 @@ def print_class(f: Any, name: str, members: List[str], extra: Optional[List[str]
 
     init_args = ''.join([(',\n        ' + transform_type(x)) for x in members])
 
-    all_replace_parameters = []
-    for m in members:
-        replace_param_name, replace_type = m.split(':')
-        all_replace_parameters.append(f"{replace_param_name}: Union[{replace_type}, _Unspec] = _Unspec()")
-
     if extra is not None:
         members.extend(extra)
     members = ''.join(map(add_indent, members));
@@ -52,9 +47,7 @@ class {name}:{members}
     @staticmethod
     def from_bytes(bytes) -> {name}: ...
     @staticmethod
-    def from_bytes_unchecked(bytes) -> {name}: ...
-    @staticmethod
-    def parse_rust(ReadableBuffer, bool = False) -> Tuple[{name}, int]: ...
+    def parse_rust(ReadableBuffer) -> Tuple[{name}, int]: ...
     def to_bytes(self) -> bytes: ...
     def __bytes__(self) -> bytes: ...
     def stream_to_bytes(self) -> bytes: ...
@@ -62,14 +55,9 @@ class {name}:{members}
     def to_json_dict(self) -> Dict[str, Any]: ...
     @staticmethod
     def from_json_dict(json_dict: Dict[str, Any]) -> {name}: ...
+    def replace(self, **kwargs) -> {name}: ...
 """
     )
-
-    if len(all_replace_parameters) > 0:
-        indent = ",\n        "
-        f.write(
-            f"""    def replace(self, *, {indent.join(all_replace_parameters)}) -> {name}: ...
-""")
 
 
 def rust_type_to_python(t: str) -> str:
@@ -179,7 +167,6 @@ extra_members = {
     ],
     "HeaderBlock": [
         "prev_header_hash: bytes32",
-        "prev_hash: bytes32",
         "header_hash: bytes32",
         "height: int",
         "weight: int",
@@ -208,23 +195,6 @@ extra_members = {
         "def to_program(self) -> ChikProgram: ...",
         "def uncurry(self) -> Tuple[ChikProgram, ChikProgram]: ...",
     ],
-    "SpendBundle": [
-        "@staticmethod\n    def aggregate(sbs: List[SpendBundle]) -> SpendBundle: ...",
-        "def name(self) -> bytes32: ...",
-        "def removals(self) -> List[Coin]: ...",
-        "def additions(self) -> List[Coin]: ...",
-        "def debug(self) -> None: ...",
-    ],
-    "BlockRecord": [
-        "is_transaction_block: bool",
-        "first_in_sub_slot: bool",
-        "def is_challenge_block(self, constants: ConsensusConstants) -> bool: ...",
-        "def sp_sub_slot_total_iters(self, constants: ConsensusConstants) -> int: ...",
-        "def ip_sub_slot_total_iters(self, constants: ConsensusConstants) -> int: ...",
-        "def sp_iters(self, constants: ConsensusConstants) -> int: ...",
-        "def ip_iters(self, constants: ConsensusConstants) -> int: ...",
-        "def sp_total_iters(self, constants: ConsensusConstants) -> int: ...",
-    ],
 }
 
 classes = []
@@ -243,12 +213,8 @@ with open(output_file, "w") as f:
 from typing import List, Optional, Sequence, Tuple
 from chik.types.blockchain_format.sized_bytes import bytes32
 from chik.types.blockchain_format.program import Program as ChikProgram
-from chik.consensus.constants import ConsensusConstants
 
 ReadableBuffer = Union[bytes, bytearray, memoryview]
-
-class _Unspec:
-    pass
 
 def solution_generator(spends: Sequence[Tuple[Coin, bytes, bytes]]) -> bytes: ...
 def solution_generator_backrefs(spends: Sequence[Tuple[Coin, bytes, bytes]]) -> bytes: ...
@@ -281,6 +247,7 @@ NO_RELATIVE_CONDITIONS_ON_EPHEMERAL: int = ...
 ENABLE_BLS_OPS: int = ...
 ENABLE_SECP_OPS: int = ...
 ENABLE_BLS_OPS_OUTSIDE_GUARD: int = ...
+LIMIT_OBJECTS: int = ...
 ENABLE_FIXED_DIV: int = ...
 ALLOW_BACKREFS: int = ...
 

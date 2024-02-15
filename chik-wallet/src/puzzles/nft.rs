@@ -1,6 +1,8 @@
+#[cfg(fuzzing)]
+use arbitrary::Arbitrary;
 use chik_protocol::Bytes32;
+use klvm_traits::{KlvmDecoder, KlvmEncoder, FromKlvm, FromKlvmError, Raw, ToKlvm, ToKlvmError};
 use hex_literal::hex;
-use klvm_traits::{FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder, Raw, ToKlvm, ToKlvmError};
 
 use crate::singleton::SingletonStruct;
 
@@ -51,7 +53,7 @@ pub struct NftRoyaltyTransferPuzzleArgs {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(fuzzing, derive(arbitrary::Arbitrary))]
+#[cfg_attr(fuzzing, derive(Arbitrary))]
 pub struct NftMetadata {
     pub edition_number: u64,
     pub edition_total: u64,

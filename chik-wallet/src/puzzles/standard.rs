@@ -1,7 +1,7 @@
 use chik_bls::PublicKey;
-use hex_literal::hex;
 use klvm_traits::{FromKlvm, ToKlvm};
 use klvm_utils::{curry_tree_hash, tree_hash_atom};
+use hex_literal::hex;
 
 #[derive(Debug, Clone, PartialEq, Eq, ToKlvm, FromKlvm)]
 #[klvm(curry)]

@@ -24,9 +24,6 @@ our_crates = [
     "chik-wallet",
     "chik-client",
     "chik-ssl",
-    "fuzz",
-    "chik-wallet/fuzz",
-    "klvm-utils/fuzz",
 ]
 
 def crates_with_changes() -> Set[str]:

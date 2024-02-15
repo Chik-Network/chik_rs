@@ -23,9 +23,9 @@ pub fn curry_tree_hash(program_hash: [u8; 32], arg_hashes: &[[u8; 32]]) -> [u8; 
 
 #[cfg(test)]
 mod tests {
-    use hex::ToHex;
     use klvm_traits::{klvm_curried_args, ToKlvm};
     use klvmr::Allocator;
+    use hex::ToHex;
 
     use crate::{tree_hash, CurriedProgram};
 

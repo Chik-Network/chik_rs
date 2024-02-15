@@ -25,7 +25,7 @@ fn do_fuzz(data: &[u8], short_atoms: bool) {
 
     let dialect = &ChikDialect::new(0);
 
-    let args = allocator.nil();
+    let args = allocator.null();
 
     let max_cost = u64::MAX;
 
