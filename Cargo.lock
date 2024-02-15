@@ -306,12 +306,12 @@ dependencies = [
  "chik-protocol 0.3.1",
  "chik-traits 0.3.0",
  "chik-wallet",
+ "hex",
+ "hex-literal",
  "klvm-derive 0.2.14",
  "klvm-traits 0.2.14",
  "klvm-utils 0.3.0",
  "klvmr",
- "hex",
- "hex-literal",
  "num-traits",
  "pyo3",
  "rstest 0.16.0",
@@ -323,15 +323,15 @@ dependencies = [
 name = "chik-bls"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1f02b3316f347607f79668627cf1f01b5a62257089c08e92c7df3ad93c6c1aa"
+checksum = "26b04377fee8f47187fe7acc57f908f975dd353075f894088774df188a3fc7ef"
 dependencies = [
  "anyhow",
  "arbitrary",
  "blst",
  "chik-traits 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "klvm-traits 0.2.14",
  "hex",
  "hkdf",
+ "klvm-traits 0.2.14",
  "sha2 0.10.8",
  "thiserror",
  "tiny-bip39",
@@ -386,10 +386,10 @@ dependencies = [
  "chik",
  "chik-protocol 0.3.1",
  "chik-traits 0.3.0",
+ "hex-literal",
  "klvm-traits 0.2.14",
  "klvm-utils 0.3.0",
  "klvmr",
- "hex-literal",
  "libfuzzer-sys",
 ]
 
@@ -397,16 +397,16 @@ dependencies = [
 name = "chik-protocol"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5065871f83884a9a64d70f3f8390c328acb878e5dab0e575ab068f73aaf1e577"
+checksum = "06ee554f0a396b8d4ca3314b75c6d414b403a5a5605af819a3caacf4e0c7406a"
 dependencies = [
  "arbitrary",
  "chik-bls 0.3.0",
  "chik-traits 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chik_streamable_macro 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hex",
  "klvm-traits 0.2.14",
  "klvm-utils 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "klvmr",
- "hex",
  "sha2 0.10.8",
 ]
 
@@ -419,10 +419,10 @@ dependencies = [
  "chik-traits 0.3.0",
  "chik_py_streamable_macro",
  "chik_streamable_macro 0.3.0",
+ "hex",
  "klvm-traits 0.2.14",
  "klvm-utils 0.3.0",
  "klvmr",
- "hex",
  "pyo3",
  "rstest 0.17.0",
  "sha2 0.10.8",
@@ -462,11 +462,11 @@ dependencies = [
  "chik-traits 0.3.0",
  "chik-wallet",
  "clap",
+ "hex",
+ "hex-literal",
  "klvm-traits 0.2.14",
  "klvm-utils 0.3.0",
  "klvmr",
- "hex",
- "hex-literal",
  "rusqlite",
  "threadpool",
  "zstd",
@@ -488,7 +488,7 @@ dependencies = [
 name = "chik-traits"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "636e832ece4dc14e2e866d1737fbfdc32d6dd616aa4fc3869cfb273881def303"
+checksum = "f2927c50ef65e2682cfa0ccf8868eb701696ce15fa3fe54a686f2355d6c1f7ae"
 dependencies = [
  "chik_streamable_macro 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex",
@@ -503,11 +503,11 @@ dependencies = [
  "arbitrary",
  "chik-bls 0.3.0",
  "chik-protocol 0.3.0",
+ "hex",
+ "hex-literal",
  "klvm-traits 0.2.14",
  "klvm-utils 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "klvmr",
- "hex",
- "hex-literal",
  "num-bigint",
  "sha2 0.10.8",
 ]
@@ -547,7 +547,7 @@ dependencies = [
 name = "chik_streamable_macro"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "342cdb29dd8c1214d60fac24100ab1567756270710e93336db910a531fe8a264"
+checksum = "4b16474a430c84912f86b6454d6f5fe09ee67d33b3ddf6519ff0cb561f3bd29e"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -633,101 +633,6 @@ name = "clap_lex"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2da6da31387c7e4ef160ffab6d5e7f00c42626fe39aea70a7b0f1773f7dd6c1b"
-
-[[package]]
-name = "klvm-derive"
-version = "0.2.14"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.32",
-]
-
-[[package]]
-name = "klvm-derive"
-version = "0.2.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9110e638f8a4d34922e0436282c7fe1a8149020aef3aacf699377dcd3f1553da"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.32",
-]
-
-[[package]]
-name = "klvm-traits"
-version = "0.2.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d64ffd2241dead56ca31fb0261b4d0f802ba0b98a1c1e6f4514bc06c6095a9a9"
-dependencies = [
- "klvm-derive 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
- "klvmr",
- "num-bigint",
- "thiserror",
-]
-
-[[package]]
-name = "klvm-traits"
-version = "0.3.2"
-dependencies = [
- "chik-bls 0.3.1",
- "klvm-derive 0.2.14",
- "hex",
- "hex-literal",
- "num-bigint",
- "pyo3",
- "thiserror",
-]
-
-[[package]]
-name = "klvm-utils"
-version = "0.3.0"
-dependencies = [
- "klvm-traits 0.2.14",
- "klvmr",
- "hex",
-]
-
-[[package]]
-name = "klvm-utils"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f2d0945fda2ed18f689f5f7faf50c3375594d94c5aba6f3da838ee29002f1f8"
-dependencies = [
- "klvm-traits 0.2.14",
- "klvmr",
-]
-
-[[package]]
-name = "klvm-utils-fuzz"
-version = "0.3.0"
-dependencies = [
- "chik",
- "chik-fuzz",
- "klvm-traits 0.2.14",
- "klvm-utils 0.3.0",
- "klvmr",
- "libfuzzer-sys",
-]
-
-[[package]]
-name = "klvmr"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9cd344b6dc76235f446025fe9ebe54aa6131e2e59acb49e16be48a3bb3492491"
-dependencies = [
- "bls12_381",
- "getrandom",
- "group",
- "hex",
- "k256",
- "lazy_static",
- "num-bigint",
- "num-integer",
- "num-traits",
- "p256",
- "sha2 0.9.9",
-]
 
 [[package]]
 name = "colorchoice"
@@ -1388,6 +1293,101 @@ checksum = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
 dependencies = [
  "winapi 0.2.8",
  "winapi-build",
+]
+
+[[package]]
+name = "klvm-derive"
+version = "0.2.14"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.32",
+]
+
+[[package]]
+name = "klvm-derive"
+version = "0.2.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1cd2f0dcab8ade04e9663cd26007b8eaedef7bf1bfb3c69ce0754dd98fe796b3"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.32",
+]
+
+[[package]]
+name = "klvm-traits"
+version = "0.2.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6adb1ee73cb73ea145b44cda512e79ae20d5c096e184856258fa0053600c254b"
+dependencies = [
+ "klvm-derive 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "klvmr",
+ "num-bigint",
+ "thiserror",
+]
+
+[[package]]
+name = "klvm-traits"
+version = "0.3.2"
+dependencies = [
+ "chik-bls 0.3.1",
+ "hex",
+ "hex-literal",
+ "klvm-derive 0.2.14",
+ "num-bigint",
+ "pyo3",
+ "thiserror",
+]
+
+[[package]]
+name = "klvm-utils"
+version = "0.3.0"
+dependencies = [
+ "hex",
+ "klvm-traits 0.2.14",
+ "klvmr",
+]
+
+[[package]]
+name = "klvm-utils"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ea49d9876068c77e61469dccae426348f912269b500c7f1d5f5b99a71b9d83b"
+dependencies = [
+ "klvm-traits 0.2.14",
+ "klvmr",
+]
+
+[[package]]
+name = "klvm-utils-fuzz"
+version = "0.3.0"
+dependencies = [
+ "chik",
+ "chik-fuzz",
+ "klvm-traits 0.2.14",
+ "klvm-utils 0.3.0",
+ "klvmr",
+ "libfuzzer-sys",
+]
+
+[[package]]
+name = "klvmr"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc84fad1d0571cbff6c98846c258676e2939b8764ecaebbf1e0b6f0fc07c4176"
+dependencies = [
+ "bls12_381",
+ "getrandom",
+ "group",
+ "hex",
+ "k256",
+ "lazy_static",
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "p256",
+ "sha2 0.9.9",
 ]
 
 [[package]]
