@@ -7,9 +7,9 @@ use chik::gen::conditions::{
 use chik::gen::spend_visitor::SpendVisitor;
 use chik_protocol::Bytes32;
 use chik_protocol::Coin;
+use fuzzing_utils::{make_tree, BitCursor};
 use klvm_utils::tree_hash;
 use klvmr::allocator::Allocator;
-use fuzzing_utils::{make_tree, BitCursor};
 use std::collections::HashSet;
 use std::sync::Arc;
 

@@ -1,6 +1,6 @@
 use klvm_traits::{
-    klvm_list, klvm_quote, destructure_list, destructure_quote, match_list, match_quote,
-    KlvmDecoder, KlvmEncoder, FromKlvm, FromKlvmError, MatchByte, ToKlvm, ToKlvmError,
+    destructure_list, destructure_quote, klvm_list, klvm_quote, match_list, match_quote, FromKlvm,
+    FromKlvmError, KlvmDecoder, KlvmEncoder, MatchByte, ToKlvm, ToKlvmError,
 };
 
 #[derive(Debug, Clone)]

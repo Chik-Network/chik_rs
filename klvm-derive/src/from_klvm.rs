@@ -6,7 +6,7 @@ use syn::{
 };
 
 use crate::{
-    helpers::{add_trait_bounds, parse_klvm_attr, parse_int_repr, Repr},
+    helpers::{add_trait_bounds, parse_int_repr, parse_klvm_attr, Repr},
     macros::{repr_macros, Macros},
 };
 

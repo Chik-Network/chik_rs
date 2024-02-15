@@ -1,4 +1,4 @@
-use crate::{KlvmDecoder, KlvmEncoder, FromKlvm, FromKlvmError, ToKlvm, ToKlvmError};
+use crate::{FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder, ToKlvm, ToKlvmError};
 
 /// A wrapper for an intermediate KLVM value. This is required to
 /// implement `ToKlvm` and `FromKlvm` for `N`, since the compiler

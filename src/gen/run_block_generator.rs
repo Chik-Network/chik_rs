@@ -4,7 +4,7 @@ use crate::gen::conditions::{
 use crate::gen::flags::ALLOW_BACKREFS;
 use crate::gen::spend_visitor::SpendVisitor;
 use crate::gen::validation_error::{first, ErrorCode, ValidationErr};
-use crate::generator_rom::{KLVM_DESERIALIZER, COST_PER_BYTE, GENERATOR_ROM};
+use crate::generator_rom::{COST_PER_BYTE, GENERATOR_ROM, KLVM_DESERIALIZER};
 use klvm_utils::tree_hash;
 use klvmr::allocator::{Allocator, NodePtr};
 use klvmr::chik_dialect::ChikDialect;

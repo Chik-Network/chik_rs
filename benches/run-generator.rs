@@ -1,8 +1,8 @@
 use chik::gen::conditions::MempoolVisitor;
 use chik::gen::flags::ALLOW_BACKREFS;
 use chik::gen::run_block_generator::{run_block_generator, run_block_generator2};
-use klvmr::Allocator;
 use criterion::{criterion_group, criterion_main, Criterion, SamplingMode};
+use klvmr::Allocator;
 use std::fs::read_to_string;
 use std::time::Instant;
 
