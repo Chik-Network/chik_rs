@@ -1,9 +1,7 @@
 use chik_traits::chik_error;
 use chik_traits::{read_bytes, Streamable};
+use klvm_traits::{KlvmDecoder, KlvmEncoder, FromKlvm, FromKlvmError, ToKlvm, ToKlvmError};
 use core::fmt::Formatter;
-use klvm_traits::{FromKlvm, ToKlvm};
-use klvmr::allocator::{NodePtr, SExp};
-use klvmr::Allocator;
 use sha2::{Digest, Sha256};
 use std::convert::AsRef;
 use std::convert::TryInto;
@@ -56,8 +54,8 @@ impl Streamable for Bytes {
         }
     }
 
-    fn parse(input: &mut Cursor<&[u8]>) -> chik_error::Result<Self> {
-        let len = u32::parse(input)?;
+    fn parse<const TRUSTED: bool>(input: &mut Cursor<&[u8]>) -> chik_error::Result<Self> {
+        let len = u32::parse::<TRUSTED>(input)?;
         Ok(Bytes(read_bytes(input, len as usize)?.to_vec()))
     }
 }
@@ -95,19 +93,16 @@ impl FromJsonDict for Bytes {
     }
 }
 
-impl ToKlvm for Bytes {
-    fn to_klvm(&self, a: &mut Allocator) -> klvm_traits::Result<NodePtr> {
-        Ok(a.new_atom(self.0.as_slice())?)
+impl<N> ToKlvm<N> for Bytes {
+    fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
+        encoder.encode_atom(self.0.as_slice())
     }
 }
 
-impl FromKlvm for Bytes {
-    fn from_klvm(a: &Allocator, ptr: NodePtr) -> klvm_traits::Result<Self> {
-        if let SExp::Atom = a.sexp(ptr) {
-            Ok(Self(a.atom(ptr).to_vec()))
-        } else {
-            Err(klvm_traits::Error::ExpectedAtom(ptr))
-        }
+impl<N> FromKlvm<N> for Bytes {
+    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+        let bytes = decoder.decode_atom(&node)?;
+        Ok(Self(bytes.to_vec()))
     }
 }
 
@@ -196,31 +191,27 @@ impl<const N: usize> Streamable for BytesImpl<N> {
         Ok(())
     }
 
-    fn parse(input: &mut Cursor<&[u8]>) -> chik_error::Result<Self> {
+    fn parse<const TRUSTED: bool>(input: &mut Cursor<&[u8]>) -> chik_error::Result<Self> {
         Ok(BytesImpl(read_bytes(input, N)?.try_into().unwrap()))
     }
 }
 
-impl<const N: usize> ToKlvm for BytesImpl<N> {
-    fn to_klvm(&self, a: &mut Allocator) -> klvm_traits::Result<NodePtr> {
-        Ok(a.new_atom(self.0.as_slice())?)
+impl<N, const LEN: usize> ToKlvm<N> for BytesImpl<LEN> {
+    fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
+        encoder.encode_atom(self.0.as_slice())
     }
 }
 
-impl<const N: usize> FromKlvm for BytesImpl<N> {
-    fn from_klvm(a: &Allocator, ptr: NodePtr) -> klvm_traits::Result<Self> {
-        let blob = match a.sexp(ptr) {
-            SExp::Atom => {
-                if a.atom_len(ptr) != N {
-                    return Err(klvm_traits::Error::Custom("invalid size".to_string()));
-                }
-                a.atom(ptr)
-            }
-            _ => {
-                return Err(klvm_traits::Error::ExpectedAtom(ptr));
-            }
-        };
-        Ok(Self::from(blob))
+impl<N, const LEN: usize> FromKlvm<N> for BytesImpl<LEN> {
+    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+        let bytes = decoder.decode_atom(&node)?;
+        if bytes.len() != LEN {
+            return Err(FromKlvmError::WrongAtomLength {
+                expected: LEN,
+                found: bytes.len(),
+            });
+        }
+        Ok(Self::from(bytes))
     }
 }
 
@@ -425,7 +416,10 @@ impl<'py> FromPyObject<'py> for Bytes {
 mod tests {
     use super::*;
 
-    use klvmr::serde::{node_from_bytes, node_to_bytes};
+    use klvmr::{
+        serde::{node_from_bytes, node_to_bytes},
+        Allocator,
+    };
     use rstest::rstest;
 
     #[rstest]
@@ -568,7 +562,7 @@ mod tests {
 
     fn from_bytes<T: Streamable + std::fmt::Debug + std::cmp::PartialEq>(buf: &[u8], expected: T) {
         let mut input = Cursor::<&[u8]>::new(buf);
-        assert_eq!(T::parse(&mut input).unwrap(), expected);
+        assert_eq!(T::parse::<false>(&mut input).unwrap(), expected);
     }
 
     fn from_bytes_fail<T: Streamable + std::fmt::Debug + std::cmp::PartialEq>(
@@ -576,7 +570,7 @@ mod tests {
         expected: chik_error::Error,
     ) {
         let mut input = Cursor::<&[u8]>::new(buf);
-        assert_eq!(T::parse(&mut input).unwrap_err(), expected);
+        assert_eq!(T::parse::<false>(&mut input).unwrap_err(), expected);
     }
 
     fn stream<T: Streamable>(v: &T) -> Vec<u8> {
@@ -690,15 +684,12 @@ mod tests {
         let bytes =
             hex::decode("f07522495060c066f66f32acc2a77e3a3e737aca8baea4d1a64ea4cdc13da9").unwrap();
         let ptr = a.new_atom(&bytes).unwrap();
-        assert_eq!(
-            Bytes32::from_klvm(a, ptr).unwrap_err(),
-            klvm_traits::Error::Custom("invalid size".to_string())
-        );
+        assert!(Bytes32::from_klvm(a, ptr).is_err());
 
         let ptr = a.new_pair(a.one(), a.one()).unwrap();
         assert_eq!(
             Bytes32::from_klvm(a, ptr).unwrap_err(),
-            klvm_traits::Error::ExpectedAtom(ptr)
+            FromKlvmError::ExpectedAtom
         );
     }
 }

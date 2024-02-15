@@ -29,6 +29,11 @@ def print_class(f: Any, name: str, members: List[str], extra: Optional[List[str]
 
     init_args = ''.join([(',\n        ' + transform_type(x)) for x in members])
 
+    all_replace_parameters = []
+    for m in members:
+        replace_param_name, replace_type = m.split(':')
+        all_replace_parameters.append(f"{replace_param_name}: Union[{replace_type}, _Unspec] = _Unspec()")
+
     if extra is not None:
         members.extend(extra)
     members = ''.join(map(add_indent, members));
@@ -40,7 +45,6 @@ class {name}:{members}
         self{init_args}
     ) -> None: ...
     def __hash__(self) -> int: ...
-    def __str__(self) -> str: ...
     def __repr__(self) -> str: ...
     def __richcmp__(self) -> Any: ...
     def __deepcopy__(self) -> {name}: ...
@@ -48,16 +52,24 @@ class {name}:{members}
     @staticmethod
     def from_bytes(bytes) -> {name}: ...
     @staticmethod
-    def parse_rust(ReadableBuffer) -> Tuple[{name}, int]: ...
+    def from_bytes_unchecked(bytes) -> {name}: ...
+    @staticmethod
+    def parse_rust(ReadableBuffer, bool = False) -> Tuple[{name}, int]: ...
     def to_bytes(self) -> bytes: ...
     def __bytes__(self) -> bytes: ...
+    def stream_to_bytes(self) -> bytes: ...
     def get_hash(self) -> bytes32: ...
     def to_json_dict(self) -> Dict[str, Any]: ...
     @staticmethod
-    def from_json_dict(o: Dict[str, Any]) -> {name}: ...
-    def replace(self, **kwargs) -> {name}: ...
+    def from_json_dict(json_dict: Dict[str, Any]) -> {name}: ...
 """
     )
+
+    if len(all_replace_parameters) > 0:
+        indent = ",\n        "
+        f.write(
+            f"""    def replace(self, *, {indent.join(all_replace_parameters)}) -> {name}: ...
+""")
 
 
 def rust_type_to_python(t: str) -> str:
@@ -162,11 +174,12 @@ extra_members = {
         "total_iters: int",
         "height: int",
         "weight: int",
-        "def get_included_reward_coins(self) -> Set[Coin]: ...",
+        "def get_included_reward_coins(self) -> List[Coin]: ...",
         "def is_fully_compactified(self) -> bool: ...",
     ],
     "HeaderBlock": [
         "prev_header_hash: bytes32",
+        "prev_hash: bytes32",
         "header_hash: bytes32",
         "height: int",
         "weight: int",
@@ -174,7 +187,7 @@ extra_members = {
         "total_iters: int",
         "log_string: str",
         "is_transaction_block: bool",
-        "first_in_sub_slots: bool",
+        "first_in_sub_slot: bool",
     ],
     "RewardChainBlock": [
         "def get_unfinished(self) -> RewardChainBlockUnfinished: ...",
@@ -182,6 +195,35 @@ extra_members = {
     "SubSlotData": [
         "def is_end_of_slot(self) -> bool: ...",
         "def is_challenge(self) -> bool: ...",
+    ],
+    "Program": [
+        "def get_tree_hash(self) -> bytes32: ...",
+        "@staticmethod\n    def default() -> Program: ...",
+        "@staticmethod\n    def fromhex(hex) -> Program: ...",
+        "def run_mempool_with_cost(self, max_cost: int, args: object) -> Tuple[int, ChikProgram]: ...",
+        "def run_with_cost(self, max_cost: int, args: object) -> Tuple[int, ChikProgram]: ...",
+        "def _run(self, max_cost: int, flags: int, args: object) -> Tuple[int, ChikProgram]: ...",
+        "@staticmethod\n    def to(o: object) -> Program: ...",
+        "@staticmethod\n    def from_program(p: ChikProgram) -> Program: ...",
+        "def to_program(self) -> ChikProgram: ...",
+        "def uncurry(self) -> Tuple[ChikProgram, ChikProgram]: ...",
+    ],
+    "SpendBundle": [
+        "@staticmethod\n    def aggregate(sbs: List[SpendBundle]) -> SpendBundle: ...",
+        "def name(self) -> bytes32: ...",
+        "def removals(self) -> List[Coin]: ...",
+        "def additions(self) -> List[Coin]: ...",
+        "def debug(self) -> None: ...",
+    ],
+    "BlockRecord": [
+        "is_transaction_block: bool",
+        "first_in_sub_slot: bool",
+        "def is_challenge_block(self, constants: ConsensusConstants) -> bool: ...",
+        "def sp_sub_slot_total_iters(self, constants: ConsensusConstants) -> int: ...",
+        "def ip_sub_slot_total_iters(self, constants: ConsensusConstants) -> int: ...",
+        "def sp_iters(self, constants: ConsensusConstants) -> int: ...",
+        "def ip_iters(self, constants: ConsensusConstants) -> int: ...",
+        "def sp_total_iters(self, constants: ConsensusConstants) -> int: ...",
     ],
 }
 
@@ -200,8 +242,13 @@ with open(output_file, "w") as f:
 
 from typing import List, Optional, Sequence, Tuple
 from chik.types.blockchain_format.sized_bytes import bytes32
+from chik.types.blockchain_format.program import Program as ChikProgram
+from chik.consensus.constants import ConsensusConstants
 
 ReadableBuffer = Union[bytes, bytearray, memoryview]
+
+class _Unspec:
+    pass
 
 def solution_generator(spends: Sequence[Tuple[Coin, bytes, bytes]]) -> bytes: ...
 def solution_generator_backrefs(spends: Sequence[Tuple[Coin, bytes, bytes]]) -> bytes: ...
@@ -226,7 +273,6 @@ def run_puzzle(
 COND_ARGS_NIL: int = ...
 NO_UNKNOWN_CONDS: int = ...
 STRICT_ARGS_COUNT: int = ...
-LIMIT_ANNOUNCES: int = ...
 AGG_SIG_ARGS: int = ...
 LIMIT_HEAP: int = ...
 ENABLE_SOFTFORK_CONDITION: int = ...
@@ -235,7 +281,6 @@ NO_RELATIVE_CONDITIONS_ON_EPHEMERAL: int = ...
 ENABLE_BLS_OPS: int = ...
 ENABLE_SECP_OPS: int = ...
 ENABLE_BLS_OPS_OUTSIDE_GUARD: int = ...
-LIMIT_OBJECTS: int = ...
 ENABLE_FIXED_DIV: int = ...
 ALLOW_BACKREFS: int = ...
 
@@ -287,6 +332,8 @@ class AugSchemeMPL:
         "def from_bytes_unchecked(b: bytes) -> G1Element: ...",
         "@staticmethod",
         "def generator() -> G1Element: ...",
+        "def __str__(self) -> str: ...",
+        "def __repr__(self) -> str: ...",
         "def __add__(self, other: G1Element) -> G1Element: ...",
         "def __iadd__(self, other: G1Element) -> G1Element: ...",
     ])
@@ -298,6 +345,8 @@ class AugSchemeMPL:
         "def pair(self, other: G1Element) -> GTElement: ...",
         "@staticmethod",
         "def generator() -> G2Element: ...",
+        "def __str__(self) -> str: ...",
+        "def __repr__(self) -> str: ...",
         "def __add__(self, other: G2Element) -> G2Element: ...",
         "def __iadd__(self, other: G2Element) -> G2Element: ...",
         ])
@@ -305,6 +354,8 @@ class AugSchemeMPL:
         "SIZE: ClassVar[int] = ...",
         "@staticmethod",
         "def from_bytes_unchecked(b: bytes) -> GTElement: ...",
+        "def __str__(self) -> str: ...",
+        "def __repr__(self) -> str: ...",
         "def __mul__(self, rhs: GTElement) -> GTElement: ...",
         "def __imul__(self, rhs: GTElement) -> GTElement : ...",
         ])
@@ -312,6 +363,8 @@ class AugSchemeMPL:
         "PRIVATE_KEY_SIZE: ClassVar[int] = ...",
         "def sign_g2(self, msg: bytes, dst: bytes) -> G2Element: ...",
         "def get_g1(self) -> G1Element: ...",
+        "def __str__(self) -> str: ...",
+        "def __repr__(self) -> str: ...",
         ])
 
     print_class(f, "Spend",

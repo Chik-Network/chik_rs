@@ -1,9 +1,10 @@
 use crate::streamable_struct;
 use crate::{bytes::Bytes32, BytesImpl};
 use chik_streamable_macro::Streamable;
-use klvm_traits::{destructure_list, klvm_list, match_list, FromKlvm, ToKlvm};
-use klvmr::allocator::NodePtr;
-use klvmr::Allocator;
+use klvm_traits::{
+    klvm_list, destructure_list, match_list, KlvmDecoder, KlvmEncoder, FromKlvm, FromKlvmError,
+    ToKlvm, ToKlvmError,
+};
 use sha2::{Digest, Sha256};
 use std::convert::TryInto;
 
@@ -46,23 +47,23 @@ impl Coin {
 }
 
 #[cfg(feature = "py-bindings")]
-#[cfg_attr(feature = "py-bindings", pymethods)]
+#[pymethods]
 impl Coin {
     fn name<'p>(&self, py: pyo3::Python<'p>) -> pyo3::PyResult<&'p pyo3::types::PyBytes> {
         Ok(pyo3::types::PyBytes::new(py, &self.coin_id()))
     }
 }
 
-impl ToKlvm for Coin {
-    fn to_klvm(&self, a: &mut Allocator) -> klvm_traits::Result<NodePtr> {
-        klvm_list!(self.parent_coin_info, self.puzzle_hash, self.amount).to_klvm(a)
+impl<N> ToKlvm<N> for Coin {
+    fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
+        klvm_list!(self.parent_coin_info, self.puzzle_hash, self.amount).to_klvm(encoder)
     }
 }
 
-impl FromKlvm for Coin {
-    fn from_klvm(a: &Allocator, ptr: NodePtr) -> klvm_traits::Result<Self> {
+impl<N> FromKlvm<N> for Coin {
+    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
         let destructure_list!(parent_coin_info, puzzle_hash, amount) =
-            <match_list!(BytesImpl<32>, BytesImpl<32>, u64)>::from_klvm(a, ptr)?;
+            <match_list!(BytesImpl<32>, BytesImpl<32>, u64)>::from_klvm(decoder, node)?;
         Ok(Coin {
             parent_coin_info,
             puzzle_hash,
@@ -74,7 +75,10 @@ impl FromKlvm for Coin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use klvmr::serde::{node_from_bytes, node_to_bytes};
+    use klvmr::{
+        serde::{node_from_bytes, node_to_bytes},
+        Allocator,
+    };
     use rstest::rstest;
 
     #[rstest]

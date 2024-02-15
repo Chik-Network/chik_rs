@@ -51,21 +51,14 @@ impl GTElement {
     }
 }
 #[cfg(feature = "py-bindings")]
-#[cfg_attr(feature = "py-bindings", pymethods)]
+#[pymethods]
 impl GTElement {
     #[classattr]
     #[pyo3(name = "SIZE")]
     const PY_SIZE: usize = Self::SIZE;
 
-    #[staticmethod]
-    #[pyo3(name = "from_bytes_unchecked")]
-    fn py_from_bytes_unchecked(bytes: [u8; Self::SIZE]) -> Result<GTElement> {
-        Ok(Self::from_bytes(&bytes))
-    }
-
-    pub fn __repr__(&self) -> String {
-        let bytes = self.to_bytes();
-        format!("<GTElement {}>", &hex::encode(bytes))
+    fn __str__(&self) -> pyo3::PyResult<String> {
+        Ok(hex::encode(self.to_bytes()))
     }
 
     pub fn __mul__(&self, rhs: &Self) -> Self {
@@ -137,7 +130,10 @@ impl FromJsonDict for GTElement {
 
 impl fmt::Debug for GTElement {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str(&hex::encode(self.to_bytes()))
+        formatter.write_fmt(format_args!(
+            "<GTElement {}>",
+            &hex::encode(self.to_bytes())
+        ))
     }
 }
 
@@ -151,7 +147,7 @@ impl Streamable for GTElement {
         Ok(())
     }
 
-    fn parse(input: &mut Cursor<&[u8]>) -> Result<Self> {
+    fn parse<const TRUSTED: bool>(input: &mut Cursor<&[u8]>) -> Result<Self> {
         Ok(GTElement::from_bytes(
             read_bytes(input, Self::SIZE)?.try_into().unwrap(),
         ))

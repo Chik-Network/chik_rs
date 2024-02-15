@@ -1,34 +1,47 @@
-use klvmr::{allocator::NodePtr, reduction::EvalErr};
+use std::string::FromUtf8Error;
+
 use thiserror::Error;
 
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
-pub enum Error {
-    #[error("allocator error {0:?}")]
-    Allocator(EvalErr),
-
-    #[error("expected atom")]
-    ExpectedAtom(NodePtr),
-
-    #[error("expected cons")]
-    ExpectedCons(NodePtr),
-
-    #[error("expected nil")]
-    ExpectedNil(NodePtr),
-
-    #[error("expected one")]
-    ExpectedOne(NodePtr),
-
-    #[error("validation failed")]
-    Validation(NodePtr),
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
+pub enum ToKlvmError {
+    #[error("out of memory")]
+    OutOfMemory,
 
     #[error("{0}")]
     Custom(String),
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
+pub enum FromKlvmError {
+    #[error("{0}")]
+    InvalidUtf8(#[from] FromUtf8Error),
 
-impl From<EvalErr> for Error {
-    fn from(value: EvalErr) -> Self {
-        Self::Allocator(value)
+    #[error("expected atom of length {expected}, but found length {found}")]
+    WrongAtomLength { expected: usize, found: usize },
+
+    #[error("expected atom")]
+    ExpectedAtom,
+
+    #[error("expected pair")]
+    ExpectedPair,
+
+    #[error("{0}")]
+    Custom(String),
+}
+
+#[cfg(feature = "py-bindings")]
+use pyo3::PyErr;
+
+#[cfg(feature = "py-bindings")]
+impl std::convert::From<ToKlvmError> for PyErr {
+    fn from(err: ToKlvmError) -> PyErr {
+        pyo3::exceptions::PyValueError::new_err(err.to_string())
+    }
+}
+
+#[cfg(feature = "py-bindings")]
+impl std::convert::From<FromKlvmError> for PyErr {
+    fn from(err: FromKlvmError) -> PyErr {
+        pyo3::exceptions::PyValueError::new_err(err.to_string())
     }
 }

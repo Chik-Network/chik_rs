@@ -2,79 +2,183 @@
 //! This is a library for encoding and decoding Rust values using a KLVM allocator.
 //! It provides implementations for every fixed-width signed and unsigned integer type,
 //! as well as many other values in the standard library that would be common to encode.
-//!
-//! As well as the built-in implementations, this library exposes two derive macros
-//! for implementing the `ToKlvm` and `FromKlvm` traits on structs. They be marked
-//! with one of the following encodings:
-//!
-//! * `#[klvm(tuple)]` for unterminated lists such as `(A . (B . C))`.
-//! * `#[klvm(list)]` for proper lists such as `(A B C)`, or in other words `(A . (B . (C . ())))`.
-//! * `#[klvm(curry)]` for curried arguments such as `(c (q . A) (c (q . B) (c (q . C) 1)))`.
 
-#![cfg_attr(
-    feature = "derive",
-    doc = r#"
-## Derive Example
-
-```rust
-use klvmr::Allocator;
-use klvm_traits::{ToKlvm, FromKlvm};
-
-#[derive(Debug, PartialEq, Eq, ToKlvm, FromKlvm)]
-#[klvm(tuple)]
-struct Point {
-    x: i32,
-    y: i32,
-}
-
-let a = &mut Allocator::new();
-
-let point = Point { x: 5, y: 2 };
-let ptr = point.to_klvm(a).unwrap();
-
-assert_eq!(Point::from_klvm(a, ptr).unwrap(), point);
-```
-"#
-)]
+#![cfg_attr(feature = "derive", doc = "\n\n")]
+#![cfg_attr(feature = "derive", doc = include_str!("../docs/derive_macros.md"))]
 
 #[cfg(feature = "derive")]
 pub use klvm_derive::*;
 
+mod klvm_decoder;
+mod klvm_encoder;
 mod error;
 mod from_klvm;
 mod macros;
 mod match_byte;
 mod to_klvm;
+mod wrappers;
 
+pub use klvm_decoder::*;
+pub use klvm_encoder::*;
 pub use error::*;
 pub use from_klvm::*;
 pub use match_byte::*;
 pub use to_klvm::*;
+pub use wrappers::*;
 
 #[cfg(test)]
-#[cfg(feature = "derive")]
-mod tests {
+pub mod tests {
     extern crate self as klvm_traits;
-
-    use std::fmt;
-
-    use klvmr::{serde::node_to_bytes, Allocator};
 
     use super::*;
 
+    #[derive(Clone)]
+    pub enum TestNode {
+        Atom(usize),
+        Pair(Box<TestNode>, Box<TestNode>),
+    }
+
+    #[derive(Default)]
+    pub struct TestAllocator {
+        atoms: Vec<Vec<u8>>,
+    }
+
+    impl TestAllocator {
+        pub fn new() -> Self {
+            TestAllocator::default()
+        }
+
+        fn new_atom(&mut self, buf: &[u8]) -> TestNode {
+            let idx = self.atoms.len();
+            self.atoms.push(buf.to_vec());
+            TestNode::Atom(idx)
+        }
+
+        fn atom(&self, idx: usize) -> &[u8] {
+            self.atoms[idx].as_slice()
+        }
+    }
+
+    pub fn node_eq(a: &TestAllocator, left: &TestNode, right: &TestNode) -> bool {
+        match (left, right) {
+            (TestNode::Atom(l), TestNode::Atom(r)) => a.atom(*l) == a.atom(*r),
+            (TestNode::Pair(l1, r1), TestNode::Pair(l2, r2)) => {
+                node_eq(a, l1, l2) && node_eq(a, r1, r2)
+            }
+            _ => false,
+        }
+    }
+
+    pub fn node_to_str(a: &TestAllocator, input: &TestNode) -> String {
+        match input {
+            TestNode::Atom(v) => {
+                let atom = a.atom(*v);
+                if atom.is_empty() {
+                    "NIL".to_owned()
+                } else {
+                    hex::encode(atom)
+                }
+            }
+            TestNode::Pair(l, r) => format!("( {} {}", node_to_str(a, l), node_to_str(a, r)),
+        }
+    }
+
+    pub fn str_to_node<'a>(a: &mut TestAllocator, input: &'a str) -> (&'a str, TestNode) {
+        let (first, rest) = if let Some((f, r)) = input.split_once(' ') {
+            (f, r)
+        } else {
+            (input, "")
+        };
+
+        println!("\"{first}\" | \"{rest}\"");
+        if first == "(" {
+            let (rest, left) = str_to_node(a, rest);
+            let (rest, right) = str_to_node(a, rest);
+            (rest, TestNode::Pair(Box::new(left), Box::new(right)))
+        } else if first == "NIL" {
+            (rest, a.new_atom(&[]))
+        } else {
+            (
+                rest,
+                a.new_atom(hex::decode(first).expect("invalid hex").as_slice()),
+            )
+        }
+    }
+
+    impl KlvmDecoder for TestAllocator {
+        type Node = TestNode;
+
+        fn decode_atom(&self, node: &Self::Node) -> Result<&[u8], FromKlvmError> {
+            match &node {
+                TestNode::Atom(v) => Ok(self.atom(*v)),
+                _ => Err(FromKlvmError::ExpectedAtom),
+            }
+        }
+
+        fn decode_pair(
+            &self,
+            node: &Self::Node,
+        ) -> Result<(Self::Node, Self::Node), FromKlvmError> {
+            match &node {
+                TestNode::Pair(l, r) => Ok((*l.clone(), *r.clone())),
+                _ => Err(FromKlvmError::ExpectedPair),
+            }
+        }
+
+        fn clone_node(&self, node: &Self::Node) -> Self::Node {
+            node.clone()
+        }
+    }
+
+    impl KlvmEncoder for TestAllocator {
+        type Node = TestNode;
+
+        fn encode_atom(&mut self, bytes: &[u8]) -> Result<Self::Node, ToKlvmError> {
+            Ok(self.new_atom(bytes))
+        }
+
+        fn encode_pair(
+            &mut self,
+            first: Self::Node,
+            rest: Self::Node,
+        ) -> Result<Self::Node, ToKlvmError> {
+            Ok(TestNode::Pair(Box::new(first), Box::new(rest)))
+        }
+    }
+}
+
+#[cfg(test)]
+#[cfg(feature = "derive")]
+mod derive_tests {
+    extern crate self as klvm_traits;
+
+    use super::*;
+    use crate::tests::*;
+    use std::fmt::Debug;
+
     fn check<T>(value: T, expected: &str)
     where
-        T: fmt::Debug + PartialEq + ToKlvm + FromKlvm,
+        T: Debug + PartialEq + ToKlvm<TestNode> + FromKlvm<TestNode>,
     {
-        let a = &mut Allocator::new();
+        let a = &mut TestAllocator::new();
 
         let ptr = value.to_klvm(a).unwrap();
+
+        let actual = node_to_str(a, &ptr);
+        assert_eq!(expected, actual);
+
         let round_trip = T::from_klvm(a, ptr).unwrap();
         assert_eq!(value, round_trip);
+    }
 
-        let bytes = node_to_bytes(a, ptr).unwrap();
-        let actual = hex::encode(bytes);
-        assert_eq!(expected, actual);
+    fn coerce_into<A, B>(value: A) -> B
+    where
+        A: ToKlvm<TestNode>,
+        B: FromKlvm<TestNode>,
+    {
+        let a = &mut TestAllocator::new();
+        let ptr = value.to_klvm(a).unwrap();
+        B::from_klvm(a, ptr).unwrap()
     }
 
     #[test]
@@ -86,7 +190,7 @@ mod tests {
             b: i32,
         }
 
-        check(TupleStruct { a: 52, b: -32 }, "ff3481e0");
+        check(TupleStruct { a: 52, b: -32 }, "( 34 e0");
     }
 
     #[test]
@@ -98,11 +202,11 @@ mod tests {
             b: i32,
         }
 
-        check(ListStruct { a: 52, b: -32 }, "ff34ff81e080");
+        check(ListStruct { a: 52, b: -32 }, "( 34 ( e0 NIL");
     }
 
     #[test]
-    fn test_args() {
+    fn test_curry() {
         #[derive(Debug, ToKlvm, FromKlvm, PartialEq, Eq)]
         #[klvm(curry)]
         struct CurryStruct {
@@ -112,7 +216,7 @@ mod tests {
 
         check(
             CurryStruct { a: 52, b: -32 },
-            "ff04ffff0134ffff04ffff0181e0ff018080",
+            "( 04 ( ( 01 34 ( ( 04 ( ( 01 e0 ( 01 NIL NIL",
         );
     }
 
@@ -122,7 +226,7 @@ mod tests {
         #[klvm(tuple)]
         struct UnnamedStruct(String, String);
 
-        check(UnnamedStruct("A".to_string(), "B".to_string()), "ff4142");
+        check(UnnamedStruct("A".to_string(), "B".to_string()), "( 41 42");
     }
 
     #[test]
@@ -131,6 +235,100 @@ mod tests {
         #[klvm(tuple)]
         struct NewTypeStruct(String);
 
-        check(NewTypeStruct("XYZ".to_string()), "8358595a");
+        check(NewTypeStruct("XYZ".to_string()), "58595a");
+    }
+
+    #[test]
+    fn test_enum() {
+        #[derive(Debug, ToKlvm, FromKlvm, PartialEq, Eq)]
+        #[klvm(tuple)]
+        enum Enum {
+            A(i32),
+            B { x: i32 },
+            C,
+        }
+
+        check(Enum::A(32), "( NIL 20");
+        check(Enum::B { x: -72 }, "( 01 b8");
+        check(Enum::C, "( 02 NIL");
+    }
+
+    #[test]
+    fn test_explicit_enum() {
+        #[derive(Debug, ToKlvm, FromKlvm, PartialEq, Eq)]
+        #[klvm(tuple)]
+        #[repr(u8)]
+        enum Enum {
+            A(i32) = 42,
+            B { x: i32 } = 34,
+            C = 11,
+        }
+
+        check(Enum::A(32), "( 2a 20");
+        check(Enum::B { x: -72 }, "( 22 b8");
+        check(Enum::C, "( 0b NIL");
+    }
+
+    #[test]
+    fn test_untagged_enum() {
+        #[derive(Debug, ToKlvm, FromKlvm, PartialEq, Eq)]
+        #[klvm(tuple, untagged)]
+        enum Enum {
+            A(i32),
+
+            #[klvm(list)]
+            B {
+                x: i32,
+                y: i32,
+            },
+
+            #[klvm(curry)]
+            C {
+                curried_value: String,
+            },
+        }
+
+        check(Enum::A(32), "20");
+        check(Enum::B { x: -72, y: 94 }, "( b8 ( 5e NIL");
+        check(
+            Enum::C {
+                curried_value: "Hello".to_string(),
+            },
+            "( 04 ( ( 01 48656c6c6f ( 01 NIL",
+        );
+    }
+
+    #[test]
+    fn test_untagged_enum_parsing_order() {
+        #[derive(Debug, ToKlvm, FromKlvm, PartialEq, Eq)]
+        #[klvm(tuple, untagged)]
+        enum Enum {
+            // This variant is parsed first, so `B` will never be deserialized.
+            A(i32),
+            // When `B` is serialized, it will round trip as `A` instead.
+            B(i32),
+            // `C` will be deserialized as a fallback when the bytes don't deserialize to a valid `i32`.
+            C(String),
+        }
+
+        // This round trips to the same value, since `A` is parsed first.
+        assert_eq!(coerce_into::<Enum, Enum>(Enum::A(32)), Enum::A(32));
+
+        // This round trips to `A` instead of `B`, since `A` is parsed first.
+        assert_eq!(coerce_into::<Enum, Enum>(Enum::B(32)), Enum::A(32));
+
+        // This round trips to `A` instead of `C`, since the bytes used to represent
+        // this string are also a valid `i32` value.
+        assert_eq!(
+            coerce_into::<Enum, Enum>(Enum::C("Hi".into())),
+            Enum::A(18537)
+        );
+
+        // This round trips to `C` instead of `A`, since the bytes used to represent
+        // this string exceed the size of `i32`.
+        assert_eq!(
+            coerce_into::<Enum, Enum>(Enum::C("Hello, world!".into())),
+            Enum::C("Hello, world!".into())
+        );
     }
 }

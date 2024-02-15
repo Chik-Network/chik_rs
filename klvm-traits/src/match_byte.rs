@@ -1,36 +1,30 @@
-use klvmr::{
-    allocator::{NodePtr, SExp},
-    Allocator,
-};
+use num_bigint::BigInt;
 
-use crate::{Error, FromKlvm, Result, ToKlvm};
+use crate::{KlvmDecoder, KlvmEncoder, FromKlvm, FromKlvmError, ToKlvm, ToKlvmError};
 
 #[derive(Debug, Copy, Clone)]
 pub struct MatchByte<const BYTE: u8>;
 
-impl<const BYTE: u8> ToKlvm for MatchByte<BYTE> {
-    fn to_klvm(&self, a: &mut Allocator) -> Result<NodePtr> {
-        match BYTE {
-            0 => Ok(a.null()),
-            1 => Ok(a.one()),
-            _ => Ok(a.new_number(BYTE.into())?),
+impl<N, const BYTE: u8> ToKlvm<N> for MatchByte<BYTE> {
+    fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
+        if BYTE == 0 {
+            return encoder.encode_atom(&[]);
         }
+        let number = BigInt::from(BYTE);
+        let bytes = number.to_signed_bytes_be();
+        encoder.encode_atom(&bytes)
     }
 }
 
-impl<const BYTE: u8> FromKlvm for MatchByte<BYTE> {
-    fn from_klvm(a: &Allocator, node: NodePtr) -> Result<Self> {
-        if let SExp::Atom = a.sexp(node) {
-            match a.atom(node) {
-                [] if BYTE == 0 => Ok(Self),
-                [byte] if *byte == BYTE && BYTE > 0 => Ok(Self),
-                _ => Err(Error::Custom(format!(
-                    "expected an atom with a value of {}",
-                    BYTE
-                ))),
-            }
-        } else {
-            Err(Error::ExpectedAtom(node))
+impl<N, const BYTE: u8> FromKlvm<N> for MatchByte<BYTE> {
+    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+        match decoder.decode_atom(&node)? {
+            [] if BYTE == 0 => Ok(Self),
+            [byte] if *byte == BYTE && BYTE > 0 => Ok(Self),
+            _ => Err(FromKlvmError::Custom(format!(
+                "expected an atom with a single byte value of {}",
+                BYTE
+            ))),
         }
     }
 }

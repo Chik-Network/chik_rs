@@ -1,6 +1,9 @@
-use proc_macro2::Ident;
 use std::fmt;
-use syn::{punctuated::Punctuated, Attribute, GenericParam, Generics, Token, TypeParamBound};
+
+use proc_macro2::{Ident, Span};
+use syn::{
+    ext::IdentExt, punctuated::Punctuated, Attribute, GenericParam, Generics, Token, TypeParamBound,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Repr {
@@ -19,20 +22,21 @@ impl fmt::Display for Repr {
     }
 }
 
-pub struct KlvmDeriveArgs {
-    pub repr: Repr,
+#[derive(Default)]
+pub struct KlvmAttr {
+    pub repr: Option<Repr>,
+    pub untagged: bool,
 }
 
-pub fn parse_args(attrs: &[Attribute]) -> KlvmDeriveArgs {
-    let repr = parse_repr(attrs);
-    KlvmDeriveArgs {
-        repr: repr
-            .expect("expected clvm attribute parameter of either `tuple`, `list`, or `curry`"),
+impl KlvmAttr {
+    pub fn expect_repr(&self) -> Repr {
+        self.repr
+            .expect("expected klvm attribute parameter of either `tuple`, `list`, or `curry`")
     }
 }
 
-pub fn parse_repr(attrs: &[Attribute]) -> Option<Repr> {
-    let mut repr: Option<Repr> = None;
+pub fn parse_klvm_attr(attrs: &[Attribute]) -> KlvmAttr {
+    let mut result = KlvmAttr::default();
     for attr in attrs {
         if let Some(ident) = attr.path().get_ident() {
             if ident == "klvm" {
@@ -41,12 +45,20 @@ pub fn parse_repr(attrs: &[Attribute]) -> Option<Repr> {
                     .unwrap();
 
                 for arg in args {
-                    let existing = repr;
+                    let existing = result.repr;
 
-                    repr = Some(match arg.to_string().as_str() {
+                    result.repr = Some(match arg.to_string().as_str() {
                         "tuple" => Repr::Tuple,
                         "list" => Repr::List,
                         "curry" => Repr::Curry,
+                        "untagged" => {
+                            if result.untagged {
+                                panic!("`untagged` specified twice");
+                            } else {
+                                result.untagged = true;
+                            }
+                            continue;
+                        }
                         ident => panic!("unknown argument `{ident}`"),
                     });
 
@@ -57,8 +69,19 @@ pub fn parse_repr(attrs: &[Attribute]) -> Option<Repr> {
             }
         }
     }
+    result
+}
 
-    repr
+pub fn parse_int_repr(attrs: &[Attribute]) -> Ident {
+    let mut int_repr: Option<Ident> = None;
+    for attr in attrs {
+        if let Some(ident) = attr.path().get_ident() {
+            if ident == "repr" {
+                int_repr = Some(attr.parse_args_with(Ident::parse_any).unwrap());
+            }
+        }
+    }
+    int_repr.unwrap_or(Ident::new("isize", Span::call_site()))
 }
 
 pub fn add_trait_bounds(generics: &mut Generics, bound: TypeParamBound) {

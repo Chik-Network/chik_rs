@@ -2,8 +2,6 @@ use crate::secret_key::is_all_zero;
 use crate::{DerivableKey, Error, Result};
 use blst::*;
 use chik_traits::{read_bytes, Streamable};
-use klvm_traits::{FromKlvm, ToKlvm};
-use klvmr::allocator::{Allocator, NodePtr, SExp};
 use sha2::{digest::FixedOutput, Digest, Sha256};
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -157,7 +155,7 @@ impl PublicKey {
 }
 
 #[cfg(feature = "py-bindings")]
-#[cfg_attr(feature = "py-bindings", pymethods)]
+#[pymethods]
 impl PublicKey {
     #[classattr]
     const SIZE: usize = 48;
@@ -165,12 +163,6 @@ impl PublicKey {
     #[new]
     pub fn init() -> Self {
         Self::default()
-    }
-
-    #[staticmethod]
-    #[pyo3(name = "from_bytes_unchecked")]
-    fn py_from_bytes_unchecked(bytes: [u8; Self::SIZE]) -> Result<Self> {
-        Self::from_bytes_unchecked(&bytes)
     }
 
     #[staticmethod]
@@ -188,9 +180,8 @@ impl PublicKey {
         self.get_fingerprint()
     }
 
-    pub fn __repr__(&self) -> String {
-        let bytes = self.to_bytes();
-        format!("<G1Element {}>", &hex::encode(bytes))
+    fn __str__(&self) -> pyo3::PyResult<String> {
+        Ok(hex::encode(self.to_bytes()))
     }
 
     pub fn __add__(&self, rhs: &Self) -> Self {
@@ -219,10 +210,13 @@ impl Streamable for PublicKey {
         Ok(())
     }
 
-    fn parse(input: &mut Cursor<&[u8]>) -> chik_traits::Result<Self> {
-        Ok(Self::from_bytes(
-            read_bytes(input, 48)?.try_into().unwrap(),
-        )?)
+    fn parse<const TRUSTED: bool>(input: &mut Cursor<&[u8]>) -> chik_traits::Result<Self> {
+        let input = read_bytes(input, 48)?.try_into().unwrap();
+        if TRUSTED {
+            Ok(Self::from_bytes_unchecked(input)?)
+        } else {
+            Ok(Self::from_bytes(input)?)
+        }
     }
 }
 
@@ -291,7 +285,10 @@ impl Add<&PublicKey> for PublicKey {
 
 impl fmt::Debug for PublicKey {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str(&hex::encode(self.to_bytes()))
+        formatter.write_fmt(format_args!(
+            "<G1Element {}>",
+            &hex::encode(self.to_bytes())
+        ))
     }
 }
 
@@ -382,28 +379,6 @@ impl DerivableKey for PublicKey {
             p1.assume_init()
         };
         PublicKey(p1)
-    }
-}
-
-impl FromKlvm for PublicKey {
-    fn from_klvm(a: &Allocator, ptr: NodePtr) -> klvm_traits::Result<Self> {
-        let blob = match a.sexp(ptr) {
-            SExp::Atom => a.atom(ptr),
-            _ => {
-                return Err(klvm_traits::Error::ExpectedAtom(ptr));
-            }
-        };
-        Self::from_bytes(
-            blob.try_into()
-                .map_err(|_error| klvm_traits::Error::Custom("invalid size".to_string()))?,
-        )
-        .map_err(|error| klvm_traits::Error::Custom(error.to_string()))
-    }
-}
-
-impl ToKlvm for PublicKey {
-    fn to_klvm(&self, a: &mut Allocator) -> klvm_traits::Result<NodePtr> {
-        Ok(a.new_atom(&self.to_bytes())?)
     }
 }
 
@@ -600,29 +575,9 @@ mod tests {
         let mut data = [0u8; 48];
         data[0] = 0xc0;
         let pk = PublicKey::from_bytes(&data).unwrap();
-        assert_eq!(format!("{:?}", pk), hex::encode(data));
-    }
-
-    #[test]
-    fn test_to_from_klvm() {
-        let mut a = Allocator::new();
-        let bytes = hex::decode("997cc43ed8788f841fcf3071f6f212b89ba494b6ebaf1bda88c3f9de9d968a61f3b7284a5ee13889399ca71a026549a2").expect("hex::decode()");
-        let ptr = a.new_atom(&bytes).expect("new_atom");
-
-        let pk = PublicKey::from_klvm(&a, ptr).expect("from_klvm");
-        assert_eq!(pk.to_bytes(), &bytes[..]);
-
-        let pk_ptr = pk.to_klvm(&mut a).expect("to_klvm");
-        assert!(a.atom_eq(pk_ptr, ptr));
-    }
-
-    #[test]
-    fn test_from_klvm_failure() {
-        let mut a = Allocator::new();
-        let ptr = a.new_pair(a.one(), a.one()).expect("new_pair");
         assert_eq!(
-            PublicKey::from_klvm(&a, ptr).unwrap_err(),
-            klvm_traits::Error::ExpectedAtom(ptr)
+            format!("{:?}", pk),
+            format!("<G1Element {}>", hex::encode(data))
         );
     }
 

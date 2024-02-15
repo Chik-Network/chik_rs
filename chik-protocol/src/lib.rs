@@ -1,3 +1,4 @@
+pub mod block_record;
 pub mod bytes;
 pub mod chik_protocol;
 pub mod classgroup;
@@ -7,9 +8,11 @@ pub mod coin_state;
 pub mod end_of_sub_slot_bundle;
 pub mod fee_estimate;
 pub mod foliage;
+pub mod full_node_protocol;
 pub mod fullblock;
 pub mod header_block;
 pub mod message_struct;
+pub mod peer_info;
 pub mod pool_target;
 pub mod program;
 pub mod proof_of_space;
@@ -26,6 +29,7 @@ pub mod weight_proof;
 pub mod lazy_node;
 
 // export shorter names
+pub use crate::block_record::*;
 pub use crate::bytes::*;
 pub use crate::chik_protocol::*;
 pub use crate::classgroup::*;
@@ -35,8 +39,10 @@ pub use crate::coin_state::*;
 pub use crate::end_of_sub_slot_bundle::*;
 pub use crate::fee_estimate::*;
 pub use crate::foliage::*;
+pub use crate::full_node_protocol::*;
 pub use crate::fullblock::*;
 pub use crate::header_block::*;
+pub use crate::peer_info::*;
 pub use crate::pool_target::*;
 pub use crate::program::*;
 pub use crate::proof_of_space::*;

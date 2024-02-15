@@ -1,33 +1,33 @@
 use klvm_traits::{
-    destructure_list, destructure_quote, klvm_list, klvm_quote, match_list, match_quote, FromKlvm,
-    MatchByte, Result, ToKlvm,
+    klvm_list, klvm_quote, destructure_list, destructure_quote, match_list, match_quote,
+    KlvmDecoder, KlvmEncoder, FromKlvm, FromKlvmError, MatchByte, ToKlvm, ToKlvmError,
 };
-use klvmr::{allocator::NodePtr, Allocator};
 
 #[derive(Debug, Clone)]
-pub struct CurriedProgram<T> {
-    pub program: NodePtr,
-    pub args: T,
+pub struct CurriedProgram<P, A> {
+    pub program: P,
+    pub args: A,
 }
 
-impl<T> FromKlvm for CurriedProgram<T>
+impl<N, P, A> FromKlvm<N> for CurriedProgram<P, A>
 where
-    T: FromKlvm,
+    P: FromKlvm<N>,
+    A: FromKlvm<N>,
 {
-    fn from_klvm(a: &Allocator, ptr: NodePtr) -> Result<Self> {
+    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
         let destructure_list!(_, destructure_quote!(program), args) =
-            <match_list!(MatchByte<2>, match_quote!(NodePtr), T)>::from_klvm(a, ptr)?;
-
+            <match_list!(MatchByte<2>, match_quote!(P), A)>::from_klvm(decoder, node)?;
         Ok(Self { program, args })
     }
 }
 
-impl<T> ToKlvm for CurriedProgram<T>
+impl<N, P, A> ToKlvm<N> for CurriedProgram<P, A>
 where
-    T: ToKlvm,
+    P: ToKlvm<N>,
+    A: ToKlvm<N>,
 {
-    fn to_klvm(&self, a: &mut Allocator) -> Result<NodePtr> {
-        klvm_list!(2, klvm_quote!(self.program), self.args.to_klvm(a)?).to_klvm(a)
+    fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
+        klvm_list!(2, klvm_quote!(&self.program), &self.args).to_klvm(encoder)
     }
 }
 
@@ -36,29 +36,28 @@ mod tests {
     use std::fmt::Debug;
 
     use klvm_traits::klvm_curried_args;
-    use klvmr::serde::node_to_bytes;
+    use klvmr::{allocator::NodePtr, serde::node_to_bytes, Allocator};
 
     use super::*;
 
-    fn check<T, A>(program: T, args: A, expected: &str)
+    fn check<P, A>(program: P, args: A, expected: &str)
     where
-        T: Debug + ToKlvm + PartialEq + FromKlvm,
-        A: Debug + Clone + PartialEq + ToKlvm + FromKlvm,
+        P: Debug + PartialEq + ToKlvm<NodePtr> + FromKlvm<NodePtr>,
+        A: Debug + PartialEq + ToKlvm<NodePtr> + FromKlvm<NodePtr>,
     {
         let a = &mut Allocator::new();
 
         let curry = CurriedProgram {
             program: program.to_klvm(a).unwrap(),
-            args: args.clone(),
+            args: &args,
         }
         .to_klvm(a)
         .unwrap();
         let actual = node_to_bytes(a, curry).unwrap();
         assert_eq!(hex::encode(actual), expected);
 
-        let curried = CurriedProgram::<A>::from_klvm(a, curry).unwrap();
-        let round_program = T::from_klvm(a, curried.program).unwrap();
-        assert_eq!(round_program, program);
+        let curried = CurriedProgram::<P, A>::from_klvm(a, curry).unwrap();
+        assert_eq!(curried.program, program);
         assert_eq!(curried.args, args);
     }
 

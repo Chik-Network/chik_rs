@@ -1,6 +1,6 @@
 [package]
 name = "chik-fuzz"
-version = "0.0.0"
+version = "0.4.0"
 authors = ["Automatically generated"]
 publish = false
 edition = "2021"
@@ -10,7 +10,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-klvmr = "=0.3.0"
+klvmr = "0.4.0"
 klvm-utils = { path = "../klvm-utils" }
 klvm-traits = { path = "../klvm-traits" }
 chik-protocol = { path = "../chik-protocol" }

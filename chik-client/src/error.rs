@@ -2,10 +2,8 @@ use chik_protocol::Message;
 use chik_traits::chik_error;
 use thiserror::Error;
 
-pub type Result<T> = std::result::Result<T, Error>;
-
 #[derive(Debug, Error)]
-pub enum Error {
+pub enum Error<R> {
     #[error("{0:?}")]
     Chik(#[from] chik_error::Error),
 
@@ -17,4 +15,7 @@ pub enum Error {
 
     #[error("missing response")]
     MissingResponse,
+
+    #[error("rejection")]
+    Rejection(R),
 }

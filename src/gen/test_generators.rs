@@ -68,7 +68,7 @@ fn print_conditions(a: &Allocator, c: &SpendBundleConditions) -> String {
         let mut create_coin: Vec<&NewCoin> = s.create_coin.iter().collect();
         create_coin.sort_by_key(|cc| (cc.puzzle_hash, cc.amount));
         for cc in create_coin {
-            if cc.hint != NodePtr(-1) {
+            if cc.hint != NodePtr::NIL {
                 ret += &format!(
                     "  CREATE_COIN: ph: {} amount: {} hint: {}\n",
                     hex::encode(cc.puzzle_hash),
@@ -144,6 +144,7 @@ fn print_diff(output: &str, expected: &str) {
 }
 
 #[rstest]
+#[case("block-4671894")]
 #[case("block-225758")]
 #[case("assert-puzzle-announce-fail")]
 #[case("block-834752")]
@@ -223,6 +224,7 @@ fn run_generator(#[case] name: &str) {
             Err(code) => (0, format!("FAILED: {}\n", u32::from(code.1))),
         };
 
+        let mut a = make_allocator(*flags);
         let conds = run_block_generator2::<_, MempoolVisitor>(
             &mut a,
             &generator,

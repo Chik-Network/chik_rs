@@ -17,9 +17,9 @@ pub struct SingletonStruct {
 
 #[derive(FromKlvm, ToKlvm, Debug)]
 #[klvm(curry)]
-pub struct SingletonArgs {
+pub struct SingletonArgs<I> {
     pub singleton_struct: SingletonStruct,
-    pub inner_puzzle: NodePtr,
+    pub inner_puzzle: I,
 }
 
 #[derive(FromKlvm, ToKlvm, Debug)]
@@ -32,10 +32,10 @@ pub struct LineageProof {
 
 #[derive(FromKlvm, ToKlvm, Debug)]
 #[klvm(list)]
-pub struct SingletonSolution {
+pub struct SingletonSolution<I> {
     pub lineage_proof: LineageProof,
     pub amount: u64,
-    pub inner_solution: NodePtr,
+    pub inner_solution: I,
 }
 
 // TODO: replace this with a generic function to compute the hash of curried
@@ -98,20 +98,14 @@ pub fn fast_forward_singleton(
         return Err(Error::CoinAmountEven);
     }
 
-    // in the case of fast-forwarding a spend, we require the amount to remain
-    // unchanged
-    if coin.amount != new_coin.amount || coin.amount != new_parent.amount {
-        return Err(Error::CoinAmountMismatch);
-    }
-
     // we can only fast-forward spends of singletons whose puzzle hash doesn't
     // change
     if coin.puzzle_hash != new_parent.puzzle_hash || coin.puzzle_hash != new_coin.puzzle_hash {
         return Err(Error::PuzzleHashMismatch);
     }
 
-    let singleton = CurriedProgram::<SingletonArgs>::from_klvm(a, puzzle)?;
-    let mut new_solution = SingletonSolution::from_klvm(a, solution)?;
+    let singleton = CurriedProgram::<NodePtr, SingletonArgs<NodePtr>>::from_klvm(a, puzzle)?;
+    let mut new_solution = SingletonSolution::<NodePtr>::from_klvm(a, solution)?;
 
     // this is the tree hash of the singleton top layer puzzle
     // the tree hash of singleton_top_layer_v1_1.clsp
@@ -126,11 +120,9 @@ pub fn fast_forward_singleton(
         return Err(Error::NotSingletonModHash);
     }
 
-    // we can only fast-forward if the coin amount stay the same
-    // this is to minimize the risk of producing an invalid spend, after
-    // fast-forward. e.g. we might end up attempting to spend more that the
-    // amount of the coin
-    if coin.amount != new_solution.lineage_proof.parent_amount || coin.amount != new_parent.amount {
+    // if the current solution to the puzzle doesn't match the coin amount, it's
+    // an invalid spend. Don't try to fast-forward it
+    if coin.amount != new_solution.amount {
         return Err(Error::CoinAmountMismatch);
     }
 
@@ -169,6 +161,8 @@ pub fn fast_forward_singleton(
 
     // update the solution to use the new parent coin's information
     new_solution.lineage_proof.parent_parent_coin_id = new_parent.parent_coin_info;
+    new_solution.lineage_proof.parent_amount = new_parent.amount;
+    new_solution.amount = new_coin.amount;
 
     let expected_new_parent = new_parent.coin_id();
 
@@ -186,11 +180,11 @@ mod tests {
     use crate::gen::run_puzzle::run_puzzle;
     use chik_protocol::CoinSpend;
     use chik_traits::streamable::Streamable;
-    use hex_literal::hex;
     use klvmr::serde::{node_from_bytes, node_to_bytes};
+    use klvmr::ToNodePtr;
+    use hex_literal::hex;
     use rstest::rstest;
     use std::fs;
-    use std::io::Cursor;
 
     // this test loads CoinSpends from file (Coin, puzzle, solution)-triples
     // and "fast-forwards" the spend onto a few different parent-parent coins
@@ -206,27 +200,36 @@ mod tests {
             "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
         )]
         new_parents_parent: &str,
+        #[values(0, 1, 3, 5)] new_amount: u64,
+        #[values(0, 1, 3, 5)] prev_amount: u64,
     ) {
         let spend_bytes = fs::read(format!("ff-tests/{spend_file}.spend")).expect("read file");
-        let spend =
-            CoinSpend::parse(&mut Cursor::new(spend_bytes.as_slice())).expect("parse CoinSpend");
+        let spend = CoinSpend::from_bytes(&spend_bytes).expect("parse CoinSpend");
         let new_parents_parent = hex::decode(new_parents_parent).unwrap();
 
-        let mut a = Allocator::new_limited(500000000, 62500000, 62500000);
-        let puzzle = spend.puzzle_reveal.to_klvm(&mut a).expect("to_klvm");
-        let solution = spend.solution.to_klvm(&mut a).expect("to_klvm");
+        let mut a = Allocator::new_limited(500000000);
+        let puzzle = spend.puzzle_reveal.to_node_ptr(&mut a).expect("to_klvm");
+        let solution = spend.solution.to_node_ptr(&mut a).expect("to_klvm");
         let puzzle_hash = Bytes32::from(tree_hash(&a, puzzle));
 
         let new_parent_coin = Coin {
             parent_coin_info: new_parents_parent.as_slice().into(),
             puzzle_hash,
-            amount: spend.coin.amount,
+            amount: if prev_amount == 0 {
+                spend.coin.amount
+            } else {
+                prev_amount
+            },
         };
 
         let new_coin = Coin {
             parent_coin_info: new_parent_coin.coin_id().into(),
             puzzle_hash,
-            amount: spend.coin.amount,
+            amount: if new_amount == 0 {
+                spend.coin.amount
+            } else {
+                new_amount
+            },
         };
 
         // perform fast-forward
@@ -273,13 +276,12 @@ mod tests {
         expected_err: Error,
     ) {
         let spend_bytes = fs::read("ff-tests/e3c0.spend").expect("read file");
-        let mut spend =
-            CoinSpend::parse(&mut Cursor::new(spend_bytes.as_slice())).expect("parse CoinSpend");
+        let mut spend = CoinSpend::from_bytes(&spend_bytes).expect("parse CoinSpend");
         let new_parents_parent: &[u8] =
             &hex!("abababababababababababababababababababababababababababababababab");
 
-        let mut a = Allocator::new_limited(500000000, 62500000, 62500000);
-        let puzzle = spend.puzzle_reveal.to_klvm(&mut a).expect("to_klvm");
+        let mut a = Allocator::new_limited(500000000);
+        let puzzle = spend.puzzle_reveal.to_node_ptr(&mut a).expect("to_klvm");
         let puzzle_hash = Bytes32::from(tree_hash(&a, puzzle));
 
         let mut new_parent_coin = Coin {
@@ -355,40 +357,29 @@ mod tests {
             },
             Error::CoinAmountMismatch,
         );
-
-        run_ff_test(
-            |_a, _coin, new_coin, _new_parent, _puzzle, _solution| {
-                new_coin.amount = 3;
-            },
-            Error::CoinAmountMismatch,
-        );
-
-        run_ff_test(
-            |_a, _coin, _new_coin, new_parent, _puzzle, _solution| {
-                new_parent.amount = 3;
-            },
-            Error::CoinAmountMismatch,
-        );
     }
 
-    fn parse_solution(a: &mut Allocator, solution: &[u8]) -> SingletonSolution {
+    fn parse_solution(a: &mut Allocator, solution: &[u8]) -> SingletonSolution<NodePtr> {
         let new_solution = node_from_bytes(a, solution).expect("parse solution");
         SingletonSolution::from_klvm(a, new_solution).expect("parse solution")
     }
 
-    fn serialize_solution(a: &mut Allocator, solution: &SingletonSolution) -> Vec<u8> {
+    fn serialize_solution(a: &mut Allocator, solution: &SingletonSolution<NodePtr>) -> Vec<u8> {
         let new_solution = solution.to_klvm(a).expect("to_klvm");
         node_to_bytes(a, new_solution).expect("serialize solution")
     }
 
-    fn parse_singleton(a: &mut Allocator, puzzle: &[u8]) -> CurriedProgram<SingletonArgs> {
+    fn parse_singleton(
+        a: &mut Allocator,
+        puzzle: &[u8],
+    ) -> CurriedProgram<NodePtr, SingletonArgs<NodePtr>> {
         let puzzle = node_from_bytes(a, puzzle).expect("parse puzzle");
-        CurriedProgram::<SingletonArgs>::from_klvm(a, puzzle).expect("uncurry")
+        CurriedProgram::<NodePtr, SingletonArgs<NodePtr>>::from_klvm(a, puzzle).expect("uncurry")
     }
 
     fn serialize_singleton(
         a: &mut Allocator,
-        singleton: &CurriedProgram<SingletonArgs>,
+        singleton: &CurriedProgram<NodePtr, SingletonArgs<NodePtr>>,
     ) -> Vec<u8> {
         let puzzle = singleton.to_klvm(a).expect("to_klvm");
         node_to_bytes(a, puzzle).expect("serialize puzzle")
@@ -422,7 +413,7 @@ mod tests {
 
                 *solution = serialize_solution(a, &new_solution);
             },
-            Error::CoinAmountMismatch,
+            Error::ParentCoinMismatch,
         );
     }
 
@@ -484,7 +475,7 @@ mod tests {
             |a, _coin, _new_coin, _new_parent, puzzle, _solution| {
                 let mut singleton = parse_singleton(a, puzzle);
 
-                singleton.program = a.null();
+                singleton.program = a.nil();
 
                 *puzzle = serialize_singleton(a, &singleton);
             },

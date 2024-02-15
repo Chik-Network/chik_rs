@@ -1,6 +1,6 @@
 [package]
 name = "chik-tools"
-version = "0.2.12"
+version = "0.4.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Utility functions and types used by the Chik blockchain full node"
@@ -9,14 +9,15 @@ homepage = "https://github.com/Chik-Network/chik_rs/chik-tools"
 repository = "https://github.com/Chik-Network/chik_rs/chik-tools"
 
 [dependencies]
-chik-protocol = { version = "0.2.13", path = "../chik-protocol" }
+chik-protocol = { version = "0.4.0", path = "../chik-protocol" }
 chik-traits = { path = "../chik-traits" }
 klvm-utils = { path = "../klvm-utils" }
-klvm-traits = { path = "../klvm-traits" }
-chik-wallet = { version = "=0.2.12", path = "../chik-wallet" }
-klvmr = { version = "=0.3.0", features = ["counters"] }
-chik = { version = "0.2.15", path = ".." }
-sqlite = "=0.31.0"
+klvm-traits = { version = "=0.3.3", path = "../klvm-traits" }
+chik-wallet = { version = "=0.4.0", path = "../chik-wallet" }
+chik-bls = { version = "0.4.0", path = "../chik-bls" }
+klvmr = { version = "0.4.0", features = ["counters"] }
+chik = { version = "0.4.0", path = ".." }
+rusqlite = { version = "=0.30.0", features = ["bundled"] }
 clap = { version = "=4.3.9", features = ["derive"] }
 zstd = "=0.12.3"
 threadpool = "=1.8.1"

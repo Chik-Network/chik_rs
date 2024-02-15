@@ -1,8 +1,6 @@
 use crate::{Error, GTElement, PublicKey, Result, SecretKey};
 use blst::*;
 use chik_traits::{read_bytes, Streamable};
-use klvm_traits::{FromKlvm, ToKlvm};
-use klvmr::allocator::{Allocator, NodePtr, SExp};
 use sha2::{Digest, Sha256};
 use std::borrow::Borrow;
 use std::convert::AsRef;
@@ -145,10 +143,15 @@ impl Streamable for Signature {
         Ok(())
     }
 
-    fn parse(input: &mut Cursor<&[u8]>) -> chik_traits::chik_error::Result<Self> {
-        Ok(Self::from_bytes(
-            read_bytes(input, 96)?.try_into().unwrap(),
-        )?)
+    fn parse<const TRUSTED: bool>(
+        input: &mut Cursor<&[u8]>,
+    ) -> chik_traits::chik_error::Result<Self> {
+        let input = read_bytes(input, 96)?.try_into().unwrap();
+        if TRUSTED {
+            Ok(Self::from_bytes_unchecked(input)?)
+        } else {
+            Ok(Self::from_bytes(input)?)
+        }
     }
 }
 
@@ -167,7 +170,10 @@ impl Hash for Signature {
 
 impl fmt::Debug for Signature {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str(&hex::encode(self.to_bytes()))
+        formatter.write_fmt(format_args!(
+            "<G2Element {}>",
+            &hex::encode(self.to_bytes())
+        ))
     }
 }
 
@@ -248,30 +254,8 @@ impl FromJsonDict for Signature {
     }
 }
 
-impl FromKlvm for Signature {
-    fn from_klvm(a: &Allocator, ptr: NodePtr) -> klvm_traits::Result<Self> {
-        let blob = match a.sexp(ptr) {
-            SExp::Atom => a.atom(ptr),
-            _ => {
-                return Err(klvm_traits::Error::ExpectedAtom(ptr));
-            }
-        };
-        Self::from_bytes(
-            blob.try_into()
-                .map_err(|_error| klvm_traits::Error::Custom("invalid size".to_string()))?,
-        )
-        .map_err(|error| klvm_traits::Error::Custom(error.to_string()))
-    }
-}
-
-impl ToKlvm for Signature {
-    fn to_klvm(&self, a: &mut Allocator) -> klvm_traits::Result<NodePtr> {
-        Ok(a.new_atom(&self.to_bytes())?)
-    }
-}
-
 #[cfg(feature = "py-bindings")]
-#[cfg_attr(feature = "py-bindings", pymethods)]
+#[pymethods]
 impl Signature {
     #[classattr]
     const SIZE: usize = 96;
@@ -279,12 +263,6 @@ impl Signature {
     #[new]
     pub fn init() -> Self {
         Self::default()
-    }
-
-    #[staticmethod]
-    #[pyo3(name = "from_bytes_unchecked")]
-    pub fn py_from_bytes_unchecked(bytes: [u8; Self::SIZE]) -> Result<Signature> {
-        Self::from_bytes_unchecked(&bytes)
     }
 
     #[pyo3(name = "pair")]
@@ -298,9 +276,8 @@ impl Signature {
         Self::generator()
     }
 
-    pub fn __repr__(&self) -> String {
-        let bytes = self.to_bytes();
-        format!("<G2Element {}>", &hex::encode(bytes))
+    fn __str__(&self) -> pyo3::PyResult<String> {
+        Ok(hex::encode(self.to_bytes()))
     }
 
     pub fn __add__(&self, rhs: &Self) -> Self {
@@ -1055,29 +1032,9 @@ mod tests {
         let mut data = [0u8; 96];
         data[0] = 0xc0;
         let sig = Signature::from_bytes(&data).unwrap();
-        assert_eq!(format!("{:?}", sig), hex::encode(data));
-    }
-
-    #[test]
-    fn test_to_from_klvm() {
-        let mut a = Allocator::new();
-        let bytes = hex::decode("b45825c0ee7759945c0189b4c38b7e54231ebadc83a851bec3bb7cf954a124ae0cc8e8e5146558332ea152f63bf8846e04826185ef60e817f271f8d500126561319203f9acb95809ed20c193757233454be1562a5870570941a84605bd2c9c9a").expect("hex::decode()");
-        let ptr = a.new_atom(&bytes).expect("new_atom");
-
-        let sig = Signature::from_klvm(&a, ptr).expect("from_klvm");
-        assert_eq!(&sig.to_bytes()[..], &bytes[..]);
-
-        let sig_ptr = sig.to_klvm(&mut a).expect("to_klvm");
-        assert!(a.atom_eq(sig_ptr, ptr));
-    }
-
-    #[test]
-    fn test_from_klvm_failure() {
-        let mut a = Allocator::new();
-        let ptr = a.new_pair(a.one(), a.one()).expect("new_pair");
         assert_eq!(
-            Signature::from_klvm(&a, ptr).unwrap_err(),
-            klvm_traits::Error::ExpectedAtom(ptr)
+            format!("{:?}", sig),
+            format!("<G2Element {}>", hex::encode(data))
         );
     }
 

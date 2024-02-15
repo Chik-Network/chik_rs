@@ -30,7 +30,7 @@ fn test_read_bytes() {
 pub trait Streamable {
     fn update_digest(&self, digest: &mut Sha256);
     fn stream(&self, out: &mut Vec<u8>) -> Result<()>;
-    fn parse(input: &mut Cursor<&[u8]>) -> Result<Self>
+    fn parse<const TRUSTED: bool>(input: &mut Cursor<&[u8]>) -> Result<Self>
     where
         Self: Sized;
 
@@ -48,7 +48,19 @@ pub trait Streamable {
         Self: Sized,
     {
         let mut cursor = Cursor::new(bytes);
-        let ret = Self::parse(&mut cursor)?;
+        let ret = Self::parse::<false>(&mut cursor)?;
+        if cursor.position() != bytes.len() as u64 {
+            Err(Error::InputTooLarge)
+        } else {
+            Ok(ret)
+        }
+    }
+    fn from_bytes_unchecked(bytes: &[u8]) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut cursor = Cursor::new(bytes);
+        let ret = Self::parse::<true>(&mut cursor)?;
         if cursor.position() != bytes.len() as u64 {
             Err(Error::InputTooLarge)
         } else {
@@ -71,7 +83,7 @@ macro_rules! streamable_primitive {
             fn stream(&self, out: &mut Vec<u8>) -> Result<()> {
                 Ok(out.extend_from_slice(&self.to_be_bytes()))
             }
-            fn parse(input: &mut Cursor<&[u8]>) -> Result<Self> {
+            fn parse<const TRUSTED: bool>(input: &mut Cursor<&[u8]>) -> Result<Self> {
                 let sz = size_of::<$t>();
                 Ok(<$t>::from_be_bytes(
                     read_bytes(input, sz)?.try_into().unwrap(),
@@ -112,14 +124,17 @@ impl<T: Streamable> Streamable for Vec<T> {
         }
     }
 
-    fn parse(input: &mut Cursor<&[u8]>) -> Result<Self> {
-        let len = u32::parse(input)?;
+    fn parse<const TRUSTED: bool>(input: &mut Cursor<&[u8]>) -> Result<Self> {
+        let len = u32::parse::<TRUSTED>(input)?;
 
-        // TODO: pre-allocate capacity, but we'd need safe-guards for overflow
-        // attacks
-        let mut ret = Vec::<T>::new();
+        let mut ret = if std::mem::size_of::<T>() == 0 {
+            Vec::<T>::new()
+        } else {
+            let limit = 2 * 1024 * 1024 / std::mem::size_of::<T>();
+            Vec::<T>::with_capacity(std::cmp::min(limit, len as usize))
+        };
         for _ in 0..len {
-            ret.push(T::parse(input)?);
+            ret.push(T::parse::<TRUSTED>(input)?);
         }
         Ok(ret)
     }
@@ -144,8 +159,8 @@ impl Streamable for String {
         }
     }
 
-    fn parse(input: &mut Cursor<&[u8]>) -> Result<Self> {
-        let len = u32::parse(input)?;
+    fn parse<const TRUSTED: bool>(input: &mut Cursor<&[u8]>) -> Result<Self> {
+        let len = u32::parse::<TRUSTED>(input)?;
         Ok(String::from(
             std::str::from_utf8(read_bytes(input, len as usize)?)
                 .map_err(|_| Error::InvalidString)?,
@@ -162,13 +177,23 @@ impl Streamable for bool {
         out.extend_from_slice(if *self { &[1] } else { &[0] });
         Ok(())
     }
-    fn parse(input: &mut Cursor<&[u8]>) -> Result<Self> {
+    fn parse<const TRUSTED: bool>(input: &mut Cursor<&[u8]>) -> Result<Self> {
         let val = read_bytes(input, 1)?[0];
         match val {
             0 => Ok(false),
             1 => Ok(true),
             _ => Err(Error::InvalidBool),
         }
+    }
+}
+
+impl Streamable for () {
+    fn update_digest(&self, _digest: &mut Sha256) {}
+    fn stream(&self, _out: &mut Vec<u8>) -> Result<()> {
+        Ok(())
+    }
+    fn parse<const TRUSTED: bool>(_input: &mut Cursor<&[u8]>) -> Result<Self> {
+        Ok(())
     }
 }
 
@@ -197,11 +222,11 @@ impl<T: Streamable> Streamable for Option<T> {
         }
         Ok(())
     }
-    fn parse(input: &mut Cursor<&[u8]>) -> Result<Self> {
+    fn parse<const TRUSTED: bool>(input: &mut Cursor<&[u8]>) -> Result<Self> {
         let val = read_bytes(input, 1)?[0];
         match val {
             0 => Ok(None),
-            1 => Ok(Some(T::parse(input)?)),
+            1 => Ok(Some(T::parse::<TRUSTED>(input)?)),
             _ => Err(Error::InvalidOptional),
         }
     }
@@ -217,8 +242,8 @@ impl<T: Streamable, U: Streamable> Streamable for (T, U) {
         self.1.stream(out)?;
         Ok(())
     }
-    fn parse(input: &mut Cursor<&[u8]>) -> Result<Self> {
-        Ok((T::parse(input)?, U::parse(input)?))
+    fn parse<const TRUSTED: bool>(input: &mut Cursor<&[u8]>) -> Result<Self> {
+        Ok((T::parse::<TRUSTED>(input)?, U::parse::<TRUSTED>(input)?))
     }
 }
 
@@ -234,8 +259,12 @@ impl<T: Streamable, U: Streamable, V: Streamable> Streamable for (T, U, V) {
         self.2.stream(out)?;
         Ok(())
     }
-    fn parse(input: &mut Cursor<&[u8]>) -> Result<Self> {
-        Ok((T::parse(input)?, U::parse(input)?, V::parse(input)?))
+    fn parse<const TRUSTED: bool>(input: &mut Cursor<&[u8]>) -> Result<Self> {
+        Ok((
+            T::parse::<TRUSTED>(input)?,
+            U::parse::<TRUSTED>(input)?,
+            V::parse::<TRUSTED>(input)?,
+        ))
     }
 }
 
@@ -253,12 +282,12 @@ impl<T: Streamable, U: Streamable, V: Streamable, W: Streamable> Streamable for 
         self.3.stream(out)?;
         Ok(())
     }
-    fn parse(input: &mut Cursor<&[u8]>) -> Result<Self> {
+    fn parse<const TRUSTED: bool>(input: &mut Cursor<&[u8]>) -> Result<Self> {
         Ok((
-            T::parse(input)?,
-            U::parse(input)?,
-            V::parse(input)?,
-            W::parse(input)?,
+            T::parse::<TRUSTED>(input)?,
+            U::parse::<TRUSTED>(input)?,
+            V::parse::<TRUSTED>(input)?,
+            W::parse::<TRUSTED>(input)?,
         ))
     }
 }
@@ -268,7 +297,7 @@ impl<T: Streamable, U: Streamable, V: Streamable, W: Streamable> Streamable for 
 #[cfg(test)]
 fn from_bytes<T: Streamable + std::fmt::Debug + std::cmp::PartialEq>(buf: &[u8], expected: T) {
     let mut input = Cursor::<&[u8]>::new(buf);
-    assert_eq!(T::parse(&mut input).unwrap(), expected);
+    assert_eq!(T::parse::<false>(&mut input).unwrap(), expected);
 }
 
 #[cfg(test)]
@@ -277,7 +306,7 @@ fn from_bytes_fail<T: Streamable + std::fmt::Debug + std::cmp::PartialEq>(
     expected: Error,
 ) {
     let mut input = Cursor::<&[u8]>::new(buf);
-    assert_eq!(T::parse(&mut input).unwrap_err(), expected);
+    assert_eq!(T::parse::<false>(&mut input).unwrap_err(), expected);
 }
 
 #[test]
@@ -354,6 +383,12 @@ fn test_parse_list_list_3() {
         0, 0, 0, 3, 0, 0, 0, 1, 1, 2, 3, 4, 0, 0, 0, 1, 1, 3, 3, 7, 0, 0, 0, 1, 0, 0, 4, 2,
     ];
     from_bytes::<Vec<Vec<u32>>>(buf, vec![vec![0x01020304], vec![0x01030307], vec![0x402]]);
+}
+
+#[test]
+fn test_parse_list_empty() {
+    let buf: &[u8] = &[0, 0, 0, 3];
+    from_bytes::<Vec<()>>(buf, vec![(), (), ()]);
 }
 
 #[test]
@@ -663,6 +698,12 @@ fn test_stream_list() {
         &out,
         &[0, 0, 0, 3, 1, 3, 3, 7, 0, 0, 0, 42, 0xff, 0xff, 0xff, 0xff]
     );
+}
+
+#[test]
+fn test_stream_list_of_empty() {
+    let out = stream(&vec![(), (), ()]);
+    assert_eq!(&out, &[0, 0, 0, 3]);
 }
 
 #[test]

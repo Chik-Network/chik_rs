@@ -1,4 +1,5 @@
 use crate::gen::validation_error::ValidationErr;
+use klvm_traits::{FromKlvmError, ToKlvmError};
 use klvmr::reduction::EvalErr;
 use thiserror::Error;
 
@@ -7,8 +8,11 @@ use pyo3::PyErr;
 
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum Error {
-    #[error("KLVM {0}")]
-    Klvm(#[from] klvm_traits::Error),
+    #[error("To KLVM {0}")]
+    ToKlvm(#[from] ToKlvmError),
+
+    #[error("From KLVM {0}")]
+    FromKlvm(#[from] FromKlvmError),
 
     #[error("Eval {0}")]
     Eval(#[from] EvalErr),
