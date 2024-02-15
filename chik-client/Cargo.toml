@@ -9,8 +9,8 @@ homepage = "https://github.com/Chik-Network/chik_rs/chik-client/"
 repository = "https://github.com/Chik-Network/chik_rs/chik-client/"
 
 [dependencies]
-chik-protocol = { version = "0.2.14", path = "../chik-protocol" }
-chik-traits = { version = "0.2.14", path = "../chik-traits" }
+chik-protocol = { version = "0.3.0", path = "../chik-protocol" }
+chik-traits = { version = "0.3.0", path = "../chik-traits" }
 tokio = { version = "1.32.0", features = ["rt", "sync"] }
 tokio-tungstenite = "0.20.0"
 futures-util = "0.3.28"

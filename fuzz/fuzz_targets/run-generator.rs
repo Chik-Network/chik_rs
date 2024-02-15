@@ -1,19 +1,19 @@
 #![no_main]
 use chik::allocator::make_allocator;
 use chik::gen::conditions::MempoolVisitor;
-use chik::gen::flags::{ALLOW_BACKREFS, LIMIT_OBJECTS};
+use chik::gen::flags::ALLOW_BACKREFS;
 use chik::gen::run_block_generator::{run_block_generator, run_block_generator2};
 use chik::gen::validation_error::{ErrorCode, ValidationErr};
 use klvmr::chik_dialect::LIMIT_HEAP;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
-    let mut a1 = make_allocator(LIMIT_HEAP | LIMIT_OBJECTS);
+    let mut a1 = make_allocator(LIMIT_HEAP);
     let r1 =
         run_block_generator::<&[u8], MempoolVisitor>(&mut a1, data, &[], 110000000, ALLOW_BACKREFS);
     drop(a1);
 
-    let mut a2 = make_allocator(LIMIT_HEAP | LIMIT_OBJECTS);
+    let mut a2 = make_allocator(LIMIT_HEAP);
     let r2 = run_block_generator2::<&[u8], MempoolVisitor>(
         &mut a2,
         data,

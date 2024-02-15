@@ -27,37 +27,156 @@ pub use to_klvm::*;
 pub use wrappers::*;
 
 #[cfg(test)]
-#[cfg(feature = "derive")]
-mod tests {
+pub mod tests {
     extern crate self as klvm_traits;
-
-    use std::fmt;
-
-    use klvmr::{allocator::NodePtr, serde::node_to_bytes, Allocator};
 
     use super::*;
 
+    #[derive(Clone)]
+    pub enum TestNode {
+        Atom(usize),
+        Pair(Box<TestNode>, Box<TestNode>),
+    }
+
+    #[derive(Default)]
+    pub struct TestAllocator {
+        atoms: Vec<Vec<u8>>,
+    }
+
+    impl TestAllocator {
+        pub fn new() -> Self {
+            TestAllocator::default()
+        }
+
+        fn new_atom(&mut self, buf: &[u8]) -> TestNode {
+            let idx = self.atoms.len();
+            self.atoms.push(buf.to_vec());
+            TestNode::Atom(idx)
+        }
+
+        fn atom(&self, idx: usize) -> &[u8] {
+            self.atoms[idx].as_slice()
+        }
+    }
+
+    pub fn node_eq(a: &TestAllocator, left: &TestNode, right: &TestNode) -> bool {
+        match (left, right) {
+            (TestNode::Atom(l), TestNode::Atom(r)) => a.atom(*l) == a.atom(*r),
+            (TestNode::Pair(l1, r1), TestNode::Pair(l2, r2)) => {
+                node_eq(a, l1, l2) && node_eq(a, r1, r2)
+            }
+            _ => false,
+        }
+    }
+
+    pub fn node_to_str(a: &TestAllocator, input: &TestNode) -> String {
+        match input {
+            TestNode::Atom(v) => {
+                let atom = a.atom(*v);
+                if atom.is_empty() {
+                    "NIL".to_owned()
+                } else {
+                    hex::encode(atom)
+                }
+            }
+            TestNode::Pair(l, r) => format!("( {} {}", node_to_str(a, l), node_to_str(a, r)),
+        }
+    }
+
+    pub fn str_to_node<'a>(a: &mut TestAllocator, input: &'a str) -> (&'a str, TestNode) {
+        let (first, rest) = if let Some((f, r)) = input.split_once(' ') {
+            (f, r)
+        } else {
+            (input, "")
+        };
+
+        println!("\"{first}\" | \"{rest}\"");
+        if first == "(" {
+            let (rest, left) = str_to_node(a, rest);
+            let (rest, right) = str_to_node(a, rest);
+            (rest, TestNode::Pair(Box::new(left), Box::new(right)))
+        } else if first == "NIL" {
+            (rest, a.new_atom(&[]))
+        } else {
+            (
+                rest,
+                a.new_atom(hex::decode(first).expect("invalid hex").as_slice()),
+            )
+        }
+    }
+
+    impl KlvmDecoder for TestAllocator {
+        type Node = TestNode;
+
+        fn decode_atom(&self, node: &Self::Node) -> Result<&[u8], FromKlvmError> {
+            match &node {
+                TestNode::Atom(v) => Ok(self.atom(*v)),
+                _ => Err(FromKlvmError::ExpectedAtom),
+            }
+        }
+
+        fn decode_pair(
+            &self,
+            node: &Self::Node,
+        ) -> Result<(Self::Node, Self::Node), FromKlvmError> {
+            match &node {
+                TestNode::Pair(l, r) => Ok((*l.clone(), *r.clone())),
+                _ => Err(FromKlvmError::ExpectedPair),
+            }
+        }
+
+        fn clone_node(&self, node: &Self::Node) -> Self::Node {
+            node.clone()
+        }
+    }
+
+    impl KlvmEncoder for TestAllocator {
+        type Node = TestNode;
+
+        fn encode_atom(&mut self, bytes: &[u8]) -> Result<Self::Node, ToKlvmError> {
+            Ok(self.new_atom(bytes))
+        }
+
+        fn encode_pair(
+            &mut self,
+            first: Self::Node,
+            rest: Self::Node,
+        ) -> Result<Self::Node, ToKlvmError> {
+            Ok(TestNode::Pair(Box::new(first), Box::new(rest)))
+        }
+    }
+}
+
+#[cfg(test)]
+#[cfg(feature = "derive")]
+mod derive_tests {
+    extern crate self as klvm_traits;
+
+    use super::*;
+    use crate::tests::*;
+    use std::fmt::Debug;
+
     fn check<T>(value: T, expected: &str)
     where
-        T: fmt::Debug + PartialEq + ToKlvm<NodePtr> + FromKlvm<NodePtr>,
+        T: Debug + PartialEq + ToKlvm<TestNode> + FromKlvm<TestNode>,
     {
-        let a = &mut Allocator::new();
+        let a = &mut TestAllocator::new();
 
         let ptr = value.to_klvm(a).unwrap();
+
+        let actual = node_to_str(a, &ptr);
+        assert_eq!(expected, actual);
+
         let round_trip = T::from_klvm(a, ptr).unwrap();
         assert_eq!(value, round_trip);
-
-        let bytes = node_to_bytes(a, ptr).unwrap();
-        let actual = hex::encode(bytes);
-        assert_eq!(expected, actual);
     }
 
     fn coerce_into<A, B>(value: A) -> B
     where
-        A: ToKlvm<NodePtr>,
-        B: FromKlvm<NodePtr>,
+        A: ToKlvm<TestNode>,
+        B: FromKlvm<TestNode>,
     {
-        let a = &mut Allocator::new();
+        let a = &mut TestAllocator::new();
         let ptr = value.to_klvm(a).unwrap();
         B::from_klvm(a, ptr).unwrap()
     }
@@ -71,7 +190,7 @@ mod tests {
             b: i32,
         }
 
-        check(TupleStruct { a: 52, b: -32 }, "ff3481e0");
+        check(TupleStruct { a: 52, b: -32 }, "( 34 e0");
     }
 
     #[test]
@@ -83,7 +202,7 @@ mod tests {
             b: i32,
         }
 
-        check(ListStruct { a: 52, b: -32 }, "ff34ff81e080");
+        check(ListStruct { a: 52, b: -32 }, "( 34 ( e0 NIL");
     }
 
     #[test]
@@ -97,7 +216,7 @@ mod tests {
 
         check(
             CurryStruct { a: 52, b: -32 },
-            "ff04ffff0134ffff04ffff0181e0ff018080",
+            "( 04 ( ( 01 34 ( ( 04 ( ( 01 e0 ( 01 NIL NIL",
         );
     }
 
@@ -107,7 +226,7 @@ mod tests {
         #[klvm(tuple)]
         struct UnnamedStruct(String, String);
 
-        check(UnnamedStruct("A".to_string(), "B".to_string()), "ff4142");
+        check(UnnamedStruct("A".to_string(), "B".to_string()), "( 41 42");
     }
 
     #[test]
@@ -116,7 +235,7 @@ mod tests {
         #[klvm(tuple)]
         struct NewTypeStruct(String);
 
-        check(NewTypeStruct("XYZ".to_string()), "8358595a");
+        check(NewTypeStruct("XYZ".to_string()), "58595a");
     }
 
     #[test]
@@ -129,9 +248,9 @@ mod tests {
             C,
         }
 
-        check(Enum::A(32), "ff8020");
-        check(Enum::B { x: -72 }, "ff0181b8");
-        check(Enum::C, "ff0280");
+        check(Enum::A(32), "( NIL 20");
+        check(Enum::B { x: -72 }, "( 01 b8");
+        check(Enum::C, "( 02 NIL");
     }
 
     #[test]
@@ -145,9 +264,9 @@ mod tests {
             C = 11,
         }
 
-        check(Enum::A(32), "ff2a20");
-        check(Enum::B { x: -72 }, "ff2281b8");
-        check(Enum::C, "ff0b80");
+        check(Enum::A(32), "( 2a 20");
+        check(Enum::B { x: -72 }, "( 22 b8");
+        check(Enum::C, "( 0b NIL");
     }
 
     #[test]
@@ -170,12 +289,12 @@ mod tests {
         }
 
         check(Enum::A(32), "20");
-        check(Enum::B { x: -72, y: 94 }, "ff81b8ff5e80");
+        check(Enum::B { x: -72, y: 94 }, "( b8 ( 5e NIL");
         check(
             Enum::C {
                 curried_value: "Hello".to_string(),
             },
-            "ff04ffff018548656c6c6fff0180",
+            "( 04 ( ( 01 48656c6c6f ( 01 NIL",
         );
     }
 

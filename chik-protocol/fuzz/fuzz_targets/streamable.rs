@@ -21,6 +21,9 @@ pub fn test_streamable<T: Streamable + std::fmt::Debug + PartialEq>(obj: &T) {
     };
     assert_eq!(obj, &obj2);
 
+    let obj3 = T::from_bytes_unchecked(&bytes).unwrap();
+    assert_eq!(obj, &obj3);
+
     let mut ctx = Sha256::new();
     ctx.update(&bytes);
     let expect_hash: [u8; 32] = ctx.finalize().into();
@@ -29,11 +32,13 @@ pub fn test_streamable<T: Streamable + std::fmt::Debug + PartialEq>(obj: &T) {
     // make sure input too large is an error
     let mut corrupt_bytes = bytes.clone();
     corrupt_bytes.push(0);
-    assert!(T::from_bytes(&corrupt_bytes) == Err(chik_traits::Error::InputTooLarge));
+    assert!(T::from_bytes_unchecked(&corrupt_bytes) == Err(chik_traits::Error::InputTooLarge));
 
-    // make sure input too short is an error
-    corrupt_bytes.truncate(bytes.len() - 1);
-    assert!(T::from_bytes(&corrupt_bytes) == Err(chik_traits::Error::EndOfBuffer));
+    if !bytes.is_empty() {
+        // make sure input too short is an error
+        corrupt_bytes.truncate(bytes.len() - 1);
+        assert!(T::from_bytes_unchecked(&corrupt_bytes) == Err(chik_traits::Error::EndOfBuffer));
+    }
 }
 #[cfg(fuzzing)]
 fn test<'a, T: Arbitrary<'a> + Streamable + std::fmt::Debug + PartialEq>(data: &'a [u8]) {
@@ -81,6 +86,11 @@ fuzz_target!(|data: &[u8]| {
     test::<SubEpochChallengeSegment>(data);
     test::<SubEpochSegments>(data);
     test::<SubEpochSummary>(data);
+    test::<WeightProof>(data);
+    test::<TimestampedPeerInfo>(data);
+    test::<RecentChainData>(data);
+    test::<ProofBlockHeader>(data);
+    test::<SubEpochData>(data);
 
     test::<Handshake>(data);
 
@@ -117,4 +127,31 @@ fuzz_target!(|data: &[u8]| {
     test::<RespondSesInfo>(data);
     test::<RequestFeeEstimates>(data);
     test::<RespondFeeEstimates>(data);
+
+    // Full Node Protocol
+    test::<NewPeak>(data);
+    test::<NewTransaction>(data);
+    test::<RequestTransaction>(data);
+    test::<RespondTransaction>(data);
+    test::<RequestProofOfWeight>(data);
+    test::<RespondProofOfWeight>(data);
+    test::<RequestBlock>(data);
+    test::<RejectBlock>(data);
+    test::<RequestBlocks>(data);
+    test::<RespondBlocks>(data);
+    test::<RejectBlocks>(data);
+    test::<RespondBlock>(data);
+    test::<NewUnfinishedBlock>(data);
+    test::<RequestUnfinishedBlock>(data);
+    test::<RespondUnfinishedBlock>(data);
+    test::<NewSignagePointOrEndOfSubSlot>(data);
+    test::<RequestSignagePointOrEndOfSubSlot>(data);
+    test::<RespondSignagePoint>(data);
+    test::<RespondEndOfSubSlot>(data);
+    test::<RequestMempoolTransactions>(data);
+    test::<NewCompactVDF>(data);
+    test::<RequestCompactVDF>(data);
+    test::<RespondCompactVDF>(data);
+    test::<RequestPeers>(data);
+    test::<RespondPeers>(data);
 });
