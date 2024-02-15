@@ -1338,11 +1338,11 @@ fn u64_to_bytes(n: u64) -> Vec<u8> {
 #[cfg(test)]
 use crate::gen::flags::ENABLE_SOFTFORK_CONDITION;
 #[cfg(test)]
+use hex::FromHex;
+#[cfg(test)]
 use klvmr::number::Number;
 #[cfg(test)]
 use klvmr::serde::node_to_bytes;
-#[cfg(test)]
-use hex::FromHex;
 #[cfg(test)]
 use num_traits::Num;
 #[cfg(test)]

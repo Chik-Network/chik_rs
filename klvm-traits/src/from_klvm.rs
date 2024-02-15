@@ -1,7 +1,7 @@
 use klvmr::{allocator::NodePtr, Allocator};
 use num_bigint::{BigInt, Sign};
 
-use crate::{KlvmDecoder, FromKlvmError};
+use crate::{FromKlvmError, KlvmDecoder};
 
 pub trait FromKlvm<N>: Sized {
     fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError>;

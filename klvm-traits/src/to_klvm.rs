@@ -148,8 +148,8 @@ impl<N> ToKlvm<N> for String {
 
 #[cfg(test)]
 mod tests {
-    use klvmr::{serde::node_to_bytes, Allocator};
     use hex::ToHex;
+    use klvmr::{serde::node_to_bytes, Allocator};
 
     use super::*;
 
