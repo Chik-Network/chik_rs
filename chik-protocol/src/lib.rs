@@ -1,4 +1,3 @@
-pub mod block_record;
 pub mod bytes;
 pub mod chik_protocol;
 pub mod classgroup;
@@ -29,7 +28,6 @@ pub mod weight_proof;
 pub mod lazy_node;
 
 // export shorter names
-pub use crate::block_record::*;
 pub use crate::bytes::*;
 pub use crate::chik_protocol::*;
 pub use crate::classgroup::*;

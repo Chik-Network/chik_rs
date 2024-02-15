@@ -80,7 +80,7 @@ fn convert_spend(a: &Allocator, spend: Spend) -> PySpend {
         create_coin.push((
             c.puzzle_hash,
             c.amount,
-            if c.hint != a.nil() {
+            if c.hint != a.null() {
                 Some(a.atom(c.hint).into())
             } else {
                 None

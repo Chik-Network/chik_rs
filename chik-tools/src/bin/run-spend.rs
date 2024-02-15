@@ -3,10 +3,10 @@ use chik_protocol::Bytes32;
 use chik_traits::Streamable;
 use clap::Parser;
 use hex_literal::hex;
+use klvm_traits::ToNodePtr;
 use klvm_traits::{FromKlvm, ToKlvm};
 use klvm_utils::tree_hash;
 use klvm_utils::CurriedProgram;
-use klvmr::ToNodePtr;
 use klvmr::{allocator::NodePtr, Allocator};
 
 /// Run a puzzle given a solution and print the resulting conditions

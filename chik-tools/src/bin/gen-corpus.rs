@@ -8,12 +8,13 @@ use clap::Parser;
 use chik_tools::{iterate_tx_blocks, visit_spends};
 use chik_traits::streamable::Streamable;
 
-use chik_protocol::{Bytes32, Coin, CoinSpend, Program, SpendBundle};
+use chik_protocol::bytes::Bytes32;
+use chik_protocol::{coin::Coin, coin_spend::CoinSpend, program::Program};
 use chik_wallet::singleton::SINGLETON_TOP_LAYER_PUZZLE_HASH;
-use klvm_traits::FromKlvm;
+use klvm_traits::{FromKlvm, FromNodePtr};
 use klvm_utils::{tree_hash, CurriedProgram};
 use klvmr::allocator::NodePtr;
-use klvmr::{Allocator, FromNodePtr};
+use klvmr::Allocator;
 use std::thread::available_parallelism;
 use threadpool::ThreadPool;
 
@@ -27,10 +28,6 @@ struct Args {
     /// The number of threads to run block generators in
     #[arg(short = 'j', long)]
     num_jobs: Option<usize>,
-
-    /// generate spend-bundles
-    #[arg(long, default_value_t = false)]
-    spend_bundles: bool,
 
     /// stop running block generators when reaching this height
     #[arg(short, long)]
@@ -49,11 +46,8 @@ fn main() {
             .unwrap_or_else(|| available_parallelism().unwrap().into()),
     );
 
-    use chik_bls::G2Element;
     use std::collections::HashSet;
-    use std::fs::write;
     use std::sync::{Arc, Mutex};
-
     let seen_puzzles = Arc::new(Mutex::new(HashSet::<Bytes32>::new()));
     let seen_singletons = Arc::new(Mutex::new(HashSet::<Bytes32>::new()));
 
@@ -69,11 +63,9 @@ fn main() {
             let seen_puzzles = seen_puzzles.clone();
             let seen_singletons = seen_singletons.clone();
             pool.execute(move || {
-                let mut a = Allocator::new_limited(500000000);
+                let mut a = Allocator::new_limited(500000000, 62500000, 62500000);
 
                 let generator = prg.as_ref();
-
-                let mut bundle = SpendBundle::new(vec![], G2Element::default());
 
                 visit_spends(
                     &mut a,
@@ -92,9 +84,11 @@ fn main() {
                         let fast_forward = (mod_hash == SINGLETON_TOP_LAYER_PUZZLE_HASH)
                             && seen_singletons.lock().unwrap().insert(puzzle_hash);
 
-                        if !run_puzzle && !fast_forward && !args.spend_bundles {
+                        if !run_puzzle && !fast_forward {
                             return;
                         }
+                        use std::fs::write;
+
                         let puzzle_reveal =
                             Program::from_node_ptr(a, puzzle).expect("puzzle reveal");
                         let solution = Program::from_node_ptr(a, solution).expect("solution");
@@ -109,13 +103,6 @@ fn main() {
                             solution,
                         };
 
-                        if args.spend_bundles {
-                            bundle.coin_spends.push(spend.clone());
-                        }
-
-                        if !run_puzzle && !fast_forward {
-                            return;
-                        }
                         let mut bytes = Vec::<u8>::new();
                         spend.stream(&mut bytes).expect("stream CoinSpend");
                         if run_puzzle {
@@ -135,13 +122,6 @@ fn main() {
                     },
                 )
                 .expect("failed to run block generator");
-
-                if args.spend_bundles {
-                    let directory = "../chik-protocol/fuzz/corpus/spend-bundle";
-                    let _ = std::fs::create_dir_all(directory);
-                    let bytes = bundle.to_bytes().expect("to_bytes");
-                    write(format!("{directory}/{height}.bundle"), bytes).expect("write");
-                }
             });
         },
     );

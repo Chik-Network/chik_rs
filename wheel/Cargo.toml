@@ -1,6 +1,6 @@
 [package]
 name = "chik_rs"
-version = "0.4.0"
+version = "0.3.1"
 authors = ["Richard Kiss <him@richardkiss.com>"]
 edition = "2021"
 license = "Apache-2.0"
@@ -15,19 +15,14 @@ crate-type = ["cdylib"]
 path = "src/lib.rs"
 
 [dependencies]
-klvmr = "0.4.0"
+klvmr = "=0.3.0"
 hex = "0.4.3"
 sha2 = "0.10.8"
 pyo3 = { version = "=0.19.0", features = ["extension-module", "multiple-pymethods"] }
-chik = { version = "=0.4.0", path = "..", features = ["py-bindings"] }
-chik-bls = { version = "=0.4.0", path = "../chik-bls", features = ["py-bindings"]  }
-chik-protocol = { version = "=0.4.0", path = "../chik-protocol", features = ["py-bindings"]  }
-chik-traits = { version = "=0.3.3", path = "../chik-traits", features = ["py-bindings"]  }
-klvm-traits = { version = "=0.3.3", path = "../klvm-traits", features = ["derive", "py-bindings"] }
+chik = { version = "=0.3.1", path = "..", features = ["py-bindings"] }
+chik-bls = { version = "=0.3.1", path = "../chik-bls", features = ["py-bindings"]  }
+chik-protocol = { version = "=0.3.1", path = "../chik-protocol", features = ["py-bindings"]  }
+chik-traits = { version = "=0.3.0", path = "../chik-traits", features = ["py-bindings"]  }
+klvm-traits = { version = "=0.2.14", features = ["derive", "py-bindings"] }
 chik_py_streamable_macro = { version = "=0.3.0", path = "../chik_py_streamable_macro" }
 chik_streamable_macro = { version = "=0.3.0", path = "../chik_streamable_macro" }
-
-# See `../Cargo.toml` for more information on why this is necessary.
-[patch.crates-io]
-klvm-traits = { path = "../klvm-traits" }
-blst = { git = "https://github.com/supranational/blst.git", rev = "0d46eefa45fc1e57aceb42bba0e84eab3a7a9725" }

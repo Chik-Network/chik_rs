@@ -1,16 +1,10 @@
 use crate::bytes::Bytes;
 use chik_traits::chik_error::{Error, Result};
 use chik_traits::Streamable;
-use klvm_traits::{FromKlvmError, ToKlvmError};
+use klvm_traits::{FromKlvmError, FromNodePtr, ToKlvmError, ToNodePtr};
 use klvmr::allocator::NodePtr;
-use klvmr::cost::Cost;
-use klvmr::reduction::EvalErr;
-use klvmr::run_program;
-use klvmr::serde::{
-    node_from_bytes, node_from_bytes_backrefs, node_to_bytes, serialized_length_from_bytes,
-    serialized_length_from_bytes_trusted,
-};
-use klvmr::{Allocator, ChikDialect, FromNodePtr, ToNodePtr};
+use klvmr::serde::{node_from_bytes, node_to_bytes, serialized_length_from_bytes};
+use klvmr::Allocator;
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
 
@@ -54,31 +48,6 @@ impl Program {
     pub fn as_slice(&self) -> &[u8] {
         self.0.as_slice()
     }
-
-    #[cfg(test)]
-    pub fn new(buf: Bytes) -> Program {
-        Program(buf)
-    }
-
-    pub fn run<A: ToNodePtr>(
-        &self,
-        a: &mut Allocator,
-        flags: u32,
-        max_cost: Cost,
-        arg: &A,
-    ) -> std::result::Result<(Cost, NodePtr), EvalErr> {
-        let arg = arg.to_node_ptr(a).map_err(|_| {
-            EvalErr(
-                a.nil(),
-                "failed to convert argument to KLVM objects".to_string(),
-            )
-        })?;
-        let program =
-            node_from_bytes_backrefs(a, self.0.as_ref()).expect("invalid SerializedProgram");
-        let dialect = ChikDialect::new(flags);
-        let reduction = run_program(a, &dialect, program, arg, max_cost)?;
-        Ok((reduction.0, reduction.1))
-    }
 }
 
 impl Default for Program {
@@ -103,6 +72,9 @@ use pyo3::prelude::*;
 use pyo3::types::{PyList, PyTuple};
 
 #[cfg(feature = "py-bindings")]
+use klvmr::serde::node_from_bytes_backrefs;
+
+#[cfg(feature = "py-bindings")]
 use klvmr::allocator::SExp;
 
 #[cfg(feature = "py-bindings")]
@@ -117,7 +89,10 @@ use pyo3::exceptions::*;
 fn klvm_convert(a: &mut Allocator, o: &PyAny) -> PyResult<NodePtr> {
     // None
     if o.is_none() {
-        Ok(a.nil())
+        Ok(a.null())
+    // Program itself
+    } else if let Ok(prg) = o.extract::<Program>() {
+        Ok(node_from_bytes_backrefs(a, prg.0.as_slice())?)
     // bytes
     } else if let Ok(buffer) = o.extract::<&[u8]>() {
         a.new_atom(buffer)
@@ -149,7 +124,7 @@ fn klvm_convert(a: &mut Allocator, o: &PyAny) -> PyResult<NodePtr> {
         for py_item in list.iter() {
             rev.push(py_item);
         }
-        let mut ret = a.nil();
+        let mut ret = a.null();
         for py_item in rev.into_iter().rev() {
             let item = klvm_convert(a, py_item)?;
             ret = a
@@ -173,12 +148,6 @@ fn klvm_convert(a: &mut Allocator, o: &PyAny) -> PyResult<NodePtr> {
             a.new_atom(atom.extract::<&[u8]>()?)
                 .map_err(|e| PyMemoryError::new_err(e.to_string()))
         }
-    // Program itself. This is interpreted as a program in serialized form, and
-    // just a buffer of that serialization. This is an optimization to finding
-    // __bytes__() and calling it
-    } else if let Ok(prg) = o.extract::<Program>() {
-        a.new_atom(prg.0.as_slice())
-            .map_err(|e| PyMemoryError::new_err(e.to_string()))
     // anything convertible to bytes
     } else if let Ok(fun) = o.getattr("__bytes__") {
         let bytes = fun.call0()?;
@@ -189,52 +158,6 @@ fn klvm_convert(a: &mut Allocator, o: &PyAny) -> PyResult<NodePtr> {
         Err(PyTypeError::new_err(format!(
             "unknown parameter to run_with_cost() {o}"
         )))
-    }
-}
-
-#[cfg(feature = "py-bindings")]
-fn klvm_serialize(a: &mut Allocator, o: &PyAny) -> PyResult<NodePtr> {
-    /*
-    When passing arguments to run(), there's some special treatment, before falling
-    back on the regular python -> KLVM conversion (implemented by klvm_convert
-    above). This function mimics the _serialize() function in python:
-
-       def _serialize(node: object) -> bytes:
-           if isinstance(node, list):
-               serialized_list = bytearray()
-               for a in node:
-                   serialized_list += b"\xff"
-                   serialized_list += _serialize(a)
-               serialized_list += b"\x80"
-               return bytes(serialized_list)
-           if type(node) is SerializedProgram:
-               return bytes(node)
-           if type(node) is Program:
-               return bytes(node)
-           else:
-               ret: bytes = SExp.to(node).as_bin()
-               return ret
-    */
-
-    // List
-    if let Ok(list) = o.downcast::<PyList>() {
-        let mut rev = Vec::<&PyAny>::new();
-        for py_item in list.iter() {
-            rev.push(py_item);
-        }
-        let mut ret = a.nil();
-        for py_item in rev.into_iter().rev() {
-            let item = klvm_serialize(a, py_item)?;
-            ret = a
-                .new_pair(item, ret)
-                .map_err(|e| PyMemoryError::new_err(e.to_string()))?;
-        }
-        Ok(ret)
-    // Program itself
-    } else if let Ok(prg) = o.extract::<Program>() {
-        Ok(node_from_bytes_backrefs(a, prg.0.as_slice())?)
-    } else {
-        klvm_convert(a, o)
     }
 }
 
@@ -264,7 +187,7 @@ impl Program {
     #[staticmethod]
     #[pyo3(name = "to")]
     fn py_to(args: &PyAny) -> PyResult<Program> {
-        let mut a = Allocator::new_limited(500000000);
+        let mut a = Allocator::new_limited(500000000, 62500000, 62500000);
         let klvm = klvm_convert(&mut a, args)?;
         Program::from_node_ptr(&a, klvm)
             .map_err(|error| PyErr::new::<PyTypeError, _>(error.to_string()))
@@ -321,19 +244,12 @@ impl Program {
         args: &PyAny,
     ) -> PyResult<(u64, &'a PyAny)> {
         use klvmr::reduction::Response;
+        use klvmr::run_program;
+        use klvmr::ChikDialect;
         use std::rc::Rc;
 
-        let mut a = Allocator::new_limited(500000000);
-        // The python behavior here is a bit messy, and is best not emulated
-        // on the rust side. We must be able to pass a Program as an argument,
-        // and it being treated as the KLVM structure it represents. In python's
-        // SerializedProgram, we have a hack where we interpret the first
-        // "layer" of SerializedProgram, or lists of SerializedProgram this way.
-        // But if we encounter an Optional or tuple, we defer to the klvm
-        // wheel's conversion function to SExp. This level does not have any
-        // special treatment for SerializedProgram (as that would cause a
-        // circular dependency).
-        let klvm_args = klvm_serialize(&mut a, args)?;
+        let mut a = Allocator::new_limited(500000000, 62500000, 62500000);
+        let klvm_args = klvm_convert(&mut a, args)?;
 
         let r: Response = (|| -> PyResult<Response> {
             let program = node_from_bytes_backrefs(&mut a, self.0.as_ref())?;
@@ -352,7 +268,7 @@ impl Program {
 
     fn to_program<'a>(&self, py: Python<'a>) -> PyResult<&'a PyAny> {
         use std::rc::Rc;
-        let mut a = Allocator::new_limited(500000000);
+        let mut a = Allocator::new_limited(500000000, 62500000, 62500000);
         let prg = node_from_bytes_backrefs(&mut a, self.0.as_ref())?;
         let prg = LazyNode::new(Rc::new(a), prg);
         to_program(py, prg)
@@ -362,12 +278,12 @@ impl Program {
         use klvm_utils::CurriedProgram;
         use std::rc::Rc;
 
-        let mut a = Allocator::new_limited(500000000);
+        let mut a = Allocator::new_limited(500000000, 62500000, 62500000);
         let prg = node_from_bytes_backrefs(&mut a, self.0.as_ref())?;
         let Ok(uncurried) = CurriedProgram::<NodePtr, NodePtr>::from_node_ptr(&a, prg) else {
             let a = Rc::new(a);
             let prg = LazyNode::new(a.clone(), prg);
-            let ret = a.nil();
+            let ret = a.null();
             let ret = LazyNode::new(a, ret);
             return Ok((to_program(py, prg)?, to_program(py, ret)?));
         };
@@ -384,12 +300,12 @@ impl Program {
                 <(
                     klvm_traits::MatchByte<4>,
                     (klvm_traits::match_quote!(NodePtr), (NodePtr, ())),
-                ) as klvmr::FromNodePtr>::from_node_ptr(&a, args)
+                ) as klvm_traits::FromNodePtr>::from_node_ptr(&a, args)
                 .map_err(|error| PyErr::new::<PyTypeError, _>(error.to_string()))?;
             curried_args.push(arg);
             args = rest;
         }
-        let mut ret = a.nil();
+        let mut ret = a.null();
         for item in curried_args.into_iter().rev() {
             ret = a.new_pair(item, ret).map_err(|_e| Error::EndOfBuffer)?;
         }
@@ -413,11 +329,7 @@ impl Streamable for Program {
     fn parse<const TRUSTED: bool>(input: &mut Cursor<&[u8]>) -> Result<Self> {
         let pos = input.position();
         let buf: &[u8] = &input.get_ref()[pos as usize..];
-        let len = if TRUSTED {
-            serialized_length_from_bytes_trusted(buf).map_err(|_e| Error::EndOfBuffer)?
-        } else {
-            serialized_length_from_bytes(buf).map_err(|_e| Error::EndOfBuffer)?
-        };
+        let len = serialized_length_from_bytes(buf).map_err(|_e| Error::EndOfBuffer)?;
         if buf.len() < len as usize {
             return Err(Error::EndOfBuffer);
         }
@@ -487,17 +399,5 @@ mod tests {
 
         let round_trip = program.to_node_ptr(a).unwrap();
         assert_eq!(expected, hex::encode(node_to_bytes(a, round_trip).unwrap()));
-    }
-
-    #[test]
-    fn program_run() {
-        let a = &mut Allocator::new();
-
-        // (+ 2 5)
-        let prg = Program::from_bytes(&hex::decode("ff10ff02ff0580").expect("hex::decode"))
-            .expect("from_bytes");
-        let (cost, result) = prg.run(a, 0, 1000, &[1300, 37]).expect("run");
-        assert_eq!(cost, 869);
-        assert_eq!(a.number(result), 1337.into());
     }
 }

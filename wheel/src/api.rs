@@ -14,8 +14,8 @@ use chik::gen::solution_generator::solution_generator as native_solution_generat
 use chik::gen::solution_generator::solution_generator_backrefs as native_solution_generator_backrefs;
 use chik::merkle_set::compute_merkle_set_root as compute_merkle_root_impl;
 use chik_protocol::{
-    BlockRecord, Bytes32, ChallengeBlockInfo, ChallengeChainSubSlot, ClassgroupElement, Coin,
-    CoinSpend, CoinState, CoinStateUpdate, EndOfSubSlotBundle, Foliage, FoliageBlockData,
+    Bytes32, ChallengeBlockInfo, ChallengeChainSubSlot, ClassgroupElement, Coin, CoinSpend,
+    CoinState, CoinStateUpdate, EndOfSubSlotBundle, Foliage, FoliageBlockData,
     FoliageTransactionBlock, FullBlock, HeaderBlock, InfusedChallengeChainSubSlot, NewCompactVDF,
     NewPeak, NewPeakWallet, NewSignagePointOrEndOfSubSlot, NewTransaction, NewUnfinishedBlock,
     PoolTarget, Program, ProofBlockHeader, ProofOfSpace, PuzzleSolutionResponse, RecentChainData,
@@ -36,7 +36,10 @@ use chik_protocol::{
     TransactionAck, TransactionsInfo, UnfinishedBlock, VDFInfo, VDFProof, WeightProof,
 };
 use klvmr::serde::tree_hash_from_stream;
-use klvmr::{ENABLE_BLS_OPS_OUTSIDE_GUARD, ENABLE_FIXED_DIV, LIMIT_HEAP, NO_UNKNOWN_OPS};
+use klvmr::{
+    ENABLE_BLS_OPS, ENABLE_BLS_OPS_OUTSIDE_GUARD, ENABLE_FIXED_DIV, ENABLE_SECP_OPS, LIMIT_HEAP,
+    NO_UNKNOWN_OPS,
+};
 use pyo3::buffer::PyBuffer;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
@@ -392,7 +395,6 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<SubEpochSummary>()?;
     m.add_class::<UnfinishedBlock>()?;
     m.add_class::<FullBlock>()?;
-    m.add_class::<BlockRecord>()?;
     m.add_class::<WeightProof>()?;
     m.add_class::<RecentChainData>()?;
     m.add_class::<ProofBlockHeader>()?;
@@ -467,6 +469,8 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(run_chik_program, m)?)?;
     m.add("NO_UNKNOWN_OPS", NO_UNKNOWN_OPS)?;
     m.add("LIMIT_HEAP", LIMIT_HEAP)?;
+    m.add("ENABLE_BLS_OPS", ENABLE_BLS_OPS)?;
+    m.add("ENABLE_SECP_OPS", ENABLE_SECP_OPS)?;
     m.add("ENABLE_BLS_OPS_OUTSIDE_GUARD", ENABLE_BLS_OPS_OUTSIDE_GUARD)?;
 
     m.add_function(wrap_pyfunction!(serialized_length, m)?)?;

@@ -89,22 +89,19 @@ pub fn iterate_tx_blocks(
     }
 }
 
-pub fn visit_spends<
-    GenBuf: AsRef<[u8]>,
-    F: FnMut(&mut Allocator, Bytes32, u64, NodePtr, NodePtr),
->(
+pub fn visit_spends<GenBuf: AsRef<[u8]>, F: Fn(&mut Allocator, Bytes32, u64, NodePtr, NodePtr)>(
     a: &mut Allocator,
     program: &[u8],
     block_refs: &[GenBuf],
     max_cost: u64,
-    mut callback: F,
+    callback: F,
 ) -> Result<(), ValidationErr> {
     let klvm_deserializer = node_from_bytes(a, &KLVM_DESERIALIZER)?;
     let program = node_from_bytes_backrefs(a, program)?;
 
     // iterate in reverse order since we're building a linked list from
     // the tail
-    let mut blocks = a.nil();
+    let mut blocks = a.null();
     for g in block_refs.iter().rev() {
         let ref_gen = a.new_atom(g.as_ref())?;
         blocks = a.new_pair(ref_gen, blocks)?;
@@ -112,7 +109,7 @@ pub fn visit_spends<
 
     // the first argument to the generator is the serializer, followed by a list
     // of the blocks it requested.
-    let mut args = a.new_pair(blocks, a.nil())?;
+    let mut args = a.new_pair(blocks, a.null())?;
     args = a.new_pair(klvm_deserializer, args)?;
 
     let dialect = ChikDialect::new(0);

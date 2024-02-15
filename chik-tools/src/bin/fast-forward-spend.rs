@@ -5,9 +5,9 @@ use chik::fast_forward::fast_forward_singleton;
 use chik_protocol::bytes::Bytes32;
 use chik_protocol::{coin::Coin, coin_spend::CoinSpend, program::Program};
 use chik_traits::streamable::Streamable;
+use klvm_traits::{FromNodePtr, ToNodePtr};
 use klvm_utils::tree_hash;
 use klvmr::allocator::Allocator;
-use klvmr::{FromNodePtr, ToNodePtr};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -37,7 +37,7 @@ fn main() {
         .as_slice()
         .into();
 
-    let mut a = Allocator::new_limited(500000000);
+    let mut a = Allocator::new_limited(500000000, 62500000, 62500000);
     let puzzle = spend.puzzle_reveal.to_node_ptr(&mut a).expect("to_klvm");
     let solution = spend.solution.to_node_ptr(&mut a).expect("to_klvm");
     let puzzle_hash = Bytes32::from(tree_hash(&a, puzzle));

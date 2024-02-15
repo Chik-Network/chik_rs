@@ -112,7 +112,7 @@ mod tests {
     #[test]
     fn did_solution() {
         let a = &mut Allocator::new();
-        let did_solution = DidSolution::InnerSpend(a.nil());
+        let did_solution = DidSolution::InnerSpend(a.null());
         let ptr = did_solution.to_klvm(a).unwrap();
         let roundtrip = DidSolution::from_klvm(a, ptr).unwrap();
         assert_eq!(did_solution, roundtrip);
