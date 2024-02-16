@@ -1,8 +1,8 @@
 #[cfg(fuzzing)]
 use arbitrary::Arbitrary;
 use chik_protocol::Bytes32;
-use klvm_traits::{KlvmDecoder, KlvmEncoder, FromKlvm, FromKlvmError, Raw, ToKlvm, ToKlvmError};
 use hex_literal::hex;
+use klvm_traits::{FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder, Raw, ToKlvm, ToKlvmError};
 
 use crate::singleton::SingletonStruct;
 

@@ -1,6 +1,6 @@
 use num_bigint::BigInt;
 
-use crate::{KlvmDecoder, KlvmEncoder, FromKlvm, FromKlvmError, ToKlvm, ToKlvmError};
+use crate::{FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder, ToKlvm, ToKlvmError};
 
 #[derive(Debug, Copy, Clone)]
 pub struct MatchByte<const BYTE: u8>;

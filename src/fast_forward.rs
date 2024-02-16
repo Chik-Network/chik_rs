@@ -180,9 +180,9 @@ mod tests {
     use crate::gen::run_puzzle::run_puzzle;
     use chik_protocol::CoinSpend;
     use chik_traits::streamable::Streamable;
+    use hex_literal::hex;
     use klvmr::serde::{node_from_bytes, node_to_bytes};
     use klvmr::ToNodePtr;
-    use hex_literal::hex;
     use rstest::rstest;
     use std::fs;
 

@@ -7,11 +7,11 @@ use chik_protocol::Bytes32;
 use chik_protocol::Coin;
 use chik_protocol::CoinSpend;
 use chik_traits::streamable::Streamable;
+use hex_literal::hex;
 use klvm_utils::tree_hash;
 use klvmr::serde::node_to_bytes;
 use klvmr::ToNodePtr;
 use klvmr::{Allocator, NodePtr};
-use hex_literal::hex;
 use libfuzzer_sys::fuzz_target;
 use std::io::Cursor;
 
