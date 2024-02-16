@@ -2,7 +2,7 @@ use crate::streamable_struct;
 use crate::{bytes::Bytes32, BytesImpl};
 use chik_streamable_macro::Streamable;
 use klvm_traits::{
-    destructure_list, klvm_list, match_list, FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder,
+    klvm_list, destructure_list, match_list, KlvmDecoder, KlvmEncoder, FromKlvm, FromKlvmError,
     ToKlvm, ToKlvmError,
 };
 use sha2::{Digest, Sha256};

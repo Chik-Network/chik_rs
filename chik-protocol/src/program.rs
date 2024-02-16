@@ -1,10 +1,10 @@
 use crate::bytes::Bytes;
 use chik_traits::chik_error::{Error, Result};
 use chik_traits::Streamable;
-use klvm_traits::{FromKlvmError, FromNodePtr, ToKlvmError, ToNodePtr};
+use klvm_traits::{FromKlvmError, ToKlvmError};
 use klvmr::allocator::NodePtr;
 use klvmr::serde::{node_from_bytes, node_to_bytes, serialized_length_from_bytes};
-use klvmr::Allocator;
+use klvmr::{Allocator, FromNodePtr, ToNodePtr};
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
 
@@ -90,9 +90,6 @@ fn klvm_convert(a: &mut Allocator, o: &PyAny) -> PyResult<NodePtr> {
     // None
     if o.is_none() {
         Ok(a.null())
-    // Program itself
-    } else if let Ok(prg) = o.extract::<Program>() {
-        Ok(node_from_bytes_backrefs(a, prg.0.as_slice())?)
     // bytes
     } else if let Ok(buffer) = o.extract::<&[u8]>() {
         a.new_atom(buffer)
@@ -148,6 +145,12 @@ fn klvm_convert(a: &mut Allocator, o: &PyAny) -> PyResult<NodePtr> {
             a.new_atom(atom.extract::<&[u8]>()?)
                 .map_err(|e| PyMemoryError::new_err(e.to_string()))
         }
+    // Program itself. This is interpreted as a program in serialized form, and
+    // just a buffer of that serialization. This is an optimization to finding
+    // __bytes__() and calling it
+    } else if let Ok(prg) = o.extract::<Program>() {
+        a.new_atom(prg.0.as_slice())
+            .map_err(|e| PyMemoryError::new_err(e.to_string()))
     // anything convertible to bytes
     } else if let Ok(fun) = o.getattr("__bytes__") {
         let bytes = fun.call0()?;
@@ -300,7 +303,7 @@ impl Program {
                 <(
                     klvm_traits::MatchByte<4>,
                     (klvm_traits::match_quote!(NodePtr), (NodePtr, ())),
-                ) as klvm_traits::FromNodePtr>::from_node_ptr(&a, args)
+                ) as klvmr::FromNodePtr>::from_node_ptr(&a, args)
                 .map_err(|error| PyErr::new::<PyTypeError, _>(error.to_string()))?;
             curried_args.push(arg);
             args = rest;

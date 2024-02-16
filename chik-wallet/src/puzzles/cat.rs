@@ -1,7 +1,7 @@
 use chik_bls::PublicKey;
 use chik_protocol::{Bytes32, Coin};
-use hex_literal::hex;
 use klvm_traits::{FromKlvm, ToKlvm};
+use hex_literal::hex;
 
 use crate::LineageProof;
 

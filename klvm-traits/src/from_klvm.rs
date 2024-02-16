@@ -1,6 +1,6 @@
 use num_bigint::{BigInt, Sign};
 
-use crate::{FromKlvmError, KlvmDecoder};
+use crate::{KlvmDecoder, FromKlvmError};
 
 pub trait FromKlvm<N>: Sized {
     fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError>;

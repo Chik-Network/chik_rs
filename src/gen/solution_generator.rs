@@ -64,8 +64,8 @@ where
 mod tests {
     use super::*;
     use chik_protocol::Coin;
-    use hex_literal::hex;
     use klvmr::{run_program, ChikDialect};
+    use hex_literal::hex;
 
     const PUZZLE1: [u8; 291] = hex!(
         "

@@ -9,19 +9,19 @@
 #[cfg(feature = "derive")]
 pub use klvm_derive::*;
 
-mod error;
-mod from_klvm;
 mod klvm_decoder;
 mod klvm_encoder;
+mod error;
+mod from_klvm;
 mod macros;
 mod match_byte;
 mod to_klvm;
 mod wrappers;
 
-pub use error::*;
-pub use from_klvm::*;
 pub use klvm_decoder::*;
 pub use klvm_encoder::*;
+pub use error::*;
+pub use from_klvm::*;
 pub use match_byte::*;
 pub use to_klvm::*;
 pub use wrappers::*;

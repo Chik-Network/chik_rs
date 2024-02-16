@@ -25,7 +25,7 @@ exclude = ["wheel"]
 
 [package]
 name = "chik"
-version = "0.3.1"
+version = "0.3.3"
 edition = "2021"
 license = "Apache-2.0"
 description = "Utility functions and types used by the Chik blockchain full node"
@@ -37,22 +37,22 @@ repository = "https://github.com/Chik-Network/chik_rs/"
 py-bindings = ["dep:pyo3"]
 
 [dependencies]
-klvmr = "=0.3.0"
+klvmr = "0.3.2"
 hex = "0.4.3"
 pyo3 = { version = ">=0.19.0", optional = true }
-klvm-utils = { version = "=0.3.0", path = "klvm-utils" }
-chik-traits = { version = "=0.3.0", path = "chik-traits" }
-klvm-traits = { version = "=0.2.14" }
-klvm-derive = { version = "=0.2.14", path = "klvm-derive" }
-chik-protocol = { version = "=0.3.1", path = "chik-protocol" }
-chik-wallet = { version = "=0.3.2", path = "chik-wallet" }
+klvm-utils = { version = "0.3.3", path = "klvm-utils" }
+chik-traits = { version = "0.3.3", path = "chik-traits" }
+klvm-traits = { version = "0.3.3", path = "klvm-traits" }
+klvm-derive = { version = "0.2.14", path = "klvm-derive" }
+chik-protocol = { version = "0.3.3", path = "chik-protocol" }
+chik-wallet = { version = "0.3.3", path = "chik-wallet" }
 hex-literal = "0.4.1"
 thiserror = "1.0.44"
 
 [dev-dependencies]
-num-traits = "=0.2.15"
-rstest = "=0.16.0"
-text-diff = "=0.4.0"
+num-traits = "0.2.15"
+rstest = "0.16.0"
+text-diff = "0.4.0"
 
 [lib]
 name = "chik"
@@ -60,3 +60,13 @@ crate-type = ["rlib"]
 
 [profile.release]
 lto = "thin"
+
+# This is also necessary in `wheel/Cargo.toml` to make sure the `wheel` crate builds as well.
+# This overrides the crates.io version of `klvm-traits` with the local version.
+# This is because `klvmr` currently uses the latest published version of `klvm-traits`.
+# Because path dependencies are considered different from crates.io dependencies, they conflict.
+# All of the types are considered different by Cargo, and the below snippet is necessary to fix this.
+# When making breaking changes, this may be a complication.
+# Ideally this should be removed once a long term fix is found.
+[patch.crates-io]
+klvm-traits = { path = "klvm-traits" }

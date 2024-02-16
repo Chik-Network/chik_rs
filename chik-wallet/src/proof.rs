@@ -1,5 +1,5 @@
 use arbitrary::{Arbitrary, Unstructured};
-use klvm_traits::{FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder, ToKlvm, ToKlvmError};
+use klvm_traits::{KlvmDecoder, KlvmEncoder, FromKlvm, FromKlvmError, ToKlvm, ToKlvmError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Proof {

@@ -1,9 +1,9 @@
 use chik_protocol::Bytes32;
-use hex_literal::hex;
 use klvm_traits::{
-    klvm_list, match_list, match_tuple, FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder, Raw,
+    klvm_list, match_list, match_tuple, KlvmDecoder, KlvmEncoder, FromKlvm, FromKlvmError, Raw,
     ToKlvm, ToKlvmError,
 };
+use hex_literal::hex;
 
 use crate::singleton::SingletonStruct;
 

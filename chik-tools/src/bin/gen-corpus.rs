@@ -11,10 +11,10 @@ use chik_traits::streamable::Streamable;
 use chik_protocol::bytes::Bytes32;
 use chik_protocol::{coin::Coin, coin_spend::CoinSpend, program::Program};
 use chik_wallet::singleton::SINGLETON_TOP_LAYER_PUZZLE_HASH;
-use klvm_traits::{FromKlvm, FromNodePtr};
+use klvm_traits::FromKlvm;
 use klvm_utils::{tree_hash, CurriedProgram};
 use klvmr::allocator::NodePtr;
-use klvmr::Allocator;
+use klvmr::{Allocator, FromNodePtr};
 use std::thread::available_parallelism;
 use threadpool::ThreadPool;
 
