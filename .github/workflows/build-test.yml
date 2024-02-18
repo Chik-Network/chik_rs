@@ -399,7 +399,7 @@ jobs:
           source venv/bin/activate
           git clone https://github.com/Chik-Network/klvm_tools.git --branch=main --single-branch
           pip install ./klvm_tools
-          pip install colorama maturin pytest chik-blockchain==2.1.1 klvm==0.9.7
+          pip install colorama maturin pytest chik-blockchain==2.1.4 klvm==0.9.8
           maturin develop --release -m wheel/Cargo.toml
           pytest tests
           grcov . --binary-path target -s . --branch --ignore-not-existing --ignore='*/.cargo/*' --ignore='tests/*' --ignore='venv/*' -o rust_cov.info
