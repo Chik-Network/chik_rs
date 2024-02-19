@@ -34,9 +34,9 @@ jobs:
         components: rustfmt, clippy
 
     - name: fmt (nightly)
-      run: cargo +nightly fmt -- --files-with-diff --check
+      run: cargo fmt -- --files-with-diff --check
     - name: clippy (nightly)
-      run: cargo +nightly clippy
+      run: cargo clippy
     - name: tests
       run: cargo test && cargo test --release
     - name: build
