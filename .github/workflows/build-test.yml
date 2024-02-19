@@ -315,8 +315,8 @@ jobs:
           toolchain: nightly-2024-02-11
           components: clippy
         
-      - name: Set rustup override
-        run: rustup override set nightly
+      #- name: Set rustup override
+      #  run: rustup override set nightly
 
       - name: workspace
         run: |
