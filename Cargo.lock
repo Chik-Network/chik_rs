@@ -268,7 +268,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "chik"
 version = "0.3.3"
 dependencies = [
- "chik-protocol",
+ "chik-protocol 0.3.3",
  "chik-traits 0.3.3",
  "chik-wallet",
  "criterion",
@@ -335,7 +335,7 @@ dependencies = [
 name = "chik-client"
 version = "0.2.13"
 dependencies = [
- "chik-protocol",
+ "chik-protocol 0.3.3",
  "chik-traits 0.3.3",
  "futures-util",
  "thiserror",
@@ -349,7 +349,7 @@ name = "chik-fuzz"
 version = "0.3.3"
 dependencies = [
  "chik",
- "chik-protocol",
+ "chik-protocol 0.3.3",
  "chik-traits 0.3.3",
  "hex-literal",
  "klvm-traits",
@@ -381,7 +381,7 @@ name = "chik-protocol-fuzz"
 version = "0.0.0"
 dependencies = [
  "arbitrary",
- "chik-protocol",
+ "chik-protocol 0.3.3",
  "chik-traits 0.3.3",
  "hex",
  "klvm-traits",
@@ -409,7 +409,7 @@ version = "0.3.3"
 dependencies = [
  "chik",
  "chik-bls 0.3.3",
- "chik-protocol",
+ "chik-protocol 0.3.3",
  "chik-traits 0.3.3",
  "chik-wallet",
  "clap",
@@ -453,7 +453,7 @@ version = "0.3.3"
 dependencies = [
  "arbitrary",
  "chik-bls 0.3.3",
- "chik-protocol",
+ "chik-protocol 0.3.3",
  "hex",
  "hex-literal",
  "klvm-traits",
