@@ -271,20 +271,19 @@ dependencies = [
  "chik-protocol",
  "chik-traits 0.3.3",
  "chik-wallet",
+ "criterion",
+ "hex",
+ "hex-literal",
  "klvm-derive",
  "klvm-traits",
  "klvm-utils",
  "klvmr",
- "criterion",
- "hex",
- "hex-literal",
  "num-traits",
  "pyo3",
  "rstest 0.16.0",
  "text-diff",
  "thiserror",
 ]
-
 
 [[package]]
 name = "chik-bls"
@@ -298,6 +297,26 @@ dependencies = [
  "chik-traits 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex",
  "hkdf",
+ "sha2",
+ "thiserror",
+ "tiny-bip39",
+]
+
+[[package]]
+name = "chik-bls"
+version = "0.4.0"
+dependencies = [
+ "anyhow",
+ "arbitrary",
+ "blst",
+ "chik-traits 0.3.3",
+ "chik_py_streamable_macro",
+ "criterion",
+ "hex",
+ "hkdf",
+ "pyo3",
+ "rand",
+ "rstest 0.17.0",
  "sha2",
  "thiserror",
  "tiny-bip39",
@@ -332,10 +351,10 @@ dependencies = [
  "chik",
  "chik-protocol",
  "chik-traits 0.3.3",
+ "hex-literal",
  "klvm-traits",
  "klvm-utils",
  "klvmr",
- "hex-literal",
  "libfuzzer-sys",
 ]
 
@@ -348,10 +367,10 @@ dependencies = [
  "chik-traits 0.3.3",
  "chik_py_streamable_macro",
  "chik_streamable_macro 0.3.0",
+ "hex",
  "klvm-traits",
  "klvm-utils",
  "klvmr",
- "hex",
  "pyo3",
  "rstest 0.17.0",
  "sha2",
@@ -364,9 +383,9 @@ dependencies = [
  "arbitrary",
  "chik-protocol",
  "chik-traits 0.3.3",
+ "hex",
  "klvm-traits",
  "klvmr",
- "hex",
  "libfuzzer-sys",
  "sha2",
 ]
@@ -394,11 +413,11 @@ dependencies = [
  "chik-traits 0.3.3",
  "chik-wallet",
  "clap",
+ "hex",
+ "hex-literal",
  "klvm-traits",
  "klvm-utils",
  "klvmr",
- "hex",
- "hex-literal",
  "rusqlite",
  "threadpool",
  "zstd",
@@ -435,11 +454,11 @@ dependencies = [
  "arbitrary",
  "chik-bls 0.3.3",
  "chik-protocol",
+ "hex",
+ "hex-literal",
  "klvm-traits",
  "klvm-utils",
  "klvmr",
- "hex",
- "hex-literal",
  "num-bigint",
  "sha2",
 ]
@@ -566,66 +585,6 @@ name = "clap_lex"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cd7cc57abe963c6d3b9d8be5b06ba7c8957a930305ca90304f24ef040aa6f961"
-
-[[package]]
-name = "klvm-derive"
-version = "0.2.14"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.40",
-]
-
-[[package]]
-name = "klvm-traits"
-version = "0.3.3"
-dependencies = [
- "chik-bls 0.3.3",
- "klvm-derive",
- "hex",
- "hex-literal",
- "num-bigint",
- "pyo3",
- "thiserror",
-]
-
-[[package]]
-name = "klvm-utils"
-version = "0.3.3"
-dependencies = [
- "klvm-traits",
- "klvmr",
- "hex",
-]
-
-[[package]]
-name = "klvm-utils-fuzz"
-version = "0.3.3"
-dependencies = [
- "chik",
- "chik-fuzz",
- "klvm-traits",
- "klvm-utils",
- "klvmr",
- "libfuzzer-sys",
-]
-
-[[package]]
-name = "klvmr"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a5078a4fbd8fd49cf0140e60239801a0aa1b3aa187bd9eb0719ab7e9679c423"
-dependencies = [
- "chik-bls 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "klvm-traits",
- "k256",
- "lazy_static",
- "num-bigint",
- "num-integer",
- "num-traits",
- "p256",
- "sha2",
-]
 
 [[package]]
 name = "colorchoice"
@@ -1249,6 +1208,66 @@ checksum = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
 dependencies = [
  "winapi 0.2.8",
  "winapi-build",
+]
+
+[[package]]
+name = "klvm-derive"
+version = "0.2.14"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.40",
+]
+
+[[package]]
+name = "klvm-traits"
+version = "0.3.3"
+dependencies = [
+ "chik-bls 0.3.3",
+ "hex",
+ "hex-literal",
+ "klvm-derive",
+ "num-bigint",
+ "pyo3",
+ "thiserror",
+]
+
+[[package]]
+name = "klvm-utils"
+version = "0.3.3"
+dependencies = [
+ "hex",
+ "klvm-traits",
+ "klvmr",
+]
+
+[[package]]
+name = "klvm-utils-fuzz"
+version = "0.3.3"
+dependencies = [
+ "chik",
+ "chik-fuzz",
+ "klvm-traits",
+ "klvm-utils",
+ "klvmr",
+ "libfuzzer-sys",
+]
+
+[[package]]
+name = "klvmr"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a5078a4fbd8fd49cf0140e60239801a0aa1b3aa187bd9eb0719ab7e9679c423"
+dependencies = [
+ "chik-bls 0.3.3",
+ "k256",
+ "klvm-traits",
+ "lazy_static",
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "p256",
+ "sha2",
 ]
 
 [[package]]
