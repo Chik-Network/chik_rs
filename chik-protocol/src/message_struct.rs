@@ -38,7 +38,7 @@ macro_rules! streamable_struct {
     };
 
     ( impl $name:ident $( { $( $field:ident: $t:ty ),* $(,)? } )? ) => {
-        #[cfg_attr(feature = "py-bindings", pyo3::pyclass(get_all, frozen), derive(chik_py_streamable_macro::PyJsonDict, chik_py_streamable_macro::PyStreamable))]
+        #[cfg_attr(feature = "py-bindings", pyo3::pyclass(frozen), derive(chik_py_streamable_macro::PyJsonDict, chik_py_streamable_macro::PyStreamable, chik_py_streamable_macro::PyGetters))]
         #[derive(Streamable, Hash, Debug, Clone, Eq, PartialEq)]
         #[cfg_attr(fuzzing, derive(arbitrary::Arbitrary))]
         pub struct $name $( {
