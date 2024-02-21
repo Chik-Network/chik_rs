@@ -1,7 +1,7 @@
 use crate::bytes::Bytes;
 use chik_traits::chik_error::{Error, Result};
 use chik_traits::Streamable;
-use klvm_traits::{FromKlvmError, ToKlvmError};
+use klvm_traits::{FromKlvmError, FromNodePtr, ToKlvmError, ToNodePtr};
 use klvmr::allocator::NodePtr;
 use klvmr::cost::Cost;
 use klvmr::reduction::EvalErr;
@@ -10,7 +10,7 @@ use klvmr::serde::{
     node_from_bytes, node_from_bytes_backrefs, node_to_bytes, serialized_length_from_bytes,
     serialized_length_from_bytes_trusted,
 };
-use klvmr::{Allocator, ChikDialect, FromNodePtr, ToNodePtr};
+use klvmr::{Allocator, ChikDialect};
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
 use std::ops::Deref;
@@ -440,7 +440,7 @@ impl Program {
                 <(
                     klvm_traits::MatchByte<4>,
                     (klvm_traits::match_quote!(NodePtr), (NodePtr, ())),
-                ) as klvmr::FromNodePtr>::from_node_ptr(&a, args)
+                ) as klvm_traits::FromNodePtr>::from_node_ptr(&a, args)
                 .map_err(|error| PyErr::new::<PyTypeError, _>(error.to_string()))?;
             curried_args.push(arg);
             args = rest;

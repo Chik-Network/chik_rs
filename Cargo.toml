@@ -25,7 +25,7 @@ exclude = ["wheel"]
 
 [package]
 name = "chik"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 license = "Apache-2.0"
 description = "Utility functions and types used by the Chik blockchain full node"
@@ -37,15 +37,15 @@ repository = "https://github.com/Chik-Network/chik_rs/"
 py-bindings = ["dep:pyo3"]
 
 [dependencies]
-klvmr = "0.4.0"
+klvmr = "0.5.0"
 hex = "0.4.3"
 pyo3 = { version = ">=0.19.0", optional = true }
-klvm-utils = { version = "0.4.0", path = "klvm-utils" }
-chik-traits = { version = "0.5.0", path = "chik-traits" }
-klvm-traits = { version = "0.3.3", path = "klvm-traits" }
+klvm-utils = { version = "0.5.1", path = "klvm-utils" }
+chik-traits = { version = "0.5.1", path = "chik-traits" }
+klvm-traits = { version = "0.5.1", path = "klvm-traits" }
 klvm-derive = { version = "0.2.14", path = "klvm-derive" }
-chik-protocol = { version = "0.5.0", path = "chik-protocol" }
-chik-wallet = { version = "0.5.0", path = "chik-wallet" }
+chik-protocol = { version = "0.5.1", path = "chik-protocol" }
+chik-wallet = { version = "0.5.1", path = "chik-wallet" }
 hex-literal = "0.4.1"
 thiserror = "1.0.44"
 

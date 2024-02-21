@@ -266,10 +266,10 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chik"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "chik-protocol",
- "chik-traits 0.5.0",
+ "chik-traits 0.5.1",
  "chik-wallet",
  "criterion",
  "hex",
@@ -287,9 +287,9 @@ dependencies = [
 
 [[package]]
 name = "chik-bls"
-version = "0.3.3"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6baaae360f92f96a6def5ac17776de081b62f531c4e02e958435ece0a6ccccb"
+checksum = "6d0035be195b06117387b0563c18b3cf8c6d6147195fb95cec84db1b795ed516"
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -304,12 +304,12 @@ dependencies = [
 
 [[package]]
 name = "chik-bls"
-version = "0.4.0"
+version = "0.5.1"
 dependencies = [
  "anyhow",
  "arbitrary",
  "blst",
- "chik-traits 0.5.0",
+ "chik-traits 0.5.1",
  "chik_py_streamable_macro",
  "criterion",
  "hex",
@@ -326,17 +326,17 @@ dependencies = [
 name = "chik-bls-fuzz"
 version = "0.0.0"
 dependencies = [
- "chik-bls 0.4.0",
+ "chik-bls 0.5.1",
  "libfuzzer-sys",
  "pyo3",
 ]
 
 [[package]]
 name = "chik-client"
-version = "0.4.0"
+version = "0.5.1"
 dependencies = [
  "chik-protocol",
- "chik-traits 0.5.0",
+ "chik-traits 0.5.1",
  "futures-util",
  "thiserror",
  "tokio",
@@ -346,11 +346,11 @@ dependencies = [
 
 [[package]]
 name = "chik-fuzz"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "chik",
  "chik-protocol",
- "chik-traits 0.5.0",
+ "chik-traits 0.5.1",
  "hex-literal",
  "klvm-traits",
  "klvm-utils",
@@ -360,11 +360,11 @@ dependencies = [
 
 [[package]]
 name = "chik-protocol"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "arbitrary",
- "chik-bls 0.4.0",
- "chik-traits 0.5.0",
+ "chik-bls 0.5.1",
+ "chik-traits 0.5.1",
  "chik_py_streamable_macro",
  "chik_streamable_macro 0.3.0",
  "hex",
@@ -382,7 +382,7 @@ version = "0.0.0"
 dependencies = [
  "arbitrary",
  "chik-protocol",
- "chik-traits 0.5.0",
+ "chik-traits 0.5.1",
  "hex",
  "klvm-traits",
  "klvmr",
@@ -405,12 +405,12 @@ dependencies = [
 
 [[package]]
 name = "chik-tools"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "chik",
- "chik-bls 0.4.0",
+ "chik-bls 0.5.1",
  "chik-protocol",
- "chik-traits 0.5.0",
+ "chik-traits 0.5.1",
  "chik-wallet",
  "clap",
  "hex",
@@ -437,7 +437,7 @@ dependencies = [
 
 [[package]]
 name = "chik-traits"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "chik_py_streamable_macro",
  "chik_streamable_macro 0.3.0",
@@ -449,10 +449,10 @@ dependencies = [
 
 [[package]]
 name = "chik-wallet"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "arbitrary",
- "chik-bls 0.4.0",
+ "chik-bls 0.5.1",
  "chik-protocol",
  "hex",
  "hex-literal",
@@ -465,7 +465,7 @@ dependencies = [
 
 [[package]]
 name = "chik-wallet-fuzz"
-version = "0.4.0"
+version = "0.5.1"
 dependencies = [
  "chik-wallet",
  "klvm-traits",
@@ -476,7 +476,7 @@ dependencies = [
 
 [[package]]
 name = "chik_py_streamable_macro"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -1221,12 +1221,13 @@ dependencies = [
 
 [[package]]
 name = "klvm-traits"
-version = "0.3.3"
+version = "0.5.1"
 dependencies = [
- "chik-bls 0.4.0",
+ "chik-bls 0.5.1",
  "hex",
  "hex-literal",
  "klvm-derive",
+ "klvmr",
  "num-bigint",
  "pyo3",
  "thiserror",
@@ -1234,7 +1235,7 @@ dependencies = [
 
 [[package]]
 name = "klvm-utils"
-version = "0.4.0"
+version = "0.5.1"
 dependencies = [
  "hex",
  "klvm-traits",
@@ -1255,13 +1256,12 @@ dependencies = [
 
 [[package]]
 name = "klvmr"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a5078a4fbd8fd49cf0140e60239801a0aa1b3aa187bd9eb0719ab7e9679c423"
+checksum = "883f186d0327476c34131041c2041b672c96b6e47230533865b0d14c8b9b1613"
 dependencies = [
- "chik-bls 0.3.3",
+ "chik-bls 0.4.0",
  "k256",
- "klvm-traits",
  "lazy_static",
  "num-bigint",
  "num-integer",

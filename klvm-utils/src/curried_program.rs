@@ -36,7 +36,7 @@ mod tests {
     use std::fmt::Debug;
 
     use klvm_traits::klvm_curried_args;
-    use klvmr::{allocator::NodePtr, serde::node_to_bytes, Allocator};
+    use klvmr::{serde::node_to_bytes, Allocator, NodePtr};
 
     use super::*;
 
@@ -48,7 +48,7 @@ mod tests {
         let a = &mut Allocator::new();
 
         let curry = CurriedProgram {
-            program: program.to_klvm(a).unwrap(),
+            program: &program,
             args: &args,
         }
         .to_klvm(a)

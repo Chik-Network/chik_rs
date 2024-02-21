@@ -10,7 +10,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-klvmr = "=0.4.0"
+klvmr = "=0.5.0"
 chik-fuzz = { path = "../../fuzz" }
 klvm-utils = { path = ".." }
 klvm-traits = { path = "../../klvm-traits" }
