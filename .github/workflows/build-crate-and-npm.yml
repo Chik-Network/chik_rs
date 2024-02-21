@@ -3,7 +3,7 @@ name: Build crate and npm package
 on:
   push:
     branches:
-      - main
+      - main1
     tags:
         - '**'
   pull_request:
