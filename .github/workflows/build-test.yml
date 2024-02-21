@@ -310,12 +310,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@nightly
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: nightly-2024-02-11
           components: clippy
         
-      - name: Set rustup override
-        run: rustup override set nightly
+      #- name: Set rustup override
+      #  run: rustup override set nightly
 
       - name: workspace
         run: |
