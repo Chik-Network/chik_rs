@@ -1,7 +1,7 @@
 use chik::gen::conditions::MempoolVisitor;
 use chik::gen::flags::ALLOW_BACKREFS;
 use chik::gen::run_block_generator::{run_block_generator, run_block_generator2};
-use criterion::{criterion_group, criterion_main, Criterion, SamplingMode};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use klvmr::serde::{node_from_bytes, node_to_bytes_backrefs};
 use klvmr::Allocator;
 use std::fs::read_to_string;
@@ -9,10 +9,21 @@ use std::time::Instant;
 
 fn run(c: &mut Criterion) {
     let mut group = c.benchmark_group("generator");
-    group.sample_size(20);
-    group.sampling_mode(SamplingMode::Flat);
+    group.sample_size(10);
 
-    for name in &["block-4671894", "block-834752", "block-225758"] {
+    for name in &[
+        "block-4671894",
+        "block-834752",
+        "block-225758",
+        "deep-recursion-plus",
+        "duplicate-coin-announce",
+        "block-1ee588dc",
+        "block-6fe59b24",
+        "block-b45268ac",
+        "block-c2a8df0d",
+        "block-e5002df2",
+        "recursion-pairs",
+    ] {
         let filename = format!("generator-tests/{name}.txt");
         println!("file: {filename}");
         let test_file = read_to_string(filename).expect("test file not found");
@@ -46,7 +57,7 @@ fn run(c: &mut Criterion) {
                         11000000000,
                         ALLOW_BACKREFS,
                     );
-                    assert!(conds.is_ok());
+                    let _ = black_box(conds);
                     start.elapsed()
                 })
             });
@@ -63,7 +74,7 @@ fn run(c: &mut Criterion) {
                         11000000000,
                         ALLOW_BACKREFS,
                     );
-                    assert!(conds.is_ok());
+                    let _ = black_box(conds);
                     start.elapsed()
                 })
             });

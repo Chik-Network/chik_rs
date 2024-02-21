@@ -266,10 +266,10 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chik"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "chik-protocol",
- "chik-traits 0.5.1",
+ "chik-traits 0.5.2",
  "chik-wallet",
  "criterion",
  "hex",
@@ -309,7 +309,7 @@ dependencies = [
  "anyhow",
  "arbitrary",
  "blst",
- "chik-traits 0.5.1",
+ "chik-traits 0.5.2",
  "chik_py_streamable_macro",
  "criterion",
  "hex",
@@ -336,7 +336,7 @@ name = "chik-client"
 version = "0.5.1"
 dependencies = [
  "chik-protocol",
- "chik-traits 0.5.1",
+ "chik-traits 0.5.2",
  "futures-util",
  "thiserror",
  "tokio",
@@ -350,7 +350,7 @@ version = "0.5.1"
 dependencies = [
  "chik",
  "chik-protocol",
- "chik-traits 0.5.1",
+ "chik-traits 0.5.2",
  "hex-literal",
  "klvm-traits",
  "klvm-utils",
@@ -364,7 +364,7 @@ version = "0.5.1"
 dependencies = [
  "arbitrary",
  "chik-bls 0.5.1",
- "chik-traits 0.5.1",
+ "chik-traits 0.5.2",
  "chik_py_streamable_macro",
  "chik_streamable_macro 0.3.0",
  "hex",
@@ -382,7 +382,7 @@ version = "0.0.0"
 dependencies = [
  "arbitrary",
  "chik-protocol",
- "chik-traits 0.5.1",
+ "chik-traits 0.5.2",
  "hex",
  "klvm-traits",
  "klvmr",
@@ -405,12 +405,12 @@ dependencies = [
 
 [[package]]
 name = "chik-tools"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "chik",
  "chik-bls 0.5.1",
  "chik-protocol",
- "chik-traits 0.5.1",
+ "chik-traits 0.5.2",
  "chik-wallet",
  "clap",
  "hex",
@@ -437,7 +437,7 @@ dependencies = [
 
 [[package]]
 name = "chik-traits"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "chik_py_streamable_macro",
  "chik_streamable_macro 0.3.0",
@@ -465,7 +465,7 @@ dependencies = [
 
 [[package]]
 name = "chik-wallet-fuzz"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "chik-wallet",
  "klvm-traits",
@@ -1212,7 +1212,7 @@ dependencies = [
 
 [[package]]
 name = "klvm-derive"
-version = "0.2.14"
+version = "0.5.2"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1221,7 +1221,7 @@ dependencies = [
 
 [[package]]
 name = "klvm-traits"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "chik-bls 0.5.1",
  "hex",
