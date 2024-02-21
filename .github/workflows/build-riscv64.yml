@@ -3,7 +3,7 @@ name: QEMU Build and test riscv64 crate
 on:
   push:
     branches:
-      #- main
+      - main1
       - dev
     tags:
       - "**"
