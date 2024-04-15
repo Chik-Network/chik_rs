@@ -1,18 +1,18 @@
-use crate::compression;
 use crate::run_generator::{
     convert_spend_bundle_conds, run_block_generator, run_block_generator2, PySpend,
     PySpendBundleConditions,
 };
-use chik::allocator::make_allocator;
-use chik::gen::conditions::MempoolVisitor;
-use chik::gen::flags::{
-    AGG_SIG_ARGS, ALLOW_BACKREFS, ANALYZE_SPENDS, COND_ARGS_NIL, ENABLE_SOFTFORK_CONDITION,
-    MEMPOOL_MODE, NO_RELATIVE_CONDITIONS_ON_EPHEMERAL, NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
+use chik_consensus::allocator::make_allocator;
+use chik_consensus::gen::conditions::MempoolVisitor;
+use chik_consensus::gen::flags::{
+    AGG_SIG_ARGS, ALLOW_BACKREFS, ANALYZE_SPENDS, COND_ARGS_NIL, ENABLE_MESSAGE_CONDITIONS,
+    ENABLE_SOFTFORK_CONDITION, MEMPOOL_MODE, NO_RELATIVE_CONDITIONS_ON_EPHEMERAL, NO_UNKNOWN_CONDS,
+    STRICT_ARGS_COUNT,
 };
-use chik::gen::run_puzzle::run_puzzle as native_run_puzzle;
-use chik::gen::solution_generator::solution_generator as native_solution_generator;
-use chik::gen::solution_generator::solution_generator_backrefs as native_solution_generator_backrefs;
-use chik::merkle_set::compute_merkle_set_root as compute_merkle_root_impl;
+use chik_consensus::gen::run_puzzle::run_puzzle as native_run_puzzle;
+use chik_consensus::gen::solution_generator::solution_generator as native_solution_generator;
+use chik_consensus::gen::solution_generator::solution_generator_backrefs as native_solution_generator_backrefs;
+use chik_consensus::merkle_set::compute_merkle_set_root as compute_merkle_root_impl;
 use chik_protocol::{
     BlockRecord, Bytes32, ChallengeBlockInfo, ChallengeChainSubSlot, ClassgroupElement, Coin,
     CoinSpend, CoinState, CoinStateUpdate, EndOfSubSlotBundle, Foliage, FoliageBlockData,
@@ -35,26 +35,23 @@ use chik_protocol::{
     SubEpochSegments, SubEpochSummary, SubSlotData, SubSlotProofs, TimestampedPeerInfo,
     TransactionAck, TransactionsInfo, UnfinishedBlock, VDFInfo, VDFProof, WeightProof,
 };
-use klvmr::serde::tree_hash_from_stream;
+use klvm_utils::tree_hash_from_bytes;
 use klvmr::{ENABLE_BLS_OPS_OUTSIDE_GUARD, ENABLE_FIXED_DIV, LIMIT_HEAP, NO_UNKNOWN_OPS};
 use pyo3::buffer::PyBuffer;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
-use pyo3::types::PyAny;
 use pyo3::types::PyBytes;
 use pyo3::types::PyList;
-use pyo3::types::PyModule;
 use pyo3::types::PyTuple;
-use pyo3::{wrap_pyfunction, PyResult, Python};
-use std::convert::TryInto;
+use pyo3::wrap_pyfunction;
 use std::iter::zip;
 
 use crate::run_program::{run_chik_program, serialized_length};
 
 use crate::adapt_response::eval_err_to_pyresult;
-use chik::fast_forward::fast_forward_singleton as native_ff;
-use chik::gen::get_puzzle_and_solution::get_puzzle_and_solution_for_coin as parse_puzzle_solution;
-use chik::gen::validation_error::ValidationErr;
+use chik_consensus::fast_forward::fast_forward_singleton as native_ff;
+use chik_consensus::gen::get_puzzle_and_solution::get_puzzle_and_solution_for_coin as parse_puzzle_solution;
+use chik_consensus::gen::validation_error::ValidationErr;
 use klvmr::allocator::NodePtr;
 use klvmr::cost::Cost;
 use klvmr::reduction::EvalErr;
@@ -87,8 +84,7 @@ pub fn tree_hash(py: Python, blob: PyBuffer<u8>) -> PyResult<&PyBytes> {
     }
     let slice =
         unsafe { std::slice::from_raw_parts(blob.buf_ptr() as *const u8, blob.len_bytes()) };
-    let mut input = std::io::Cursor::<&[u8]>::new(slice);
-    Ok(PyBytes::new(py, &tree_hash_from_stream(&mut input)?))
+    Ok(PyBytes::new(py, &tree_hash_from_bytes(slice)?))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -144,7 +140,7 @@ pub fn get_puzzle_and_solution_for_coin(
         };
     */
     match r {
-        Err(eval_err) => eval_err_to_pyresult(py, eval_err, allocator),
+        Err(eval_err) => eval_err_to_pyresult(eval_err, allocator),
         Ok((puzzle, solution)) => Ok((
             PyBytes::new(py, &serialize(&allocator, puzzle)?),
             PyBytes::new(py, &serialize(&allocator, solution)?),
@@ -288,7 +284,7 @@ fn supports_fast_forward(spend: &CoinSpend) -> bool {
         amount: spend.coin.amount,
     };
     let new_coin = Coin {
-        parent_coin_info: new_parent.coin_id().into(),
+        parent_coin_info: new_parent.coin_id(),
         puzzle_hash: spend.coin.puzzle_hash,
         amount: spend.coin.amount,
     };
@@ -331,7 +327,7 @@ fn fast_forward_singleton<'p>(
 }
 
 #[pymodule]
-pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
+pub fn chik_rs(_py: Python, m: &PyModule) -> PyResult<()> {
     // generator functions
     m.add_function(wrap_pyfunction!(run_block_generator, m)?)?;
     m.add_function(wrap_pyfunction!(run_block_generator2, m)?)?;
@@ -343,9 +339,12 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PySpendBundleConditions>()?;
     m.add(
         "ELIGIBLE_FOR_DEDUP",
-        chik::gen::conditions::ELIGIBLE_FOR_DEDUP,
+        chik_consensus::gen::conditions::ELIGIBLE_FOR_DEDUP,
     )?;
-    m.add("ELIGIBLE_FOR_FF", chik::gen::conditions::ELIGIBLE_FOR_FF)?;
+    m.add(
+        "ELIGIBLE_FOR_FF",
+        chik_consensus::gen::conditions::ELIGIBLE_FOR_FF,
+    )?;
     m.add_class::<PySpend>()?;
 
     // klvm functions
@@ -355,6 +354,7 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     m.add("AGG_SIG_ARGS", AGG_SIG_ARGS)?;
     m.add("ENABLE_FIXED_DIV", ENABLE_FIXED_DIV)?;
     m.add("ENABLE_SOFTFORK_CONDITION", ENABLE_SOFTFORK_CONDITION)?;
+    m.add("ENABLE_MESSAGE_CONDITIONS", ENABLE_MESSAGE_CONDITIONS)?;
     m.add(
         "NO_RELATIVE_CONDITIONS_ON_EPHEMERAL",
         NO_RELATIVE_CONDITIONS_ON_EPHEMERAL,
@@ -481,8 +481,6 @@ pub fn chik_rs(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<GTElement>()?;
     m.add_class::<SecretKey>()?;
     m.add_class::<AugSchemeMPL>()?;
-
-    compression::add_submodule(py, m)?;
 
     Ok(())
 }

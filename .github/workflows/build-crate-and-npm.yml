@@ -27,15 +27,9 @@ jobs:
       with:
         components: rustfmt, clippy
 
-    - name: Set up rust (nightly)
-      uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: nightly-2024-02-03
-        components: rustfmt, clippy
-
-    - name: fmt (nightly)
+    - name: fmt
       run: cargo fmt -- --files-with-diff --check
-    - name: clippy (nightly)
+    - name: clippy
       run: cargo clippy
     - name: tests
       run: cargo test && cargo test --release
@@ -67,7 +61,7 @@ jobs:
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.cargo_registry_token }}
       run: |
-        cd chik_py_streamable_macro
+        cd crates/chik_py_streamable_macro
         cargo publish
 
     - name: publish to crates.io if tagged (chik_streamable_macro)
@@ -76,7 +70,7 @@ jobs:
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.cargo_registry_token }}
       run: |
-        cd chik_streamable_macro
+        cd crates/chik_streamable_macro
         cargo publish
 
     - name: publish to crates.io if tagged (chik-traits)
@@ -85,7 +79,7 @@ jobs:
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.cargo_registry_token }}
       run: |
-        cd chik-traits
+        cd crates/chik-traits
         cargo publish
 
     - name: publish to crates.io if tagged (chik-bls)
@@ -94,7 +88,7 @@ jobs:
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.cargo_registry_token }}
       run: |
-        cd chik-bls
+        cd crates/chik-bls
         cargo publish
 
     - name: publish to crates.io if tagged (klvm-derive)
@@ -103,7 +97,7 @@ jobs:
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.cargo_registry_token }}
       run: |
-        cd klvm-derive
+        cd crates/klvm-derive
         cargo publish
 
     - name: publish to crates.io if tagged (klvm-traits)
@@ -112,7 +106,7 @@ jobs:
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.cargo_registry_token }}
       run: |
-        cd klvm-traits
+        cd crates/klvm-traits
         cargo publish
 
     - name: publish to crates.io if tagged (klvm-utils)
@@ -121,7 +115,7 @@ jobs:
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.cargo_registry_token }}
       run: |
-        cd klvm-utils
+        cd crates/klvm-utils
         cargo publish
 
     - name: publish to crates.io if tagged (chik-protocol)
@@ -130,7 +124,7 @@ jobs:
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.cargo_registry_token }}
       run: |
-        cd chik-protocol
+        cd crates/chik-protocol
         cargo publish
 
     - name: publish to crates.io if tagged (chik-wallet)
@@ -139,7 +133,7 @@ jobs:
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.cargo_registry_token }}
       run: |
-        cd chik-wallet
+        cd crates/chik-wallet
         cargo publish
 
     - name: publish to crates.io if tagged (chik-client)
@@ -148,7 +142,7 @@ jobs:
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.cargo_registry_token }}
       run: |
-        cd chik-client
+        cd crates/chik-client
         cargo publish
 
     - name: publish to crates.io if tagged (chik-ssl)
@@ -157,10 +151,19 @@ jobs:
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.cargo_registry_token }}
       run: |
-        cd chik-ssl
+        cd crates/chik-ssl
+        cargo publish
+    
+    - name: publish to crates.io if tagged (chik-consensus)
+      continue-on-error: true
+      if: startsWith(github.event.ref, 'refs/tags')
+      env:
+        CARGO_REGISTRY_TOKEN: ${{ secrets.cargo_registry_token }}
+      run: |
+        cd crates/chik-consensus
         cargo publish
 
-    - name: publish to crates.io if tagged (chik_rs)
+    - name: publish to crates.io if tagged (chik)
       continue-on-error: true
       if: startsWith(github.event.ref, 'refs/tags')
       env:

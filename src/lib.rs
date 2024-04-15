@@ -1,7 +1,9 @@
-pub mod allocator;
-pub mod compression;
-pub mod error;
-pub mod fast_forward;
-pub mod gen;
-pub mod generator_rom;
-pub mod merkle_set;
+pub use chik_bls as bls;
+pub use chik_client as client;
+pub use chik_consensus as consensus;
+pub use chik_protocol as protocol;
+pub use chik_ssl as ssl;
+pub use chik_traits as traits;
+pub use chik_wallet as wallet;
+pub use klvm_traits;
+pub use klvm_utils;

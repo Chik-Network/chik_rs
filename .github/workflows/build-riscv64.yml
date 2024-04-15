@@ -40,7 +40,7 @@ jobs:
             -v ${{ github.workspace }}:/ws --workdir=/ws \
             chiknetwork/ubuntu-22.04-risc-builder:latest \
             bash -exc '\
-            cargo test --release
+            cargo test --release -p chik-consensus
             '
 
   build_wheels:
@@ -81,7 +81,7 @@ jobs:
             python -m venv venv && \
             source ./venv/bin/activate && \
             pip install --upgrade pip && \
-            pip install --extra-index-url https://pypi.chia.net/simple/ maturin==1.2.3 && \
+            pip install --extra-index-url https://pypi.chiknetwork.com/simple/ maturin==1.2.3 && \
             maturin build -i python --release -m wheel/Cargo.toml \
             '
 
@@ -89,7 +89,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: packages
-          path: ./wheel/target/wheels/
+          path: ./target/wheels
           if-no-files-found: error
   upload:
     name: Upload to Chik PyPI
@@ -112,11 +112,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: packages
-          path: ./wheel/target/wheels/
+          path: ./target/wheels
 
       - name: Configure AWS credentials
         if: env.RELEASE == 'true'
-        uses: aws-actions/configure-aws-credentials@v3
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: arn:aws:iam::${{ secrets.CHIK_AWS_ACCOUNT_ID }}:role/installer-upload
           aws-region: us-west-2
@@ -133,8 +133,8 @@ jobs:
         if: env.RELEASE == 'true'
         shell: sh
         run: |
-          (cd wheel/target/wheels/; ls chik_rs-*.whl) > new_wheel_list
-          cat new_wheel_list | xargs -I % sh -c 'ls -l wheel/target/wheels/%'
+          (cd target/wheels/; ls chik_rs-*.whl) > new_wheel_list
+          cat new_wheel_list | xargs -I % sh -c 'ls -l target/wheels/%'
 
       - name: Choose wheels to upload
         if: env.RELEASE == 'true'
@@ -147,4 +147,4 @@ jobs:
         if: env.RELEASE == 'true'
         shell: sh
         run: |
-          cat upload_wheel_list | xargs -I % sh -c 'aws s3 cp wheel/target/wheels/% s3://download.chiknetwork.com/simple/chik-rs/'
+          cat upload_wheel_list | xargs -I % sh -c 'aws s3 cp target/wheels/% s3://download.chiknetwork.com/simple/chik-rs/'

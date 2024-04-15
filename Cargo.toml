@@ -1,75 +1,77 @@
-# the "wheel" crate is excluded from the workspace because pyo3 has problems with
-# "cargo test" and "cargo bench"
 [workspace]
 members = [
-    "chik-bls",
-    "chik-bls/fuzz",
-    "chik-client",
-    "chik-protocol",
-    "chik-protocol/fuzz",
-    "chik_py_streamable_macro",
-    "chik_streamable_macro",
-    "chik-ssl",
-    "chik-tools",
-    "chik-traits",
-    "chik-wallet",
-    "chik-wallet/fuzz",
-    "klvm-derive",
-    "klvm-traits",
-    "klvm-utils",
-    "klvm-utils/fuzz",
-    "fuzz",
+    "crates/chik-bls",
+    "crates/chik-bls/fuzz",
+    "crates/chik-client",
+    "crates/chik-consensus",
+    "crates/chik-consensus/fuzz",
+    "crates/chik-protocol",
+    "crates/chik-protocol/fuzz",
+    "crates/chik_py_streamable_macro",
+    "crates/chik_streamable_macro",
+    "crates/chik-ssl",
+    "crates/chik-tools",
+    "crates/chik-traits",
+    "crates/chik-wallet",
+    "crates/chik-wallet/fuzz",
+    "crates/klvm-derive",
+    "crates/klvm-traits",
+    "crates/klvm-utils",
+    "crates/klvm-utils/fuzz",
     "wasm",
+    "wheel",
 ]
-exclude = ["wheel"]
 
 [package]
 name = "chik"
-version = "0.5.2"
+version = "0.6.0"
 edition = "2021"
 license = "Apache-2.0"
-description = "Utility functions and types used by the Chik blockchain full node"
-authors = ["Richard Kiss <him@richardkiss.com>", "Arvid Norberg <arvid@chiknetwork.com>"]
-homepage = "https://github.com/Chik-Network/chik_rs/"
-repository = "https://github.com/Chik-Network/chik_rs/"
+description = "A meta-crate that exports all of the Chik crates in the workspace."
+authors = [
+    "Richard Kiss <him@richardkiss.com>",
+    "Arvid Norberg <arvid@chiknetwork.com>",
+    "Brandon Haggstrom <b.haggstrom@chiknetwork.com>"
+]
+homepage = "https://github.com/Chik-Network/chik_rs"
+repository = "https://github.com/Chik-Network/chik_rs"
 
 [features]
-py-bindings = ["dep:pyo3"]
+default = [
+    "bls",
+    "client",
+    "consensus",
+    "protocol",
+    "ssl",
+    "traits",
+    "wallet",
+    "klvm-traits",
+    "klvm-utils"
+]
+
+bls = ["dep:chik-bls"]
+client = ["dep:chik-client"]
+consensus = ["dep:chik-consensus"]
+protocol = ["dep:chik-protocol"]
+ssl = ["dep:chik-ssl"]
+traits = ["dep:chik-traits"]
+wallet = ["dep:chik-wallet"]
+klvm-traits = ["dep:klvm-traits"]
+klvm-utils = ["dep:klvm-utils"]
 
 [dependencies]
-klvmr = "0.5.0"
-hex = "0.4.3"
-pyo3 = { version = ">=0.19.0", optional = true }
-klvm-utils = { version = "0.5.1", path = "klvm-utils" }
-chik-traits = { version = "0.5.2", path = "chik-traits" }
-klvm-traits = { version = "0.5.2", path = "klvm-traits" }
-klvm-derive = { version = "0.5.2", path = "klvm-derive" }
-chik-protocol = { version = "0.5.1", path = "chik-protocol" }
-chik-wallet = { version = "0.5.1", path = "chik-wallet" }
-hex-literal = "0.4.1"
-thiserror = "1.0.44"
-
-[dev-dependencies]
-num-traits = "0.2.15"
-rstest = "0.16.0"
-text-diff = "0.4.0"
-criterion = "0.5.1"
-
-[lib]
-name = "chik"
-crate-type = ["rlib"]
-bench = false
+chik-bls = { path = "./crates/chik-bls", optional = true }
+chik-client = { path = "./crates/chik-client", optional = true }
+chik-consensus = { path = "./crates/chik-consensus", optional = true }
+chik-protocol = { path = "./crates/chik-protocol", optional = true }
+chik-ssl = { path = "./crates/chik-ssl", optional = true }
+chik-traits = { path = "./crates/chik-traits", optional = true }
+chik-wallet = { path = "./crates/chik-wallet", optional = true }
+klvm-traits = { path = "./crates/klvm-traits", optional = true }
+klvm-utils = { path = "./crates/klvm-utils", optional = true }
 
 [profile.release]
 lto = "thin"
-
-[[bench]]
-name = "run-generator"
-harness = false
-
-[[bench]]
-name = "tree-hash"
-harness = false
 
 # This is also necessary in `wheel/Cargo.toml` to make sure the `wheel` crate builds as well.
 # Pin the `blst` dependency to the correct revision, since the fix has not been properly released yet.

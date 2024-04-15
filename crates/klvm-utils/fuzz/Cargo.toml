@@ -1,0 +1,31 @@
+[package]
+name = "klvm-utils-fuzz"
+version = "0.6.0"
+authors = ["Automatically generated"]
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+klvmr = "0.6.1"
+chik-fuzz = { path = "../../chik-consensus/fuzz" }
+klvm-utils = { path = ".." }
+klvm-traits = { path = "../../klvm-traits" }
+chik-consensus = { path = "../../chik-consensus" }
+
+[[bin]]
+name = "tree-hash"
+path = "fuzz_targets/tree-hash.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "curry"
+path = "fuzz_targets/curry.rs"
+test = false
+doc = false
+bench = false

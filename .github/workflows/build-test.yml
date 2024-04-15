@@ -125,7 +125,7 @@ jobs:
               name: macOS
               matrix: macos
               runs-on:
-                arm: [macOS, ARM64]
+                arm: [ macOS, ARM64 ]
             arch:
               name: ARM
               matrix: arm
@@ -199,13 +199,13 @@ jobs:
 
     - name: Install chik_rs wheel
       run: |
-        pip install --no-index --find-links wheel/target/wheels/ chik_rs
+        pip install --no-index --find-links target/wheels/ chik_rs
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
         name: packages
-        path: ./wheel/target/wheels/
+        path: ./target/wheels/
 
   check-typestubs:
     name: Check chik_rs.pyi
@@ -238,7 +238,7 @@ jobs:
 
     - name: cargo build
       run: |
-        cd chik-tools
+        cd crates/chik-tools
         cargo build
 
   build-sdist:
@@ -282,7 +282,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: packages
-        path: ./wheel/target/wheels/
+        path: ./target/wheels/
 
   fmt:
     runs-on: ubuntu-latest
@@ -293,12 +293,9 @@ jobs:
           fetch-depth: 1
 
       - name: Install rust
-        uses: dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@stable
         with:
             components: rustfmt, clippy
-      
-      - name: Set rustup override
-        run: rustup override set nightly
 
       - name: fmt
         run: |
@@ -310,13 +307,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly-2024-02-11
           components: clippy
-        
-      #- name: Set rustup override
-      #  run: rustup override set nightly
 
       - name: workspace
         run: |
@@ -335,8 +328,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
       - name: cargo-fuzz
         run: cargo +nightly install cargo-fuzz
-      - name: cargo fuzz (chik_rs)
-        run: cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
+      - name: cargo fuzz (chik-consensus)
+        run: |
+          cd crates/chik-consensus
+          cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
       - name: cargo fuzz (chik-bls)
         env:
           # we disable leak reports here because blspy appears to be allocating
@@ -344,21 +339,21 @@ jobs:
           # not unloaded before exiting
           LSAN_OPTIONS: detect_leaks=0
         run: |
-          cd chik-bls
+          cd crates/chik-bls
           python -m pip install blspy
           cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=10 || exit 255"
       - name: cargo fuzz (klvm-utils)
         run: |
-          cd klvm-utils
+          cd crates/klvm-utils
           cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
       - name: cargo fuzz (chik-protocol)
         run: |
-          cd chik-protocol
+          cd crates/chik-protocol
           cargo +nightly fuzz build
           cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
       - name: cargo fuzz (chik-wallet)
         run: |
-          cd chik-wallet
+          cd crates/chik-wallet
           cargo +nightly fuzz build
           cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
 

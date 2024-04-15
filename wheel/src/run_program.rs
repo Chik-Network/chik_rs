@@ -1,6 +1,6 @@
 use super::adapt_response::eval_err_to_pyresult;
-use chik::allocator::make_allocator;
-use chik::gen::flags::ALLOW_BACKREFS;
+use chik_consensus::allocator::make_allocator;
+use chik_consensus::gen::flags::ALLOW_BACKREFS;
 use chik_protocol::LazyNode;
 use klvmr::chik_dialect::ChikDialect;
 use klvmr::cost::Cost;
@@ -50,6 +50,6 @@ pub fn run_chik_program(
             let val = LazyNode::new(Rc::new(allocator), reduction.1);
             Ok((reduction.0, val))
         }
-        Err(eval_err) => eval_err_to_pyresult(py, eval_err, allocator),
+        Err(eval_err) => eval_err_to_pyresult(eval_err, allocator),
     }
 }
