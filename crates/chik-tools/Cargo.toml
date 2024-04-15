@@ -15,7 +15,7 @@ klvm-utils = { version = "0.6.0", path = "../klvm-utils" }
 klvm-traits = { version = "0.6.0", path = "../klvm-traits" }
 chik-wallet = { version = "0.6.0", path = "../chik-wallet" }
 chik-bls = { version = "0.6.0", path = "../chik-bls" }
-chik-consensus = { version = "0.6.0", path = "../chik-consensus" }
+chik-consensus = { version = "0.6.1", path = "../chik-consensus" }
 klvmr = { version = "0.6.0", features = ["counters"] }
 rusqlite = { version = "0.30.0", features = ["bundled"] }
 clap = { version = "4.3.9", features = ["derive"] }

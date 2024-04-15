@@ -350,7 +350,7 @@ dependencies = [
 
 [[package]]
 name = "chik-consensus"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "chik-protocol",
  "chik-traits 0.6.0",
@@ -511,7 +511,7 @@ dependencies = [
 
 [[package]]
 name = "chik_rs"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "chik-bls 0.6.0",
  "chik-consensus",

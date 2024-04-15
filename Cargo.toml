@@ -60,15 +60,15 @@ klvm-traits = ["dep:klvm-traits"]
 klvm-utils = ["dep:klvm-utils"]
 
 [dependencies]
-chik-bls = { path = "./crates/chik-bls", optional = true }
-chik-client = { path = "./crates/chik-client", optional = true }
-chik-consensus = { path = "./crates/chik-consensus", optional = true }
-chik-protocol = { path = "./crates/chik-protocol", optional = true }
-chik-ssl = { path = "./crates/chik-ssl", optional = true }
-chik-traits = { path = "./crates/chik-traits", optional = true }
-chik-wallet = { path = "./crates/chik-wallet", optional = true }
-klvm-traits = { path = "./crates/klvm-traits", optional = true }
-klvm-utils = { path = "./crates/klvm-utils", optional = true }
+chik-bls = { path = "./crates/chik-bls", version = "0.6.0", optional = true }
+chik-client = { path = "./crates/chik-client", version = "0.6.0", optional = true }
+chik-consensus = { path = "./crates/chik-consensus", version = "0.6.1", optional = true }
+chik-protocol = { path = "./crates/chik-protocol", version = "0.6.0", optional = true }
+chik-ssl = { path = "./crates/chik-ssl", version = "0.6.0", optional = true }
+chik-traits = { path = "./crates/chik-traits", version = "0.6.0", optional = true }
+chik-wallet = { path = "./crates/chik-wallet", version = "0.6.0", optional = true }
+klvm-traits = { path = "./crates/klvm-traits", version = "0.6.0", optional = true }
+klvm-utils = { path = "./crates/klvm-utils", version = "0.6.0", optional = true }
 
 [profile.release]
 lto = "thin"
