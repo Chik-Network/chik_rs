@@ -359,7 +359,7 @@ impl<const N: usize> IntoPy<PyObject> for BytesImpl<N> {
 impl<const N: usize> ChikToPython for BytesImpl<N> {
     fn to_python<'a>(&self, py: Python<'a>) -> PyResult<&'a PyAny> {
         if N == 32 {
-            let bytes_module = PyModule::import(py, "chik.types.blockchain_format.sized_bytes")?;
+            let bytes_module = PyModule::import(py, "chik_rs.sized_bytes")?;
             let ty = bytes_module.getattr("bytes32")?;
             ty.call1((self.0.into_py(py),))
         } else {

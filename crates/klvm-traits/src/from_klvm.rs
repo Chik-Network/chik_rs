@@ -55,6 +55,19 @@ klvm_primitive!(i128);
 klvm_primitive!(usize);
 klvm_primitive!(isize);
 
+impl<N> FromKlvm<N> for bool {
+    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+        let atom = decoder.decode_atom(&node)?;
+        match atom.as_ref() {
+            [] => Ok(false),
+            [1] => Ok(true),
+            _ => Err(FromKlvmError::Custom(
+                "expected boolean value of either `()` or `1`".to_string(),
+            )),
+        }
+    }
+}
+
 impl<N, A, B> FromKlvm<N> for (A, B)
 where
     A: FromKlvm<N>,
@@ -209,6 +222,19 @@ mod tests {
         assert_eq!(decode(a, "81e5"), Ok(-27i32));
         assert_eq!(decode(a, "80"), Ok(-0));
         assert_eq!(decode(a, "8180"), Ok(-128i8));
+    }
+
+    #[test]
+    fn test_bool() {
+        let a = &mut Allocator::new();
+        assert_eq!(decode(a, "80"), Ok(false));
+        assert_eq!(decode(a, "01"), Ok(true));
+        assert_eq!(
+            decode::<bool>(a, "05"),
+            Err(FromKlvmError::Custom(
+                "expected boolean value of either `()` or `1`".to_string(),
+            ))
+        )
     }
 
     #[test]

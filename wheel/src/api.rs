@@ -1,18 +1,18 @@
-use crate::run_generator::{
-    convert_spend_bundle_conds, run_block_generator, run_block_generator2, PySpend,
-    PySpendBundleConditions,
-};
+use crate::run_generator::{run_block_generator, run_block_generator2};
 use chik_consensus::allocator::make_allocator;
+use chik_consensus::consensus_constants::ConsensusConstants;
 use chik_consensus::gen::conditions::MempoolVisitor;
 use chik_consensus::gen::flags::{
     AGG_SIG_ARGS, ALLOW_BACKREFS, ANALYZE_SPENDS, COND_ARGS_NIL, ENABLE_MESSAGE_CONDITIONS,
     ENABLE_SOFTFORK_CONDITION, MEMPOOL_MODE, NO_RELATIVE_CONDITIONS_ON_EPHEMERAL, NO_UNKNOWN_CONDS,
     STRICT_ARGS_COUNT,
 };
+use chik_consensus::gen::owned_conditions::{OwnedSpend, OwnedSpendBundleConditions};
 use chik_consensus::gen::run_puzzle::run_puzzle as native_run_puzzle;
 use chik_consensus::gen::solution_generator::solution_generator as native_solution_generator;
 use chik_consensus::gen::solution_generator::solution_generator_backrefs as native_solution_generator_backrefs;
 use chik_consensus::merkle_set::compute_merkle_set_root as compute_merkle_root_impl;
+use chik_consensus::merkle_tree::{validate_merkle_proof, MerkleSet};
 use chik_protocol::{
     BlockRecord, Bytes32, ChallengeBlockInfo, ChallengeChainSubSlot, ClassgroupElement, Coin,
     CoinSpend, CoinState, CoinStateUpdate, EndOfSubSlotBundle, Foliage, FoliageBlockData,
@@ -38,7 +38,7 @@ use chik_protocol::{
 use klvm_utils::tree_hash_from_bytes;
 use klvmr::{ENABLE_BLS_OPS_OUTSIDE_GUARD, ENABLE_FIXED_DIV, LIMIT_HEAP, NO_UNKNOWN_OPS};
 use pyo3::buffer::PyBuffer;
-use pyo3::exceptions::PyRuntimeError;
+use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 use pyo3::types::PyList;
@@ -75,6 +75,27 @@ pub fn compute_merkle_set_root<'p>(
         buffer.push(b.as_bytes().try_into()?);
     }
     Ok(PyBytes::new(py, &compute_merkle_root_impl(&mut buffer)))
+}
+
+#[pyfunction]
+pub fn confirm_included_already_hashed(
+    root: Bytes32,
+    item: Bytes32,
+    proof: &[u8],
+) -> PyResult<bool> {
+    validate_merkle_proof(proof, (&item).into(), (&root).into())
+        .map_err(|_| PyValueError::new_err("Invalid proof"))
+}
+
+#[pyfunction]
+pub fn confirm_not_included_already_hashed(
+    root: Bytes32,
+    item: Bytes32,
+    proof: &[u8],
+) -> PyResult<bool> {
+    validate_merkle_proof(proof, (&item).into(), (&root).into())
+        .map_err(|_| PyValueError::new_err("Invalid proof"))
+        .map(|r| !r)
 }
 
 #[pyfunction]
@@ -156,12 +177,12 @@ fn run_puzzle(
     amount: u64,
     max_cost: Cost,
     flags: u32,
-) -> PyResult<PySpendBundleConditions> {
+) -> PyResult<OwnedSpendBundleConditions> {
     let mut a = make_allocator(LIMIT_HEAP);
     let conds = native_run_puzzle::<MempoolVisitor>(
         &mut a, puzzle, solution, parent_id, amount, max_cost, flags,
     )?;
-    Ok(convert_spend_bundle_conds(&a, conds))
+    Ok(OwnedSpendBundleConditions::from(&a, conds))
 }
 
 // this is like a CoinSpend but with references to the puzzle and solution,
@@ -336,7 +357,7 @@ pub fn chik_rs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(solution_generator_backrefs, m)?)?;
     m.add_function(wrap_pyfunction!(supports_fast_forward, m)?)?;
     m.add_function(wrap_pyfunction!(fast_forward_singleton, m)?)?;
-    m.add_class::<PySpendBundleConditions>()?;
+    m.add_class::<OwnedSpendBundleConditions>()?;
     m.add(
         "ELIGIBLE_FOR_DEDUP",
         chik_consensus::gen::conditions::ELIGIBLE_FOR_DEDUP,
@@ -345,7 +366,15 @@ pub fn chik_rs(_py: Python, m: &PyModule) -> PyResult<()> {
         "ELIGIBLE_FOR_FF",
         chik_consensus::gen::conditions::ELIGIBLE_FOR_FF,
     )?;
-    m.add_class::<PySpend>()?;
+    m.add_class::<OwnedSpend>()?;
+
+    // constants
+    m.add_class::<ConsensusConstants>()?;
+
+    // merkle tree
+    m.add_class::<MerkleSet>()?;
+    m.add_function(wrap_pyfunction!(confirm_included_already_hashed, m)?)?;
+    m.add_function(wrap_pyfunction!(confirm_not_included_already_hashed, m)?)?;
 
     // klvm functions
     m.add("COND_ARGS_NIL", COND_ARGS_NIL)?;

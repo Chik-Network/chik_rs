@@ -40,6 +40,12 @@ klvm_primitive!(i128);
 klvm_primitive!(usize);
 klvm_primitive!(isize);
 
+impl<N> ToKlvm<N> for bool {
+    fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
+        (if *self { 1 } else { 0 }).to_klvm(encoder)
+    }
+}
+
 impl<N, T> ToKlvm<N> for &T
 where
     T: ToKlvm<N>,
@@ -171,6 +177,13 @@ mod tests {
         assert_eq!(encode(a, -27i32), Ok("81e5".to_owned()));
         assert_eq!(encode(a, -0), Ok("80".to_owned()));
         assert_eq!(encode(a, -128i8), Ok("8180".to_owned()));
+    }
+
+    #[test]
+    fn test_bool() {
+        let a = &mut Allocator::new();
+        assert_eq!(encode(a, true), Ok("01".to_owned()));
+        assert_eq!(encode(a, false), Ok("80".to_owned()));
     }
 
     #[test]

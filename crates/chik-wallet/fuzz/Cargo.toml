@@ -13,7 +13,7 @@ libfuzzer-sys = "0.4"
 klvmr = "0.6.1"
 pyo3 = { version = ">=0.19.0", features = ["auto-initialize"]}
 chik-wallet = { path = ".." }
-klvm-traits = { version = "0.6.0", path = "../../klvm-traits" }
+klvm-traits = { version = "0.7.0", path = "../../klvm-traits" }
 
 [[bin]]
 name = "roundtrip"

@@ -1,5 +1,5 @@
 #![no_main]
-use ::chik_protocol::*;
+use chik_protocol::*;
 use chik_traits::Streamable;
 use libfuzzer_sys::fuzz_target;
 use sha2::{Digest, Sha256};

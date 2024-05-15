@@ -1,6 +1,6 @@
 [package]
 name = "chik-bls"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "BLS signature, verification and aggregation funcions for the Chik blockchain"
@@ -12,8 +12,8 @@ repository = "https://github.com/Chik-Network/chik_rs"
 py-bindings = ["dep:pyo3", "chik_py_streamable_macro", "chik-traits/py-bindings"]
 
 [dependencies]
-chik-traits = { version = "0.6.0", path = "../chik-traits" }
-chik_py_streamable_macro = { version = "0.6.0", path = "../chik_py_streamable_macro", optional = true }
+chik-traits = { version = "0.7.0", path = "../chik-traits" }
+chik_py_streamable_macro = { version = "0.7.0", path = "../chik_py_streamable_macro", optional = true }
 tiny-bip39 = "1.0.0"
 anyhow = "1.0.71"
 sha2 = "0.10.8"

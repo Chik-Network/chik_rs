@@ -276,14 +276,14 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chik"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
- "chik-bls 0.6.0",
+ "chik-bls 0.7.0",
  "chik-client",
  "chik-consensus",
  "chik-protocol",
  "chik-ssl",
- "chik-traits 0.6.0",
+ "chik-traits 0.7.0",
  "chik-wallet",
  "klvm-traits",
  "klvm-utils",
@@ -308,12 +308,12 @@ dependencies = [
 
 [[package]]
 name = "chik-bls"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "arbitrary",
  "blst",
- "chik-traits 0.6.0",
+ "chik-traits 0.7.0",
  "chik_py_streamable_macro",
  "criterion",
  "hex",
@@ -330,17 +330,17 @@ dependencies = [
 name = "chik-bls-fuzz"
 version = "0.0.0"
 dependencies = [
- "chik-bls 0.6.0",
+ "chik-bls 0.7.0",
  "libfuzzer-sys",
  "pyo3",
 ]
 
 [[package]]
 name = "chik-client"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "chik-protocol",
- "chik-traits 0.6.0",
+ "chik-traits 0.7.0",
  "futures-util",
  "thiserror",
  "tokio",
@@ -350,11 +350,13 @@ dependencies = [
 
 [[package]]
 name = "chik-consensus"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "chik-protocol",
- "chik-traits 0.6.0",
+ "chik-traits 0.7.0",
  "chik-wallet",
+ "chik_py_streamable_macro",
+ "chik_streamable_macro 0.6.0",
  "criterion",
  "hex",
  "hex-literal",
@@ -364,7 +366,9 @@ dependencies = [
  "klvmr",
  "num-traits",
  "pyo3",
+ "rand",
  "rstest 0.16.0",
+ "sha2",
  "text-diff",
  "thiserror",
 ]
@@ -375,7 +379,7 @@ version = "0.6.0"
 dependencies = [
  "chik-consensus",
  "chik-protocol",
- "chik-traits 0.6.0",
+ "chik-traits 0.7.0",
  "hex-literal",
  "klvm-traits",
  "klvm-utils",
@@ -385,11 +389,11 @@ dependencies = [
 
 [[package]]
 name = "chik-protocol"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "arbitrary",
- "chik-bls 0.6.0",
- "chik-traits 0.6.0",
+ "chik-bls 0.7.0",
+ "chik-traits 0.7.0",
  "chik_py_streamable_macro",
  "chik_streamable_macro 0.6.0",
  "hex",
@@ -407,7 +411,7 @@ version = "0.0.0"
 dependencies = [
  "arbitrary",
  "chik-protocol",
- "chik-traits 0.6.0",
+ "chik-traits 0.7.0",
  "hex",
  "klvm-traits",
  "klvmr",
@@ -417,26 +421,25 @@ dependencies = [
 
 [[package]]
 name = "chik-ssl"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "lazy_static",
  "rand",
  "rcgen",
  "rsa",
- "rustls",
  "thiserror",
  "time",
 ]
 
 [[package]]
 name = "chik-tools"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "blocking-threadpool",
- "chik-bls 0.6.0",
+ "chik-bls 0.7.0",
  "chik-consensus",
  "chik-protocol",
- "chik-traits 0.6.0",
+ "chik-traits 0.7.0",
  "chik-wallet",
  "clap",
  "hex",
@@ -462,7 +465,7 @@ dependencies = [
 
 [[package]]
 name = "chik-traits"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "chik_py_streamable_macro",
  "chik_streamable_macro 0.6.0",
@@ -474,10 +477,10 @@ dependencies = [
 
 [[package]]
 name = "chik-wallet"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "arbitrary",
- "chik-bls 0.6.0",
+ "chik-bls 0.7.0",
  "chik-protocol",
  "hex",
  "hex-literal",
@@ -501,7 +504,7 @@ dependencies = [
 
 [[package]]
 name = "chik_py_streamable_macro"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -511,12 +514,12 @@ dependencies = [
 
 [[package]]
 name = "chik_rs"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
- "chik-bls 0.6.0",
+ "chik-bls 0.7.0",
  "chik-consensus",
  "chik-protocol",
- "chik-traits 0.6.0",
+ "chik-traits 0.7.0",
  "chik_py_streamable_macro",
  "chik_streamable_macro 0.6.0",
  "hex",
@@ -1270,9 +1273,9 @@ dependencies = [
 
 [[package]]
 name = "klvm-traits"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
- "chik-bls 0.6.0",
+ "chik-bls 0.7.0",
  "hex",
  "hex-literal",
  "klvm-derive",
@@ -1284,7 +1287,7 @@ dependencies = [
 
 [[package]]
 name = "klvm-utils"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "hex",
  "klvm-traits",
@@ -1327,7 +1330,7 @@ version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 dependencies = [
- "spin 0.5.2",
+ "spin",
 ]
 
 [[package]]
@@ -1840,7 +1843,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52c4f3084aa3bc7dfbba4eff4fab2a54db4324965d8872ab933565e6fbd83bc6"
 dependencies = [
  "pem",
- "ring 0.16.20",
+ "ring",
  "time",
  "x509-parser",
  "yasna",
@@ -1903,24 +1906,10 @@ dependencies = [
  "cc",
  "libc",
  "once_cell",
- "spin 0.5.2",
- "untrusted 0.7.1",
+ "spin",
+ "untrusted",
  "web-sys",
  "winapi 0.3.9",
-]
-
-[[package]]
-name = "ring"
-version = "0.17.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "688c63d65483050968b2a8937f7995f443e27041a0f7700aa59b0822aedebb74"
-dependencies = [
- "cc",
- "getrandom",
- "libc",
- "spin 0.9.8",
- "untrusted 0.9.0",
- "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -2053,28 +2042,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustls"
-version = "0.21.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9d5a6813c0759e4609cd494e8e725babae6a2ca7b62a5536a13daaec6fcb7ba"
-dependencies = [
- "log",
- "ring 0.17.7",
- "rustls-webpki",
- "sct",
-]
-
-[[package]]
-name = "rustls-webpki"
-version = "0.101.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b6275d1ee7a1cd780b64aca7726599a1dbc893b1e64144529e55c3c2f745765"
-dependencies = [
- "ring 0.17.7",
- "untrusted 0.9.0",
-]
-
-[[package]]
 name = "ryu"
 version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2100,16 +2067,6 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
-
-[[package]]
-name = "sct"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da046153aa2352493d6cb7da4b6e5c0c057d8a1d0a9aa8560baffdd945acd414"
-dependencies = [
- "ring 0.17.7",
- "untrusted 0.9.0",
-]
 
 [[package]]
 name = "sec1"
@@ -2224,12 +2181,6 @@ name = "spin"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
-
-[[package]]
-name = "spin"
-version = "0.9.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
 
 [[package]]
 name = "spki"
@@ -2528,12 +2479,6 @@ name = "untrusted"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
-
-[[package]]
-name = "untrusted"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 
 [[package]]
 name = "url"
@@ -2882,7 +2827,7 @@ dependencies = [
  "lazy_static",
  "nom",
  "oid-registry",
- "ring 0.16.20",
+ "ring",
  "rusticata-macros",
  "thiserror",
  "time",

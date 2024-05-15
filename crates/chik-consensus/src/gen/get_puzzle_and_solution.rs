@@ -1,5 +1,5 @@
 use crate::gen::validation_error::{atom, check_nil, first, next, rest, ErrorCode, ValidationErr};
-use ::chik_protocol::bytes::Bytes32;
+use chik_protocol::Bytes32;
 use klvm_utils::tree_hash;
 use klvmr::allocator::{Allocator, Atom, NodePtr};
 use klvmr::op_utils::u64_from_bytes;

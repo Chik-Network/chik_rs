@@ -1,4 +1,4 @@
-use chik_protocol::bytes::Bytes32;
+use chik_protocol::Bytes32;
 use klvmr::allocator::{Allocator, NodePtr};
 use klvmr::sha2::{Digest, Sha256};
 

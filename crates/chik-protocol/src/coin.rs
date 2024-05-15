@@ -1,4 +1,4 @@
-use crate::{bytes::Bytes32, BytesImpl};
+use crate::{Bytes32, BytesImpl};
 use chik_streamable_macro::streamable;
 use klvm_traits::{
     destructure_list, klvm_list, match_list, FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder,

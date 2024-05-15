@@ -264,7 +264,7 @@ fn main() {
     use chik_consensus::gen::flags::ENABLE_SOFTFORK_CONDITION;
     use chik_consensus::gen::opcodes::parse_opcode;
     use chik_consensus::gen::validation_error::{first, rest};
-    use chik_protocol::coin_spend::CoinSpend;
+    use chik_protocol::CoinSpend;
     use klvmr::reduction::{EvalErr, Reduction};
     use klvmr::{run_program, ChikDialect};
     use std::fs::read;

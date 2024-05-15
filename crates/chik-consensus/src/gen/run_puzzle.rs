@@ -2,8 +2,8 @@ use crate::gen::conditions::{parse_conditions, ParseState, Spend, SpendBundleCon
 use crate::gen::flags::ALLOW_BACKREFS;
 use crate::gen::spend_visitor::SpendVisitor;
 use crate::gen::validation_error::ValidationErr;
-use chik_protocol::bytes::Bytes32;
-use chik_protocol::coin::Coin;
+use chik_protocol::Bytes32;
+use chik_protocol::Coin;
 use klvm_utils::tree_hash;
 use klvmr::allocator::Allocator;
 use klvmr::chik_dialect::ChikDialect;

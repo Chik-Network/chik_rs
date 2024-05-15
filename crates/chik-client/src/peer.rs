@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicU16, Ordering};
 use std::{collections::HashMap, sync::Arc};
 
-use ::chik_protocol::*;
+use chik_protocol::*;
 use chik_traits::Streamable;
 use futures_util::stream::SplitSink;
 use futures_util::{SinkExt, StreamExt};
