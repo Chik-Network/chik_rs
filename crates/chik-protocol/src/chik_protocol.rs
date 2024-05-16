@@ -7,7 +7,7 @@ use chik_py_streamable_macro::{PyJsonDict, PyStreamable};
 
 #[repr(u8)]
 #[cfg_attr(feature = "py-bindings", derive(PyJsonDict, PyStreamable))]
-#[cfg_attr(fuzzing, derive(arbitrary::Arbitrary))]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[derive(Streamable, Hash, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ProtocolMessageTypes {
     // Shared protocol (all services)
@@ -119,6 +119,22 @@ pub enum ProtocolMessageTypes {
     RespondBlockHeaders = 88,
     RequestFeeEstimates = 89,
     RespondFeeEstimates = 90,
+
+    // Unfinished block protocol
+    NewUnfinishedBlock2 = 92,
+    RequestUnfinishedBlock2 = 93,
+
+    // New wallet sync protocol
+    RequestRemovePuzzleSubscriptions = 94,
+    RespondRemovePuzzleSubscriptions = 95,
+    RequestRemoveCoinSubscriptions = 96,
+    RespondRemoveCoinSubscriptions = 97,
+    RequestPuzzleState = 98,
+    RespondPuzzleState = 99,
+    RejectPuzzleState = 100,
+    RequestCoinState = 101,
+    RespondCoinState = 102,
+    RejectCoinState = 103,
 }
 
 #[cfg(feature = "py-bindings")]
@@ -134,7 +150,7 @@ pub trait ChikProtocolMessage {
 
 #[repr(u8)]
 #[cfg_attr(feature = "py-bindings", derive(PyJsonDict, PyStreamable))]
-#[cfg_attr(fuzzing, derive(arbitrary::Arbitrary))]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[derive(Streamable, Hash, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum NodeType {
     FullNode = 1,

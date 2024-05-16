@@ -1,125 +1,157 @@
-![Build](https://github.com/Chik-Network/chik_rs/actions/workflows/build-crate-and-npm.yml/badge.svg)
-![Test](https://github.com/Chik-Network/chik_rs/actions/workflows/build-test.yml/badge.svg)
-![PyPI](https://img.shields.io/pypi/v/chik_rs?logo=pypi)
-![PyPI - Format](https://img.shields.io/pypi/format/chik_rs?logo=pypi)
+# chik_rs
+
 ![GitHub](https://img.shields.io/github/license/Chik-Network/chik_rs?logo=Github)
 [![Coverage Status](https://coveralls.io/repos/github/Chik-Network/chik_rs/badge.svg?branch=main)](https://coveralls.io/github/Chik-Network/chik_rs?branch=main)
+![Build](https://github.com/Chik-Network/chik_rs/actions/workflows/build-crate-and-npm.yml/badge.svg)
+![Test](https://github.com/Chik-Network/chik_rs/actions/workflows/build-test.yml/badge.svg)
 
-This cargo workspace contains code useful for working with the Chik network.
+![PyPI](https://img.shields.io/pypi/v/chik_rs?logo=pypi)
+![PyPI - Format](https://img.shields.io/pypi/format/chik_rs?logo=pypi)
+[![Crates.io](https://img.shields.io/crates/v/chik.svg)](https://crates.io/crates/chik)
+[![Downloads](https://img.shields.io/crates/d/chik.svg)](https://crates.io/crates/chik)
+[![Docs](https://docs.rs/chik/badge.svg)](https://docs.rs/chik/latest/chik/)
 
-# Tests
+A collection of Rust crates for working with the Chik blockchain. There are also Python bindings in the form of a wheel.
 
-To run tests:
+## Prerequisites
 
+- [Python](https://www.python.org/downloads/) 3.8 or higher installed.
+- The [Rust toolchain](https://rustup.rs/) must be installed.
+
+## Unit Tests
+
+To run the unit tests for the whole workspace:
+
+```bash
+cargo test --workspace
 ```
-cargo test --all
+
+Some slow tests are only enabled in optimized builds, so it may also be a good idea to run the tests in release mode:
+
+```bash
+cargo test --workspace --release
 ```
 
-Some slow tests are only enabled in optimized builds, so it may also be a good
-idea to run the tests in release mode:
+### Python Linking
 
+
+You may need a Python virtual environment activated for the tests to link properly, due to the `pyo3` dependency in `wheel`.
+
+You can setup a virtual environment with the following command:
+
+```bash
+python3 -m venv venv
 ```
-cargo test --all --release
+
+Activate the virtual env:
+
+```bash
+. ./venv/bin/activate
 ```
 
-You may need a python virtual environment activated for the tests to link.
-This seems to be caused by the pyo3 dependency in the `wheel`.
+### Python Tests
 
-# Benchmarks
+The `wheel` crate is a single Python wheel that exports bindings to various functionality in the repository, mostly from `chik-consensus` and `chik-protocol`.
 
-To run benchmarks for a specific crate:
+It's built with `maturin`, so you need to have activated a python virtual environment for the build to work.
 
+The bindings are tested with `pytest`. Before you run them, install the following dependencies:
+
+```bash
+pip install pytest maturin typing-extensions chik-blockchain==2.1.2
 ```
+
+And build the Python wheel:
+
+```bash
+maturin develop -m wheel/Cargo.toml
+```
+
+Finally, you can run the Python binding tests:
+
+```bash
+pytest tests
+```
+
+Note that these tests can take several minutes to complete.
+
+## Benchmarks
+
+To run benchmarks for a specific crate before you make changes:
+
+```bash
 cargo bench -- --save-baseline before
-<make change>
+```
+
+After you apply the changes, finish the benchmark:
+
+```bash
 cargo bench -- --save-baseline after
 critcmp after before
 ```
 
-You can also run all the benchmarks by including `--workspace` on the command
-line.
+You can also run all the benchmarks by including `--workspace`.
 
-# pre-commit
+Note that you must include the flag before the `--`, for example:
 
-This repository has a pre-commit configuration, which is hooked into git by
-running:
-
+```bash
+cargo bench --workspace -- --save-baseline before
 ```
+
+## Precommit Hook
+
+This repository has a pre-commit configuration, which is hooked into git by running:
+
+```bash
 pre-commit install --hook-type pre-commit --hook-type pre-push
 ```
 
-It runs `cargo fmt` on all crates on every commit, and runs clippy and builds on
-push.
+It runs Prettier and then `cargo fmt` on all crates on every commit. When you push, it runs `cargo clippy`, `cargo test`, and `cargo build`.
 
 To run all checks explicitly (without pushing), run:
 
-```
+```bash
 pre-commit run --all --hook-stage pre-push
 ```
 
-# python bindings
+## Fuzzers
 
-The `wheel` crate is a single python wheel that exports the functionality of
-all crates in the repository.
+Fuzzers can't be run or listed for the whole workspace, but only for individual crates. There is a tool to generate a fuzzing corpus from a blockchain database.
 
-It's built with `maturin`. You need to have activated a python virtual
-environment for the build to work.
-
-```
-pip install maturin
-cd wheel
-maturin develop
-```
-
-Once built, the python tests can be run, from the root of the repository. Note
-that the tests require that `chik-blockchain` and `blspy` wheels are installed.
-
-```
-pytest tests
-```
-
-# Fuzzers
-
-Fuzzers can't be run or listed for the whole workspace, but only for individual
-crates. There is a tool to generate a fuzzing corpus from a blockchain database.
 It's run like this:
 
-```
+```bash
 cd crates/chik-tools
 cargo run --release --bin gen-corpus -- --help
 ```
 
 The following crates have fuzzers:
 
-* chik-bls
-* chik-protocol
-* chik-wallet
-* klvm-utils
-* chik (the root crate)
+- chik-bls
+- chik-consensus
+- chik-protocol
+- chik-puzzles
+- klvm-utils
 
 To list and run fuzzers:
 
-```
+```bash
 cargo fuzz list
-```
-
-```
 cargo fuzz run <name-of-fuzzer>
 ```
 
-# Bumping version number
+## Bumping Version Number
 
 Make sure you have `cargo-workspaces` installed:
 
-```
+```bash
 cargo install cargo-workspaces
 ```
 
 To bump the versions of all relevant crates:
 
-```
+```bash
 cargo ws version --all --no-git-commit
 ```
 
-Select "minor update" if there has not been any incompatible API changes,
-otherwise "major update".
+Select "minor update" if there has not been any incompatible API changes, otherwise "major update".

@@ -1,0 +1,23 @@
+[package]
+name = "chik-puzzles-fuzz"
+version = "0.8.0"
+authors = ["Automatically generated"]
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+klvmr = "0.7.0"
+pyo3 = { version = ">=0.19.0", features = ["auto-initialize"]}
+chik-puzzles = { path = "..", features = ["arbitrary"] }
+klvm-traits = { version = "0.8.0", path = "../../klvm-traits" }
+
+[[bin]]
+name = "roundtrip"
+path = "fuzz_targets/roundtrip.rs"
+test = false
+doc = false
+bench = false

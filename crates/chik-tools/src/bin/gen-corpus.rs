@@ -9,7 +9,7 @@ use chik_tools::{iterate_tx_blocks, visit_spends};
 use chik_traits::streamable::Streamable;
 
 use chik_protocol::{Bytes32, Coin, CoinSpend, Program, SpendBundle};
-use chik_wallet::singleton::SINGLETON_TOP_LAYER_PUZZLE_HASH;
+use chik_puzzles::singleton::SINGLETON_TOP_LAYER_PUZZLE_HASH;
 use klvm_traits::{FromKlvm, FromNodePtr};
 use klvm_utils::{tree_hash, CurriedProgram};
 use klvmr::allocator::NodePtr;
@@ -94,7 +94,7 @@ fn main() {
                             };
 
                         let run_puzzle = seen_puzzles.lock().unwrap().insert(mod_hash);
-                        let fast_forward = (*mod_hash == SINGLETON_TOP_LAYER_PUZZLE_HASH)
+                        let fast_forward = (mod_hash == SINGLETON_TOP_LAYER_PUZZLE_HASH.into())
                             && seen_singletons.lock().unwrap().insert(puzzle_hash);
 
                         if !run_puzzle && !fast_forward && !args.spend_bundles {

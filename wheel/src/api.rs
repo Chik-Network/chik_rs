@@ -15,25 +15,29 @@ use chik_consensus::merkle_set::compute_merkle_set_root as compute_merkle_root_i
 use chik_consensus::merkle_tree::{validate_merkle_proof, MerkleSet};
 use chik_protocol::{
     BlockRecord, Bytes32, ChallengeBlockInfo, ChallengeChainSubSlot, ClassgroupElement, Coin,
-    CoinSpend, CoinState, CoinStateUpdate, EndOfSubSlotBundle, Foliage, FoliageBlockData,
-    FoliageTransactionBlock, FullBlock, HeaderBlock, InfusedChallengeChainSubSlot, NewCompactVDF,
-    NewPeak, NewPeakWallet, NewSignagePointOrEndOfSubSlot, NewTransaction, NewUnfinishedBlock,
+    CoinSpend, CoinState, CoinStateFilters, CoinStateUpdate, EndOfSubSlotBundle, Foliage,
+    FoliageBlockData, FoliageTransactionBlock, FullBlock, HeaderBlock,
+    InfusedChallengeChainSubSlot, NewCompactVDF, NewPeak, NewPeakWallet,
+    NewSignagePointOrEndOfSubSlot, NewTransaction, NewUnfinishedBlock, NewUnfinishedBlock2,
     PoolTarget, Program, ProofBlockHeader, ProofOfSpace, PuzzleSolutionResponse, RecentChainData,
     RegisterForCoinUpdates, RegisterForPhUpdates, RejectAdditionsRequest, RejectBlock,
-    RejectBlockHeaders, RejectBlocks, RejectHeaderBlocks, RejectHeaderRequest,
-    RejectPuzzleSolution, RejectRemovalsRequest, RequestAdditions, RequestBlock,
-    RequestBlockHeader, RequestBlockHeaders, RequestBlocks, RequestChildren, RequestCompactVDF,
-    RequestFeeEstimates, RequestHeaderBlocks, RequestMempoolTransactions, RequestPeers,
-    RequestProofOfWeight, RequestPuzzleSolution, RequestRemovals, RequestSesInfo,
+    RejectBlockHeaders, RejectBlocks, RejectCoinState, RejectHeaderBlocks, RejectHeaderRequest,
+    RejectPuzzleSolution, RejectPuzzleState, RejectRemovalsRequest, RequestAdditions, RequestBlock,
+    RequestBlockHeader, RequestBlockHeaders, RequestBlocks, RequestChildren, RequestCoinState,
+    RequestCompactVDF, RequestFeeEstimates, RequestHeaderBlocks, RequestMempoolTransactions,
+    RequestPeers, RequestProofOfWeight, RequestPuzzleSolution, RequestPuzzleState, RequestRemovals,
+    RequestRemoveCoinSubscriptions, RequestRemovePuzzleSubscriptions, RequestSesInfo,
     RequestSignagePointOrEndOfSubSlot, RequestTransaction, RequestUnfinishedBlock,
-    RespondAdditions, RespondBlock, RespondBlockHeader, RespondBlockHeaders, RespondBlocks,
-    RespondChildren, RespondCompactVDF, RespondEndOfSubSlot, RespondFeeEstimates,
-    RespondHeaderBlocks, RespondPeers, RespondProofOfWeight, RespondPuzzleSolution,
-    RespondRemovals, RespondSesInfo, RespondSignagePoint, RespondToCoinUpdates, RespondToPhUpdates,
-    RespondTransaction, RespondUnfinishedBlock, RewardChainBlock, RewardChainBlockUnfinished,
-    RewardChainSubSlot, SendTransaction, SpendBundle, SubEpochChallengeSegment, SubEpochData,
-    SubEpochSegments, SubEpochSummary, SubSlotData, SubSlotProofs, TimestampedPeerInfo,
-    TransactionAck, TransactionsInfo, UnfinishedBlock, VDFInfo, VDFProof, WeightProof,
+    RequestUnfinishedBlock2, RespondAdditions, RespondBlock, RespondBlockHeader,
+    RespondBlockHeaders, RespondBlocks, RespondChildren, RespondCoinState, RespondCompactVDF,
+    RespondEndOfSubSlot, RespondFeeEstimates, RespondHeaderBlocks, RespondPeers,
+    RespondProofOfWeight, RespondPuzzleSolution, RespondPuzzleState, RespondRemovals,
+    RespondRemoveCoinSubscriptions, RespondRemovePuzzleSubscriptions, RespondSesInfo,
+    RespondSignagePoint, RespondToCoinUpdates, RespondToPhUpdates, RespondTransaction,
+    RespondUnfinishedBlock, RewardChainBlock, RewardChainBlockUnfinished, RewardChainSubSlot,
+    SendTransaction, SpendBundle, SubEpochChallengeSegment, SubEpochData, SubEpochSegments,
+    SubEpochSummary, SubSlotData, SubSlotProofs, TimestampedPeerInfo, TransactionAck,
+    TransactionsInfo, UnfinishedBlock, UnfinishedHeaderBlock, VDFInfo, VDFProof, WeightProof,
 };
 use klvm_utils::tree_hash_from_bytes;
 use klvmr::{ENABLE_BLS_OPS_OUTSIDE_GUARD, ENABLE_FIXED_DIV, LIMIT_HEAP, NO_UNKNOWN_OPS};
@@ -62,7 +66,8 @@ use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
 use klvmr::ChikDialect;
 
 use chik_bls::{
-    hash_to_g2 as native_hash_to_g2, DerivableKey, GTElement, PublicKey, SecretKey, Signature,
+    hash_to_g2 as native_hash_to_g2, BLSCache, DerivableKey, GTElement, PublicKey, SecretKey,
+    Signature,
 };
 
 #[pyfunction]
@@ -182,7 +187,7 @@ fn run_puzzle(
     let conds = native_run_puzzle::<MempoolVisitor>(
         &mut a, puzzle, solution, parent_id, amount, max_cost, flags,
     )?;
-    Ok(OwnedSpendBundleConditions::from(&a, conds))
+    Ok(OwnedSpendBundleConditions::from(&a, conds)?)
 }
 
 // this is like a CoinSpend but with references to the puzzle and solution,
@@ -451,6 +456,7 @@ pub fn chik_rs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<RejectHeaderBlocks>()?;
     m.add_class::<RespondHeaderBlocks>()?;
     m.add_class::<HeaderBlock>()?;
+    m.add_class::<UnfinishedHeaderBlock>()?;
     m.add_class::<CoinState>()?;
     m.add_class::<RegisterForPhUpdates>()?;
     m.add_class::<RespondToPhUpdates>()?;
@@ -463,6 +469,17 @@ pub fn chik_rs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<RespondSesInfo>()?;
     m.add_class::<RequestFeeEstimates>()?;
     m.add_class::<RespondFeeEstimates>()?;
+    m.add_class::<RequestRemovePuzzleSubscriptions>()?;
+    m.add_class::<RespondRemovePuzzleSubscriptions>()?;
+    m.add_class::<RequestRemoveCoinSubscriptions>()?;
+    m.add_class::<RespondRemoveCoinSubscriptions>()?;
+    m.add_class::<CoinStateFilters>()?;
+    m.add_class::<RequestPuzzleState>()?;
+    m.add_class::<RespondPuzzleState>()?;
+    m.add_class::<RejectPuzzleState>()?;
+    m.add_class::<RequestCoinState>()?;
+    m.add_class::<RespondCoinState>()?;
+    m.add_class::<RejectCoinState>()?;
 
     // full node protocol
     m.add_class::<NewPeak>()?;
@@ -490,6 +507,8 @@ pub fn chik_rs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<RespondCompactVDF>()?;
     m.add_class::<RequestPeers>()?;
     m.add_class::<RespondPeers>()?;
+    m.add_class::<NewUnfinishedBlock2>()?;
+    m.add_class::<RequestUnfinishedBlock2>()?;
 
     // facilities from klvm_rs
 
@@ -510,6 +529,7 @@ pub fn chik_rs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<GTElement>()?;
     m.add_class::<SecretKey>()?;
     m.add_class::<AugSchemeMPL>()?;
+    m.add_class::<BLSCache>()?;
 
     Ok(())
 }

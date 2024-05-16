@@ -1,6 +1,6 @@
 [package]
 name = "chik-tools"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Utility functions and types used by the Chik blockchain full node"
@@ -9,14 +9,14 @@ homepage = "https://github.com/Chik-Network/chik_rs"
 repository = "https://github.com/Chik-Network/chik_rs"
 
 [dependencies]
-chik-protocol = { version = "0.7.0", path = "../chik-protocol" }
-chik-traits = { version = "0.7.0", path = "../chik-traits" }
-klvm-utils = { version = "0.7.0", path = "../klvm-utils" }
-klvm-traits = { version = "0.7.0", path = "../klvm-traits" }
-chik-wallet = { version = "0.7.0", path = "../chik-wallet" }
-chik-bls = { version = "0.7.0", path = "../chik-bls" }
-chik-consensus = { version = "0.7.0", path = "../chik-consensus" }
-klvmr = { version = "0.6.0", features = ["counters"] }
+chik-protocol = { version = "0.8.0", path = "../chik-protocol" }
+chik-traits = { version = "0.8.0", path = "../chik-traits" }
+klvm-utils = { version = "0.8.0", path = "../klvm-utils" }
+klvm-traits = { version = "0.8.0", path = "../klvm-traits" }
+chik-puzzles = { version = "0.8.0", path = "../chik-puzzles" }
+chik-bls = { version = "0.8.0", path = "../chik-bls" }
+chik-consensus = { version = "0.8.0", path = "../chik-consensus" }
+klvmr = { version = "0.7.0", features = ["counters"] }
 rusqlite = { version = "0.30.0", features = ["bundled"] }
 clap = { version = "4.3.9", features = ["derive"] }
 zstd = "0.12.3"

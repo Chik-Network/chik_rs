@@ -1,6 +1,6 @@
 [package]
 name = "chik-consensus"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Utility functions and types used by the Chik blockchain full node"
@@ -12,18 +12,19 @@ repository = "https://github.com/Chik-Network/chik_rs"
 py-bindings = ["dep:pyo3", "dep:chik_py_streamable_macro"]
 
 [dependencies]
-klvmr = "0.6.1"
+klvmr = "0.7.0"
 hex = "0.4.3"
 pyo3 = { version = ">=0.19.0", optional = true }
 sha2 = "0.10.8"
-chik_streamable_macro = { version = "0.6.0", path = "../chik_streamable_macro" }
+chik_streamable_macro = { version = "0.8.0", path = "../chik_streamable_macro" }
 chik_py_streamable_macro = { version = "0.7.0", path = "../chik_py_streamable_macro", optional = true }
-klvm-utils = { version = "0.7.0", path = "../klvm-utils" }
-chik-traits = { version = "0.7.0", path = "../chik-traits" }
-klvm-traits = { version = "0.7.0", path = "../klvm-traits" }
+klvm-utils = { version = "0.8.0", path = "../klvm-utils" }
+chik-traits = { version = "0.8.0", path = "../chik-traits" }
+klvm-traits = { version = "0.8.0", path = "../klvm-traits" }
 klvm-derive = { version = "0.6.0", path = "../klvm-derive" }
-chik-protocol = { version = "0.7.0", path = "../chik-protocol" }
-chik-wallet = { version = "0.7.0", path = "../chik-wallet" }
+chik-protocol = { version = "0.8.0", path = "../chik-protocol" }
+chik-puzzles = { version = "0.8.0", path = "../chik-puzzles" }
+chik-bls = { version = "0.8.0", path = "../chik-bls" }
 hex-literal = "0.4.1"
 thiserror = "1.0.44"
 

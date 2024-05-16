@@ -7,7 +7,7 @@ crates_dir = Path(__file__).parent.parent.resolve() / "crates"
 input_dir = crates_dir / "chik-protocol" / "src"
 
 # enums are exposed to python as int
-enums = set(["NodeType", "ProtocolMessageTypes"])
+enums = set(["NodeType", "ProtocolMessageTypes", "RejectStateReason"])
 
 
 def transform_type(m: str) -> str:
@@ -197,6 +197,11 @@ extra_members = {
         "is_transaction_block: bool",
         "first_in_sub_slot: bool",
     ],
+    "UnfinishedHeaderBlock": [
+        "prev_header_hash: bytes32",
+        "header_hash: bytes32",
+        "total_iters: uint128",
+    ],
     "RewardChainBlock": [
         "def get_unfinished(self) -> RewardChainBlockUnfinished: ...",
     ],
@@ -333,6 +338,12 @@ def serialized_length(program: ReadableBuffer) -> int: ...
 def tree_hash(program: ReadableBuffer) -> bytes32: ...
 def get_puzzle_and_solution_for_coin(program: ReadableBuffer, args: ReadableBuffer, max_cost: int, find_parent: bytes32, find_amount: int, find_ph: bytes32, flags: int) -> Tuple[bytes, bytes]: ...
 
+class BLSCache:
+    def __init__(self, cache_size: Optional[int] = 50000) -> None: ...
+    def len(self) -> int: ...
+    def aggregate_verify(self, pks: List[G1Element], msgs: List[bytes], sig: G2Element) -> bool: ...
+    
+
 class AugSchemeMPL:
     @staticmethod
     def sign(pk: PrivateKey, msg: bytes, prepend_pk: Optional[G1Element] = None) -> G2Element: ...
@@ -432,13 +443,13 @@ class MerkleSet:
             "birth_height: Optional[int]",
             "birth_seconds: Optional[int]",
             "create_coin: List[Tuple[bytes, int, Optional[bytes]]]",
-            "agg_sig_me: List[Tuple[bytes, bytes]]",
-            "agg_sig_parent: List[Tuple[bytes, bytes]]",
-            "agg_sig_puzzle: List[Tuple[bytes, bytes]]",
-            "agg_sig_amount: List[Tuple[bytes, bytes]]",
-            "agg_sig_puzzle_amount: List[Tuple[bytes, bytes]]",
-            "agg_sig_parent_amount: List[Tuple[bytes, bytes]]",
-            "agg_sig_parent_puzzle: List[Tuple[bytes, bytes]]",
+            "agg_sig_me: List[Tuple[G1Element, bytes]]",
+            "agg_sig_parent: List[Tuple[G1Element, bytes]]",
+            "agg_sig_puzzle: List[Tuple[G1Element, bytes]]",
+            "agg_sig_amount: List[Tuple[G1Element, bytes]]",
+            "agg_sig_puzzle_amount: List[Tuple[G1Element, bytes]]",
+            "agg_sig_parent_amount: List[Tuple[G1Element, bytes]]",
+            "agg_sig_parent_puzzle: List[Tuple[G1Element, bytes]]",
             "flags: int",
         ],
     )
@@ -453,7 +464,7 @@ class MerkleSet:
             "seconds_absolute: int",
             "before_height_absolute: Optional[int]",
             "before_seconds_absolute: Optional[int]",
-            "agg_sig_unsafe: List[Tuple[bytes, bytes]]",
+            "agg_sig_unsafe: List[Tuple[G1Element, bytes]]",
             "cost: int",
             "removal_amount: int",
             "addition_amount: int",

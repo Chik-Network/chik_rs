@@ -1,4 +1,5 @@
 use chik_consensus::gen::conditions::Condition;
+use chik_puzzles::Proof;
 use chik_traits::Streamable;
 use clap::Parser;
 use klvm_traits::{FromKlvm, ToNodePtr};
@@ -6,11 +7,10 @@ use klvm_utils::tree_hash;
 use klvm_utils::CurriedProgram;
 use klvmr::{allocator::NodePtr, Allocator};
 
-use chik_wallet::cat::{CatArgs, CatSolution, CAT_PUZZLE_HASH};
-use chik_wallet::did::{DidArgs, DidSolution, DID_INNER_PUZZLE_HASH};
-use chik_wallet::singleton::{SingletonArgs, SingletonSolution, SINGLETON_TOP_LAYER_PUZZLE_HASH};
-use chik_wallet::standard::{StandardArgs, StandardSolution, STANDARD_PUZZLE_HASH};
-use chik_wallet::Proof;
+use chik_puzzles::cat::{CatArgs, CatSolution, CAT_PUZZLE_HASH};
+use chik_puzzles::did::{DidArgs, DidSolution, DID_INNER_PUZZLE_HASH};
+use chik_puzzles::singleton::{SingletonArgs, SingletonSolution, SINGLETON_TOP_LAYER_PUZZLE_HASH};
+use chik_puzzles::standard::{StandardArgs, StandardSolution, STANDARD_PUZZLE_HASH};
 
 /// Run a puzzle given a solution and print the resulting conditions
 #[derive(Parser, Debug)]
@@ -238,7 +238,7 @@ fn print_puzzle_info(a: &Allocator, puzzle: NodePtr, solution: NodePtr) {
                 return;
             };
             println!("  solution");
-            match sol.proof {
+            match sol.lineage_proof {
                 Proof::Lineage(lp) => {
                     println!("    lineage-proof: {lp:?}");
                 }

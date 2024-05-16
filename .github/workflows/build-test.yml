@@ -313,11 +313,7 @@ jobs:
 
       - name: workspace
         run: |
-            cargo clippy --workspace --all-features -- -Dwarnings
-      - name: wheel
-        run: |
-            cd wheel
-            cargo clippy --all-features -- -Dwarnings
+            cargo clippy --workspace --all-features --all-targets -- -Dwarnings
 
   fuzz_targets:
     runs-on: ubuntu-latest
@@ -351,9 +347,9 @@ jobs:
           cd crates/chik-protocol
           cargo +nightly fuzz build
           cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
-      - name: cargo fuzz (chik-wallet)
+      - name: cargo fuzz (chik-puzzles)
         run: |
-          cd crates/chik-wallet
+          cd crates/chik-puzzles
           cargo +nightly fuzz build
           cargo fuzz list | xargs -I "%" sh -c "cargo +nightly fuzz run % -- -max_total_time=20 || exit 255"
 

@@ -20,6 +20,9 @@ pub enum Error {
     #[error("Validation {0}")]
     Validation(#[from] ValidationErr),
 
+    #[error("BLS {0}")]
+    Bls(#[from] chik_bls::Error),
+
     #[error("not a singleton mod hash")]
     NotSingletonModHash,
 
@@ -40,6 +43,9 @@ pub enum Error {
 
     #[error("coin mismatch")]
     CoinMismatch,
+
+    #[error("expected lineage proof, found eve proof")]
+    ExpectedLineageProof,
 
     #[error("{0}")]
     Custom(String),

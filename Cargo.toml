@@ -12,8 +12,8 @@ members = [
     "crates/chik-ssl",
     "crates/chik-tools",
     "crates/chik-traits",
-    "crates/chik-wallet",
-    "crates/chik-wallet/fuzz",
+    "crates/chik-puzzles",
+    "crates/chik-puzzles/fuzz",
     "crates/klvm-derive",
     "crates/klvm-traits",
     "crates/klvm-utils",
@@ -24,7 +24,7 @@ members = [
 
 [package]
 name = "chik"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "A meta-crate that exports all of the Chik crates in the workspace."
@@ -44,7 +44,7 @@ default = [
     "protocol",
     "ssl",
     "traits",
-    "wallet",
+    "puzzles",
     "klvm-traits",
     "klvm-utils"
 ]
@@ -55,20 +55,20 @@ consensus = ["dep:chik-consensus"]
 protocol = ["dep:chik-protocol"]
 ssl = ["dep:chik-ssl"]
 traits = ["dep:chik-traits"]
-wallet = ["dep:chik-wallet"]
+puzzles = ["dep:chik-puzzles"]
 klvm-traits = ["dep:klvm-traits"]
 klvm-utils = ["dep:klvm-utils"]
 
 [dependencies]
-chik-bls = { path = "./crates/chik-bls", version = "0.7.0", optional = true }
-chik-client = { path = "./crates/chik-client", version = "0.7.0", optional = true }
-chik-consensus = { path = "./crates/chik-consensus", version = "0.7.0", optional = true }
-chik-protocol = { path = "./crates/chik-protocol", version = "0.7.0", optional = true }
+chik-bls = { path = "./crates/chik-bls", version = "0.8.0", optional = true }
+chik-client = { path = "./crates/chik-client", version = "0.8.0", optional = true }
+chik-consensus = { path = "./crates/chik-consensus", version = "0.8.0", optional = true }
+chik-protocol = { path = "./crates/chik-protocol", version = "0.8.0", optional = true }
 chik-ssl = { path = "./crates/chik-ssl", version = "0.7.0", optional = true }
-chik-traits = { path = "./crates/chik-traits", version = "0.7.0", optional = true }
-chik-wallet = { path = "./crates/chik-wallet", version = "0.7.0", optional = true }
-klvm-traits = { path = "./crates/klvm-traits", version = "0.7.0", optional = true }
-klvm-utils = { path = "./crates/klvm-utils", version = "0.7.0", optional = true }
+chik-traits = { path = "./crates/chik-traits", version = "0.8.0", optional = true }
+chik-puzzles = { path = "./crates/chik-puzzles", version = "0.8.0", optional = true }
+klvm-traits = { path = "./crates/klvm-traits", version = "0.8.0", optional = true }
+klvm-utils = { path = "./crates/klvm-utils", version = "0.8.0", optional = true }
 
 [profile.release]
 lto = "thin"

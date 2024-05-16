@@ -1,5 +1,6 @@
 use chik_traits::{chik_error, read_bytes, Streamable};
 use klvm_traits::{FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder, ToKlvm, ToKlvmError};
+use klvm_utils::TreeHash;
 use sha2::{Digest, Sha256};
 use std::array::TryFromSliceError;
 use std::fmt;
@@ -18,7 +19,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 
 #[derive(Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(fuzzing, derive(arbitrary::Arbitrary))]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Bytes(Vec<u8>);
 
 impl Bytes {
@@ -150,7 +151,7 @@ impl Deref for Bytes {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(fuzzing, derive(arbitrary::Arbitrary))]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct BytesImpl<const N: usize>([u8; N]);
 
 impl<const N: usize> BytesImpl<N> {
@@ -340,6 +341,18 @@ pub type Bytes32 = BytesImpl<32>;
 pub type Bytes48 = BytesImpl<48>;
 pub type Bytes96 = BytesImpl<96>;
 pub type Bytes100 = BytesImpl<100>;
+
+impl From<Bytes32> for TreeHash {
+    fn from(value: Bytes32) -> Self {
+        Self::new(value.0)
+    }
+}
+
+impl From<TreeHash> for Bytes32 {
+    fn from(value: TreeHash) -> Self {
+        Self(value.to_bytes())
+    }
+}
 
 #[cfg(feature = "py-bindings")]
 impl<const N: usize> ToPyObject for BytesImpl<N> {

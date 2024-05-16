@@ -22,12 +22,12 @@ our_crates = [
     "crates/chik-tools",
     "crates/klvm-utils",
     "crates/klvm-derive",
-    "crates/chik-wallet",
+    "crates/chik-puzzles",
     "crates/chik-client",
     "crates/chik-ssl",
     "crates/chik-consensus",
     "crates/chik-consensus/fuzz",
-    "crates/chik-wallet/fuzz",
+    "crates/chik-puzzles/fuzz",
     "crates/klvm-utils/fuzz",
 ]
 

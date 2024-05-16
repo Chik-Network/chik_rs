@@ -1,6 +1,6 @@
 [package]
 name = "klvm-traits"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Traits for encoding and decoding KLVM objects."
@@ -18,9 +18,9 @@ py-bindings = ["dep:pyo3"]
 
 [dependencies]
 pyo3 = { version = ">=0.19.0", optional = true }
-klvmr = "0.6.1"
+klvmr = "0.7.0"
 klvm-derive = { version = "0.6.0", path = "../klvm-derive", optional = true }
-chik-bls = { version = "0.7.0", path = "../chik-bls", optional = true }
+chik-bls = { version = "0.8.0", path = "../chik-bls", optional = true }
 num-bigint = "0.4.3"
 thiserror = "1.0.44"
 
