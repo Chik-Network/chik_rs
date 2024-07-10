@@ -30,8 +30,8 @@ jobs:
           - name: macOS
             matrix: macos
             runs-on:
-              arm: [macOS, ARM64]
-              intel: [macos-latest]
+              arm: [macos-14]
+              intel: [macos-12]
           - name: Ubuntu
             matrix: ubuntu
             runs-on:
@@ -121,21 +121,13 @@ jobs:
             arch:
               name: ARM
               matrix: arm
-          - os:
-              name: macOS
-              matrix: macos
-              runs-on:
-                arm: [ macOS, ARM64 ]
-            arch:
-              name: ARM
-              matrix: arm
 
     steps:
     - name: Clean workspace
       uses: Chik-Network/actions/clean-workspace@main
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -202,9 +194,9 @@ jobs:
         pip install --no-index --find-links target/wheels/ chik_rs
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: packages
+        name: packages-${{ matrix.os.name }}-${{ matrix.python.major-dot-minor }}-${{ matrix.arch.name }}
         path: ./target/wheels/
 
   check-typestubs:
@@ -213,7 +205,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -232,7 +224,7 @@ jobs:
       uses: Chik-Network/actions/clean-workspace@main
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -265,7 +257,7 @@ jobs:
       uses: Chik-Network/actions/clean-workspace@main
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -279,16 +271,16 @@ jobs:
         maturin sdist -m wheel/Cargo.toml
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: packages
+        name: packages-sdist-${{ matrix.os.name }}-${{ matrix.python.major-dot-minor }}-${{ matrix.arch.name }}
         path: ./target/wheels/
 
   fmt:
     runs-on: ubuntu-latest
     name: cargo fmt
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
@@ -306,7 +298,7 @@ jobs:
   clippy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -320,7 +312,7 @@ jobs:
     env:
         CARGO_PROFILE_RELEASE_LTO: false
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
       - name: cargo-fuzz
         run: cargo +nightly install cargo-fuzz
@@ -366,7 +358,7 @@ jobs:
         run: |
           git config --global core.autocrlf false
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
       - uses: dtolnay/rust-toolchain@stable
@@ -434,7 +426,7 @@ jobs:
       uses: Chik-Network/actions/clean-workspace@main
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -443,9 +435,10 @@ jobs:
         python-version: ${{ matrix.python.major-dot-minor }}
 
     - name: Download artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
-        name: packages
+        merge-multiple: true
+        pattern: packages-*
         path: ./dist
 
     - name: Set Env

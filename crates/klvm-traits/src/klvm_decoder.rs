@@ -1,12 +1,27 @@
 use klvmr::{allocator::SExp, Allocator, Atom, NodePtr};
 
-use crate::{FromKlvm, FromKlvmError};
+use crate::{
+    destructure_list, destructure_quote, match_list, match_quote, FromKlvm, FromKlvmError,
+    MatchByte,
+};
 
-pub trait KlvmDecoder {
-    type Node: Clone;
+pub trait KlvmDecoder: Sized {
+    type Node: Clone + FromKlvm<Self::Node>;
 
     fn decode_atom(&self, node: &Self::Node) -> Result<Atom, FromKlvmError>;
     fn decode_pair(&self, node: &Self::Node) -> Result<(Self::Node, Self::Node), FromKlvmError>;
+
+    fn decode_curried_arg(
+        &self,
+        node: &Self::Node,
+    ) -> Result<(Self::Node, Self::Node), FromKlvmError> {
+        let destructure_list!(_, destructure_quote!(first), rest) =
+            <match_list!(MatchByte<4>, match_quote!(Self::Node), Self::Node)>::from_klvm(
+                self,
+                node.clone(),
+            )?;
+        Ok((first, rest))
+    }
 
     /// This is a helper function that just calls `clone` on the node.
     /// It's required only because the compiler can't infer that `N` is `Clone`,

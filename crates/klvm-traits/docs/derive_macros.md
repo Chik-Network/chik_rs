@@ -12,29 +12,188 @@ Pick whichever representation fits your use-case the best.
 Note that the syntax `(A . B)` represents a cons-pair with two values, `A` and `B`.
 This is how non-atomic values are structured in KLVM.
 
-### Tuple
+### List
 
-This represents values in an unterminated series of nested cons-pairs.
+This represents values in a nil terminated series of nested cons-pairs, also known as a proper list.
 
-For example:
+Note that if you mark the last field to [consume the rest of the list](#consume-the-rest), there is no nil terminator.
 
-- `()` is encoded as `()`, since it's not possible to create a cons-pair with no values.
-- `(A)` is encoded as `A`, since it's not possible to create a cons-pair with one value.
-- `(A, B)` is encoded as `(A . B)`, since it's already a valid cons-pair.
-- `(A, B, C)` is encoded as `(A . (B . C))`, since every cons-pair must contain two values.
-- `(A, B, C, D)` is encoded as `(A . (B . (C . D)))` for the same reason as above.
+For example, with the list `[A, B, C]`, we build the list in reverse:
+
+- Start with the nil terminator `()`
+- Create the first cons pair `(C . ())`
+- Then continue on with `(B . (C . ()))`
+- Finally, the list is represented as `(A . (B . (C . ())))`
 
 ```rust
 use klvmr::Allocator;
 use klvm_traits::{ToKlvm, FromKlvm};
 
 #[derive(Debug, PartialEq, Eq, ToKlvm, FromKlvm)]
-#[klvm(tuple)]
+#[klvm(list)]
+struct Tiers {
+    high: u8,
+    medium: u8,
+    low: u8,
+}
+
+// The KLVM representation for this is `(10 5 1)`.
+// It can also be written as `(10 . (5 . (1 . ())))`.
+let value = Tiers {
+    high: 10,
+    medium: 5,
+    low: 1,
+};
+
+let a = &mut Allocator::new();
+let ptr = value.to_klvm(a).unwrap();
+assert_eq!(Tiers::from_klvm(a, ptr).unwrap(), value);
+```
+
+### Curry
+
+This represents the argument part of a curried KLVM program.
+In Chik, currying commits to and partially applies some of the arguments of a program, without calling it.
+
+The arguments are quoted and terminated with `1`, which is how partial application is implemented in KLVM.
+Note that if you mark the last field to [consume the rest of the arguments](#consume-the-rest), there is no `1` terminator.
+
+For example, the curried arguments `[A, B, C]` are encoded as `(c (q . A) (c (q . B) (c (q . C) 1)))`.
+
+You can read more about currying on the [Chik blockchain documentation](https://docs.chiknetwork.com/guides/chiklisp-currying).
+
+The following example is for demonstration purposes only:
+
+```rust
+use klvmr::Allocator;
+use klvm_traits::{ToKlvm, FromKlvm};
+
+#[derive(Debug, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[klvm(curry)]
+struct PuzzleArgs {
+    code_to_unlock: u32,
+    verification_level: u8,
+}
+
+// The KLVM representation for this is `(c (q . 4328714) (c (q . 5) 1))`.
+let args = PuzzleArgs {
+    code_to_unlock: 4328714,
+    verification_level: 5,
+};
+
+let a = &mut Allocator::new();
+let ptr = args.to_klvm(a).unwrap();
+assert_eq!(PuzzleArgs::from_klvm(a, ptr).unwrap(), args);
+```
+
+### Transparent
+
+If you want a struct to have the same KLVM representation as its inner struct (a newtype), you can use the `transparent` representation.
+
+```rust
+use klvmr::Allocator;
+use klvm_traits::{ToKlvm, FromKlvm};
+
+#[derive(Debug, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[klvm(transparent)]
+struct CustomString(String);
+
+// The KLVM representation for this is the same as the string itself.
+// So `"Hello"` in this case.
+let string = CustomString("Hello".to_string());
+
+let a = &mut Allocator::new();
+let ptr = string.to_klvm(a).unwrap();
+assert_eq!(CustomString::from_klvm(a, ptr).unwrap(), string);
+```
+
+## Optional Fields
+
+You can only mark the last field in a struct or enum variant as optional.
+
+This restriction is in place because if you were able to have multiple optional fields,
+or an optional field that isn't at the end, it would be ambiguous.
+
+### Optional Value
+
+You can set a field as optional by marking it as `#[klvm(default)]`.
+If the field isn't present when deserializing, it will default to the `Default` implementation of the type.
+When serializing, it will check if it's equal to the default and omit it if so.
+
+```rust
+use klvmr::Allocator;
+use klvm_traits::{ToKlvm, FromKlvm};
+
+#[derive(Debug, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[klvm(list)]
+struct Person {
+    name: String,
+    #[klvm(default)]
+    email: Option<String>,
+}
+
+// The KLVM representation of this is `("Bob" "bob@example.com")`.
+// If `email` had been set to `None`, the representation would have just been `("Bob")`.
+let person = Person {
+    name: "Bob".to_string(),
+    email: Some("bob@example.com".to_string()),
+};
+
+let a = &mut Allocator::new();
+let ptr = person.to_klvm(a).unwrap();
+assert_eq!(Person::from_klvm(a, ptr).unwrap(), person);
+```
+
+### Default Value
+
+You can also specify the default value to check against manually.
+This is useful if you want to override the `Default` trait, or if the `Default` trait isn't implemented.
+
+```rust
+use klvmr::Allocator;
+use klvm_traits::{ToKlvm, FromKlvm};
+
+#[derive(Debug, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[klvm(list)]
+struct Person {
+    name: String,
+    #[klvm(default = 18)]
+    age: u8,
+}
+
+// The KLVM representation for this is `("Bob" 24)`.
+// If `age` had been set to `18`, the representation would have been just `("Bob")`.
+let person = Person {
+    name: "Bob".to_string(),
+    age: 24,
+};
+
+let a = &mut Allocator::new();
+let ptr = person.to_klvm(a).unwrap();
+assert_eq!(Person::from_klvm(a, ptr).unwrap(), person);
+```
+
+## Consume the Rest
+
+You can consume the rest of the list items (or curried arguments, if using the `curry` representation) by using `#[klvm(rest)]`.
+This is useful for types which are represented compactly, without a nil terminator. Or for extending a list of arguments with another.
+You can also use it if you want to lazily parse the rest later.
+
+Here's a simple example of a compact representation:
+
+```rust
+use klvmr::Allocator;
+use klvm_traits::{ToKlvm, FromKlvm};
+
+#[derive(Debug, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[klvm(list)]
 struct Point {
     x: i32,
+    #[klvm(rest)]
     y: i32,
 }
 
+// The KLVM representation of this is `(5 . 2)` (with no nil terminator).
 let point = Point {
     x: 5,
     y: 2,
@@ -45,69 +204,37 @@ let ptr = point.to_klvm(a).unwrap();
 assert_eq!(Point::from_klvm(a, ptr).unwrap(), point);
 ```
 
-### List
-
-This represents values in a null terminated series of nested cons-pairs, also known as a proper list.
-
-For example:
-
-- `()` is encoded as `()`, since it's already a null value.
-- `(A)` is encoded as `(A, ())`, since it's null terminated.
-- `(A, B)` is encoded as `(A . (B . ()))`, nesting the cons-pairs just like tuples, except with a null terminator.
-- `(A, B, C)` is encoded as `(A . (B . (C . ())))` for the same reason.
-
-Note that the following code is for example purposes only and is not indicative of how to create a secure program.
-Using a password like shown in this example is an insecure method of locking coins, but it's effective for learning.
+And here's an example of lazily parsing the rest later:
 
 ```rust
-use klvmr::Allocator;
+use klvmr::{Allocator, NodePtr};
 use klvm_traits::{ToKlvm, FromKlvm};
 
 #[derive(Debug, PartialEq, Eq, ToKlvm, FromKlvm)]
 #[klvm(list)]
-struct PasswordSolution {
-    password: String,
+struct Items<T> {
+    first: String,
+    #[klvm(rest)]
+    rest: T,
 }
 
-let solution = PasswordSolution {
-    password: "Hello".into(),
+// The KLVM representation of this is `("First Item" 1 2 3 4 5)`.
+// Notice how the list is not a separate argument, but rather the rest of the arguments.
+let items = Items {
+    first: "First Item".to_string(),
+    rest: [1, 2, 3, 4, 5],
 };
 
 let a = &mut Allocator::new();
-let ptr = solution.to_klvm(a).unwrap();
-assert_eq!(PasswordSolution::from_klvm(a, ptr).unwrap(), solution);
-```
+let ptr = items.to_klvm(a).unwrap();
 
-### Curry
+// We parse `("First Item" . <rest>)`
+let items = Items::<NodePtr>::from_klvm(a, ptr).unwrap();
+assert_eq!(items.first, "First Item".to_string());
 
-This represents the argument part of a curried KLVM program. Currying is a method of partially
-applying some of the arguments without immediately calling the function.
-
-For example, `(A, B, C)` is encoded as `(c (q . A) (c (q . B) (c (q . C) 1)))`. Note that the
-arguments are quoted and terminated with `1`, which is how partial application is implemented in KLVM.
-
-You can read more about currying on the [Chik blockchain documentation](https://docs.chiknetwork.com/guides/chiklisp-currying).
-
-Note that the following code is for example purposes only and is not indicative of how to create a secure program.
-Using a password like shown in this example is an insecure method of locking coins, but it's effective for learning.
-
-```rust
-use klvmr::Allocator;
-use klvm_traits::{ToKlvm, FromKlvm};
-
-#[derive(Debug, PartialEq, Eq, ToKlvm, FromKlvm)]
-#[klvm(curry)]
-struct PasswordArgs {
-    password: String,
-}
-
-let args = PasswordArgs {
-    password: "Hello".into(),
-};
-
-let a = &mut Allocator::new();
-let ptr = args.to_klvm(a).unwrap();
-assert_eq!(PasswordArgs::from_klvm(a, ptr).unwrap(), args);
+// Then parse rest into a separate list of `(1 2 3 4 5)`.
+let rest: [u8; 5] = FromKlvm::from_klvm(a, items.rest).unwrap();
+assert_eq!(rest, [1, 2, 3, 4, 5]);
 ```
 
 ## Enums
@@ -118,7 +245,7 @@ For convenience, this is the behavior when deriving `ToKlvm` and `FromKlvm` for 
 
 ### Simple Example
 
-In this example, since the `tuple` representation is used and the only values are the discriminants, the variants will be encoded as an atom.
+In this example, since the `atom` representation, the variants will be encoded as an integer.
 Discriminants default to the `isize` type and the first value is `0`. Subsequent values are incremented by `1` by default.
 
 ```rust
@@ -126,12 +253,13 @@ use klvmr::Allocator;
 use klvm_traits::{ToKlvm, FromKlvm};
 
 #[derive(Debug, PartialEq, Eq, ToKlvm, FromKlvm)]
-#[klvm(tuple)]
+#[klvm(atom)]
 enum Status {
     Pending,
     Completed,
 }
 
+// The KLVM representation of this is just `0`.
 let status = Status::Pending;
 
 let a = &mut Allocator::new();
@@ -150,13 +278,14 @@ use klvmr::Allocator;
 use klvm_traits::{ToKlvm, FromKlvm};
 
 #[derive(Debug, PartialEq, Eq, ToKlvm, FromKlvm)]
-#[klvm(tuple)]
+#[klvm(atom)]
 #[repr(u8)]
 enum Status {
     Pending = 36,
     Completed = 42,
 }
 
+// The KLVM representation of this is `36`.
 let status = Status::Pending;
 
 let a = &mut Allocator::new();
@@ -177,11 +306,10 @@ use klvm_traits::{ToKlvm, FromKlvm};
 #[klvm(list)]
 enum SpendMode {
     AppendValue { value: i32 },
-
-    #[klvm(tuple)]
     ClearValues,
 }
 
+// The KLVM representation of this is `(42)`.
 let mode = SpendMode::AppendValue {
     value: 42
 };
@@ -194,7 +322,7 @@ assert_eq!(SpendMode::from_klvm(a, ptr).unwrap(), mode);
 ### Untagged Enums
 
 Often, the discriminator isn't necessary to encode, and you'd prefer to try to match each variant in order until one matches.
-This is what `#[klvm(untagged)]` allows you to do. However, due to current limitations, it's not possible to mix this with `#[klvm(curry)]`.
+This is what `#[klvm(untagged)]` allows you to do.
 
 Note that if there is any ambiguity, the first variant which matches a value will be the resulting value.
 For example, if both `A` and `B` are in that order and are the same type, if you serialize a value of `B`, it will be deserialized as `A`.
@@ -204,15 +332,69 @@ use klvmr::Allocator;
 use klvm_traits::{ToKlvm, FromKlvm};
 
 #[derive(Debug, PartialEq, Eq, ToKlvm, FromKlvm)]
-#[klvm(tuple, untagged)]
+#[klvm(list, untagged)]
 enum Either {
     ShortList([i32; 4]),
     ExtendedList([i32; 16]),
 }
 
+// The KLVM representation of this is `((42 42 42 42))`.
 let value = Either::ShortList([42; 4]);
 
 let a = &mut Allocator::new();
 let ptr = value.to_klvm(a).unwrap();
 assert_eq!(Either::from_klvm(a, ptr).unwrap(), value);
+```
+
+## Constant Values
+
+Sometimes you may want to include constants inside of a struct without actually exposing them as fields.
+It's possible to do this with `#[klvm(constant = ...)]`, however you must use an attribute macro to remove the constant fields.
+
+This has to be done in the proper order, or it will not work.
+
+The order is as follows:
+
+- Derive `ToKlvm` and `FromKlvm`, so that the constant fields are serialized and deserialized properly.
+- Use `#[apply_constants]` to remove them from the actual struct or enum, but keep them in the encoded output.
+- Add any other derives you want after, so they don't see the constant fields.
+- Write any `#[klvm(...)]` options you want to use.
+
+Here is an example of this:
+
+```rust
+use klvmr::Allocator;
+use klvm_traits::{apply_constants, ToKlvm, FromKlvm};
+
+#[derive(ToKlvm, FromKlvm)]
+#[apply_constants]
+#[derive(Debug, PartialEq, Eq)]
+#[klvm(list)]
+struct CustomTerminator {
+    value: u32,
+    #[klvm(constant = 42, rest)]
+    terminator: u8,
+}
+
+// The KLVM representation of this is `(100 . 42)`.
+let value = CustomTerminator {
+    value: 100,
+};
+
+let a = &mut Allocator::new();
+let ptr = value.to_klvm(a).unwrap();
+assert_eq!(CustomTerminator::from_klvm(a, ptr).unwrap(), value);
+```
+
+## Crate Name
+
+You can override the name of the `klvm_traits` crate used within the macros:
+
+```rust
+use klvmr::Allocator;
+use klvm_traits::{self as renamed_klvm_traits, ToKlvm, FromKlvm};
+
+#[derive(Debug, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[klvm(list, crate_name = renamed_klvm_traits)]
+struct Example;
 ```

@@ -18,6 +18,8 @@ use chik_traits::from_json_dict::FromJsonDict;
 #[cfg(feature = "py-bindings")]
 use chik_traits::to_json_dict::ToJsonDict;
 #[cfg(feature = "py-bindings")]
+use pyo3::prelude::PyAnyMethods;
+#[cfg(feature = "py-bindings")]
 use pyo3::{pyclass, pymethods, IntoPy, PyAny, PyObject, PyResult, Python};
 
 #[cfg_attr(
@@ -130,6 +132,10 @@ impl PublicKey {
         // Infinity was considered a valid G1Element in older Relic versions
         // For historical compatibililty this behavior is maintained.
         unsafe { blst_p1_is_inf(&self.0) || blst_p1_in_g1(&self.0) }
+    }
+
+    pub fn is_inf(&self) -> bool {
+        unsafe { blst_p1_is_inf(&self.0) }
     }
 
     pub fn negate(&mut self) {
@@ -301,7 +307,7 @@ impl ToJsonDict for PublicKey {
 }
 
 #[cfg(feature = "py-bindings")]
-pub fn parse_hex_string(o: &PyAny, len: usize, name: &str) -> PyResult<Vec<u8>> {
+pub fn parse_hex_string(o: &pyo3::Bound<PyAny>, len: usize, name: &str) -> PyResult<Vec<u8>> {
     use pyo3::exceptions::{PyTypeError, PyValueError};
     if let Ok(s) = o.extract::<String>() {
         let s = if let Some(st) = s.strip_prefix("0x") {
@@ -346,7 +352,7 @@ pub fn parse_hex_string(o: &PyAny, len: usize, name: &str) -> PyResult<Vec<u8>> 
 
 #[cfg(feature = "py-bindings")]
 impl FromJsonDict for PublicKey {
-    fn from_json_dict(o: &PyAny) -> PyResult<Self> {
+    fn from_json_dict(o: &pyo3::Bound<PyAny>) -> PyResult<Self> {
         Ok(Self::from_bytes(
             parse_hex_string(o, 48, "PublicKey")?
                 .as_slice()
@@ -549,6 +555,32 @@ mod tests {
     }
 
     #[test]
+    fn test_default_is_inf() {
+        let pk = PublicKey::default();
+        assert!(pk.is_inf());
+    }
+
+    #[test]
+    fn test_infinity() {
+        let mut data = [0u8; 48];
+        data[0] = 0xc0;
+        let pk = PublicKey::from_bytes(&data).unwrap();
+        assert!(pk.is_inf());
+    }
+
+    #[test]
+    fn test_is_inf() {
+        let mut rng = StdRng::seed_from_u64(1337);
+        let mut data = [0u8; 32];
+        for _i in 0..500 {
+            rng.fill(data.as_mut_slice());
+            let sk = SecretKey::from_seed(&data);
+            let pk = sk.public_key();
+            assert!(!pk.is_inf());
+        }
+    }
+
+    #[test]
     fn test_hash() {
         fn hash<T: std::hash::Hash>(v: T) -> u64 {
             use std::collections::hash_map::DefaultHasher;
@@ -741,7 +773,7 @@ mod pytests {
             let pk = sk.public_key();
             Python::with_gil(|py| {
                 let string = pk.to_json_dict(py).expect("to_json_dict");
-                let pk2 = PublicKey::from_json_dict(string.as_ref(py)).unwrap();
+                let pk2 = PublicKey::from_json_dict(string.bind(py)).unwrap();
                 assert_eq!(pk, pk2);
             });
         }
@@ -757,8 +789,8 @@ mod pytests {
         pyo3::prepare_freethreaded_python();
         Python::with_gil(|py| {
             let err =
-                PublicKey::from_json_dict(input.to_string().into_py(py).as_ref(py)).unwrap_err();
-            assert_eq!(err.value(py).to_string(), msg.to_string());
+                PublicKey::from_json_dict(input.to_string().into_py(py).bind(py)).unwrap_err();
+            assert_eq!(err.value_bound(py).to_string(), msg.to_string());
         });
     }
 }

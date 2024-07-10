@@ -24,7 +24,7 @@ members = [
 
 [package]
 name = "chik"
-version = "0.8.0"
+version = "0.9.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "A meta-crate that exports all of the Chik crates in the workspace."
@@ -60,15 +60,15 @@ klvm-traits = ["dep:klvm-traits"]
 klvm-utils = ["dep:klvm-utils"]
 
 [dependencies]
-chik-bls = { path = "./crates/chik-bls", version = "0.8.0", optional = true }
-chik-client = { path = "./crates/chik-client", version = "0.8.0", optional = true }
-chik-consensus = { path = "./crates/chik-consensus", version = "0.8.0", optional = true }
-chik-protocol = { path = "./crates/chik-protocol", version = "0.8.0", optional = true }
+chik-bls = { path = "./crates/chik-bls", version = "0.9.0", optional = true }
+chik-client = { path = "./crates/chik-client", version = "0.9.0", optional = true }
+chik-consensus = { path = "./crates/chik-consensus", version = "0.9.0", optional = true }
+chik-protocol = { path = "./crates/chik-protocol", version = "0.9.0", optional = true }
 chik-ssl = { path = "./crates/chik-ssl", version = "0.7.0", optional = true }
-chik-traits = { path = "./crates/chik-traits", version = "0.8.0", optional = true }
-chik-puzzles = { path = "./crates/chik-puzzles", version = "0.8.0", optional = true }
-klvm-traits = { path = "./crates/klvm-traits", version = "0.8.0", optional = true }
-klvm-utils = { path = "./crates/klvm-utils", version = "0.8.0", optional = true }
+chik-traits = { path = "./crates/chik-traits", version = "0.9.0", optional = true }
+chik-puzzles = { path = "./crates/chik-puzzles", version = "0.9.0", optional = true }
+klvm-traits = { path = "./crates/klvm-traits", version = "0.9.0", optional = true }
+klvm-utils = { path = "./crates/klvm-utils", version = "0.9.0", optional = true }
 
 [profile.release]
 lto = "thin"

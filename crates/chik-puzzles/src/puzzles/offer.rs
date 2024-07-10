@@ -5,22 +5,23 @@ use klvm_utils::TreeHash;
 
 #[derive(Debug, Clone, PartialEq, Eq, ToKlvm, FromKlvm)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(tuple)]
+#[klvm(transparent)]
 pub struct SettlementPaymentsSolution {
     pub notarized_payments: Vec<NotarizedPayment>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ToKlvm, FromKlvm)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(tuple)]
+#[klvm(list)]
 pub struct NotarizedPayment {
     pub nonce: Bytes32,
+    #[klvm(rest)]
     pub payments: Vec<Payment>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ToKlvm, FromKlvm)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(tuple, untagged)]
+#[klvm(transparent)]
 pub enum Payment {
     WithoutMemos(PaymentWithoutMemos),
     WithMemos(PaymentWithMemos),

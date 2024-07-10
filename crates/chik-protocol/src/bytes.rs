@@ -39,6 +39,10 @@ impl Bytes {
         self.0.as_slice()
     }
 
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.clone()
+    }
+
     pub fn into_inner(self) -> Vec<u8> {
         self.0
     }
@@ -87,7 +91,7 @@ impl ToJsonDict for Bytes {
 
 #[cfg(feature = "py-bindings")]
 impl FromJsonDict for Bytes {
-    fn from_json_dict(o: &PyAny) -> PyResult<Self> {
+    fn from_json_dict(o: &Bound<PyAny>) -> PyResult<Self> {
         let s: String = o.extract()?;
         if !s.starts_with("0x") {
             return Err(PyValueError::new_err(
@@ -124,6 +128,12 @@ impl From<&[u8]> for Bytes {
     }
 }
 
+impl<const N: usize> From<BytesImpl<N>> for Bytes {
+    fn from(value: BytesImpl<N>) -> Self {
+        Self(value.0.to_vec())
+    }
+}
+
 impl From<Vec<u8>> for Bytes {
     fn from(value: Vec<u8>) -> Self {
         Self(value)
@@ -155,8 +165,16 @@ impl Deref for Bytes {
 pub struct BytesImpl<const N: usize>([u8; N]);
 
 impl<const N: usize> BytesImpl<N> {
-    pub fn new(bytes: [u8; N]) -> Self {
+    pub const fn new(bytes: [u8; N]) -> Self {
         Self(bytes)
+    }
+
+    pub const fn len(&self) -> usize {
+        N
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        N == 0
     }
 
     pub fn as_slice(&self) -> &[u8] {
@@ -213,7 +231,7 @@ impl<const N: usize> ToJsonDict for BytesImpl<N> {
 
 #[cfg(feature = "py-bindings")]
 impl<const N: usize> FromJsonDict for BytesImpl<N> {
-    fn from_json_dict(o: &PyAny) -> PyResult<Self> {
+    fn from_json_dict(o: &Bound<PyAny>) -> PyResult<Self> {
         let s: String = o.extract()?;
         if !s.starts_with("0x") {
             return Err(PyValueError::new_err(
@@ -278,6 +296,22 @@ impl<const N: usize> TryFrom<&Vec<u8>> for BytesImpl<N> {
 
     fn try_from(value: &Vec<u8>) -> Result<Self, TryFromSliceError> {
         value.as_slice().try_into()
+    }
+}
+
+impl<const N: usize> TryFrom<Bytes> for BytesImpl<N> {
+    type Error = TryFromSliceError;
+
+    fn try_from(value: Bytes) -> Result<Self, TryFromSliceError> {
+        value.0.as_slice().try_into()
+    }
+}
+
+impl<const N: usize> TryFrom<&Bytes> for BytesImpl<N> {
+    type Error = TryFromSliceError;
+
+    fn try_from(value: &Bytes) -> Result<Self, TryFromSliceError> {
+        value.0.as_slice().try_into()
     }
 }
 
@@ -357,26 +391,26 @@ impl From<TreeHash> for Bytes32 {
 #[cfg(feature = "py-bindings")]
 impl<const N: usize> ToPyObject for BytesImpl<N> {
     fn to_object(&self, py: Python) -> PyObject {
-        PyBytes::new(py, &self.0).into()
+        PyBytes::new_bound(py, &self.0).into()
     }
 }
 
 #[cfg(feature = "py-bindings")]
 impl<const N: usize> IntoPy<PyObject> for BytesImpl<N> {
     fn into_py(self, py: Python) -> PyObject {
-        PyBytes::new(py, &self.0).into()
+        PyBytes::new_bound(py, &self.0).into()
     }
 }
 
 #[cfg(feature = "py-bindings")]
 impl<const N: usize> ChikToPython for BytesImpl<N> {
-    fn to_python<'a>(&self, py: Python<'a>) -> PyResult<&'a PyAny> {
+    fn to_python<'a>(&self, py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
         if N == 32 {
-            let bytes_module = PyModule::import(py, "chik_rs.sized_bytes")?;
+            let bytes_module = PyModule::import_bound(py, "chik_rs.sized_bytes")?;
             let ty = bytes_module.getattr("bytes32")?;
             ty.call1((self.0.into_py(py),))
         } else {
-            Ok(PyBytes::new(py, &self.0).into())
+            Ok(PyBytes::new_bound(py, &self.0).into_any())
         }
     }
 }
@@ -384,7 +418,7 @@ impl<const N: usize> ChikToPython for BytesImpl<N> {
 #[cfg(feature = "py-bindings")]
 impl<'py, const N: usize> FromPyObject<'py> for BytesImpl<N> {
     fn extract(obj: &'py PyAny) -> PyResult<Self> {
-        let b = <PyBytes as PyTryFrom>::try_from(obj)?;
+        let b = obj.downcast::<PyBytes>()?;
         let slice: &[u8] = b.as_bytes();
         let buf: [u8; N] = slice.try_into()?;
         Ok(BytesImpl::<N>(buf))
@@ -394,28 +428,28 @@ impl<'py, const N: usize> FromPyObject<'py> for BytesImpl<N> {
 #[cfg(feature = "py-bindings")]
 impl ToPyObject for Bytes {
     fn to_object(&self, py: Python) -> PyObject {
-        PyBytes::new(py, &self.0).into()
+        PyBytes::new_bound(py, &self.0).into()
     }
 }
 
 #[cfg(feature = "py-bindings")]
 impl IntoPy<PyObject> for Bytes {
     fn into_py(self, py: Python) -> PyObject {
-        PyBytes::new(py, &self.0).into()
+        PyBytes::new_bound(py, &self.0).into()
     }
 }
 
 #[cfg(feature = "py-bindings")]
 impl ChikToPython for Bytes {
-    fn to_python<'a>(&self, py: Python<'a>) -> PyResult<&'a PyAny> {
-        Ok(PyBytes::new(py, &self.0).into())
+    fn to_python<'a>(&self, py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
+        Ok(PyBytes::new_bound(py, &self.0).into_any())
     }
 }
 
 #[cfg(feature = "py-bindings")]
 impl<'py> FromPyObject<'py> for Bytes {
     fn extract(obj: &'py PyAny) -> PyResult<Self> {
-        let b = <PyBytes as PyTryFrom>::try_from(obj)?;
+        let b = obj.downcast::<PyBytes>()?;
         Ok(Bytes(b.as_bytes().to_vec()))
     }
 }

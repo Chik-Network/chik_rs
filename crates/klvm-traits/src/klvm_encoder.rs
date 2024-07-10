@@ -1,9 +1,9 @@
 use klvmr::{Allocator, NodePtr};
 
-use crate::{ToKlvm, ToKlvmError};
+use crate::{klvm_list, klvm_quote, ToKlvm, ToKlvmError};
 
-pub trait KlvmEncoder {
-    type Node: Clone;
+pub trait KlvmEncoder: Sized {
+    type Node: Clone + ToKlvm<Self::Node>;
 
     fn encode_atom(&mut self, bytes: &[u8]) -> Result<Self::Node, ToKlvmError>;
     fn encode_pair(
@@ -11,6 +11,15 @@ pub trait KlvmEncoder {
         first: Self::Node,
         rest: Self::Node,
     ) -> Result<Self::Node, ToKlvmError>;
+
+    fn encode_curried_arg(
+        &mut self,
+        first: Self::Node,
+        rest: Self::Node,
+    ) -> Result<Self::Node, ToKlvmError> {
+        const OP_C: u8 = 4;
+        klvm_list!(OP_C, klvm_quote!(first), rest).to_klvm(self)
+    }
 
     /// This is a helper function that just calls `clone` on the node.
     /// It's required only because the compiler can't infer that `N` is `Clone`,
