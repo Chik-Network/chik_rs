@@ -9,24 +9,13 @@ use std::io::Cursor;
 use std::mem::MaybeUninit;
 use std::ops::{Add, AddAssign, Neg, SubAssign};
 
-#[cfg(feature = "py-bindings")]
-use crate::public_key::parse_hex_string;
-#[cfg(feature = "py-bindings")]
-use chik_py_streamable_macro::PyStreamable;
-#[cfg(feature = "py-bindings")]
-use chik_traits::from_json_dict::FromJsonDict;
-#[cfg(feature = "py-bindings")]
-use chik_traits::to_json_dict::ToJsonDict;
-#[cfg(feature = "py-bindings")]
-use pyo3::{pyclass, pymethods, IntoPy, PyAny, PyObject, PyResult, Python};
-
 // we use the augmented scheme
 pub const DST: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_AUG_";
 
 #[cfg_attr(
     feature = "py-bindings",
-    pyclass(name = "G2Element"),
-    derive(PyStreamable)
+    pyo3::pyclass(name = "G2Element"),
+    derive(chik_py_streamable_macro::PyStreamable)
 )]
 #[derive(Clone, Default)]
 pub struct Signature(pub(crate) blst_p2);
@@ -43,7 +32,7 @@ impl Signature {
     pub fn from_bytes_unchecked(buf: &[u8; 96]) -> Result<Self> {
         let p2 = unsafe {
             let mut p2_affine = MaybeUninit::<blst_p2_affine>::uninit();
-            let ret = blst_p2_uncompress(p2_affine.as_mut_ptr(), buf as *const u8);
+            let ret = blst_p2_uncompress(p2_affine.as_mut_ptr(), buf.as_ptr());
             if ret != BLST_ERROR::BLST_SUCCESS {
                 return Err(Error::InvalidSignature(ret));
             }
@@ -56,17 +45,17 @@ impl Signature {
 
     pub fn from_bytes(buf: &[u8; 96]) -> Result<Self> {
         let ret = Self::from_bytes_unchecked(buf)?;
-        if !ret.is_valid() {
-            Err(Error::InvalidSignature(BLST_ERROR::BLST_POINT_NOT_ON_CURVE))
-        } else {
+        if ret.is_valid() {
             Ok(ret)
+        } else {
+            Err(Error::InvalidSignature(BLST_ERROR::BLST_POINT_NOT_ON_CURVE))
         }
     }
 
     pub fn from_uncompressed(buf: &[u8; 192]) -> Result<Self> {
         let p2 = unsafe {
             let mut p2_affine = MaybeUninit::<blst_p2_affine>::uninit();
-            let ret = blst_p2_deserialize(p2_affine.as_mut_ptr(), buf as *const u8);
+            let ret = blst_p2_deserialize(p2_affine.as_mut_ptr(), buf.as_ptr());
             if ret != BLST_ERROR::BLST_SUCCESS {
                 return Err(Error::InvalidSignature(ret));
             }
@@ -80,7 +69,7 @@ impl Signature {
     pub fn to_bytes(&self) -> [u8; 96] {
         unsafe {
             let mut bytes = MaybeUninit::<[u8; 96]>::uninit();
-            blst_p2_compress(bytes.as_mut_ptr() as *mut u8, &self.0);
+            blst_p2_compress(bytes.as_mut_ptr().cast::<u8>(), &self.0);
             bytes.assume_init()
         }
     }
@@ -111,7 +100,7 @@ impl Signature {
         unsafe {
             let mut scalar = MaybeUninit::<blst_scalar>::uninit();
             blst_scalar_from_be_bytes(scalar.as_mut_ptr(), int_bytes.as_ptr(), int_bytes.len());
-            blst_p2_mult(&mut self.0, &self.0, scalar.as_ptr() as *const u8, 256);
+            blst_p2_mult(&mut self.0, &self.0, scalar.as_ptr().cast::<u8>(), 256);
         }
     }
 
@@ -163,12 +152,12 @@ impl Eq for Signature {}
 
 impl Hash for Signature {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write(&self.to_bytes())
+        state.write(&self.to_bytes());
     }
 }
 
 impl fmt::Debug for Signature {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_fmt(format_args!(
             "<G2Element {}>",
             &hex::encode(self.to_bytes())
@@ -233,61 +222,6 @@ impl Add<&Signature> for &Signature {
     }
 }
 
-#[cfg(feature = "py-bindings")]
-impl ToJsonDict for Signature {
-    fn to_json_dict(&self, py: Python) -> pyo3::PyResult<PyObject> {
-        let bytes = self.to_bytes();
-        Ok(("0x".to_string() + &hex::encode(bytes)).into_py(py))
-    }
-}
-
-#[cfg(feature = "py-bindings")]
-impl FromJsonDict for Signature {
-    fn from_json_dict(o: &pyo3::Bound<PyAny>) -> PyResult<Self> {
-        Ok(Self::from_bytes(
-            parse_hex_string(o, 96, "Signature")?
-                .as_slice()
-                .try_into()
-                .unwrap(),
-        )?)
-    }
-}
-
-#[cfg(feature = "py-bindings")]
-#[pymethods]
-impl Signature {
-    #[classattr]
-    const SIZE: usize = 96;
-
-    #[new]
-    pub fn init() -> Self {
-        Self::default()
-    }
-
-    #[pyo3(name = "pair")]
-    pub fn py_pair(&self, other: &PublicKey) -> GTElement {
-        self.pair(other)
-    }
-
-    #[staticmethod]
-    #[pyo3(name = "generator")]
-    pub fn py_generator() -> Self {
-        Self::generator()
-    }
-
-    fn __str__(&self) -> pyo3::PyResult<String> {
-        Ok(hex::encode(self.to_bytes()))
-    }
-
-    pub fn __add__(&self, rhs: &Self) -> Self {
-        self + rhs
-    }
-
-    pub fn __iadd__(&mut self, rhs: &Self) {
-        *self += rhs;
-    }
-}
-
 // validate a series of public keys (G1 points) and G2 points. These points are
 // paired and the resulting GT points are multiplied. If the resulting GT point
 // is the identity, the function returns true, otherwise false. To validate an
@@ -304,7 +238,7 @@ where
 
     let mut v: Vec<u64> = vec![0; unsafe { blst_pairing_sizeof() } / 8];
     let ctx = unsafe {
-        let ctx = v.as_mut_slice().as_mut_ptr() as *mut blst_pairing;
+        let ctx = v.as_mut_slice().as_mut_ptr().cast::<blst_pairing>();
         blst_pairing_init(
             ctx,
             true, // hash
@@ -374,7 +308,7 @@ where
 {
     let mut ret = Signature::default();
 
-    for s in sigs.into_iter() {
+    for s in sigs {
         ret.aggregate(s.borrow());
     }
     ret
@@ -438,7 +372,7 @@ where
 
     let mut v: Vec<u64> = vec![0; unsafe { blst_pairing_sizeof() } / 8];
     let ctx = unsafe {
-        let ctx = v.as_mut_slice().as_mut_ptr() as *mut blst_pairing;
+        let ctx = v.as_mut_ptr().cast::<blst_pairing>();
         blst_pairing_init(
             ctx,
             true, // hash
@@ -539,6 +473,69 @@ pub fn sign<Msg: AsRef<[u8]>>(sk: &SecretKey, msg: Msg) -> Signature {
     let mut aug_msg = sk.public_key().to_bytes().to_vec();
     aug_msg.extend_from_slice(msg.as_ref());
     sign_raw(sk, aug_msg)
+}
+
+#[cfg(feature = "py-bindings")]
+mod pybindings {
+    use super::*;
+
+    use crate::parse_hex::parse_hex_string;
+
+    use chik_traits::{FromJsonDict, ToJsonDict};
+    use pyo3::prelude::*;
+
+    #[pymethods]
+    impl Signature {
+        #[classattr]
+        const SIZE: usize = 96;
+
+        #[new]
+        pub fn init() -> Self {
+            Self::default()
+        }
+
+        #[pyo3(name = "pair")]
+        pub fn py_pair(&self, other: &PublicKey) -> GTElement {
+            self.pair(other)
+        }
+
+        #[staticmethod]
+        #[pyo3(name = "generator")]
+        pub fn py_generator() -> Self {
+            Self::generator()
+        }
+
+        fn __str__(&self) -> String {
+            hex::encode(self.to_bytes())
+        }
+
+        #[must_use]
+        pub fn __add__(&self, rhs: &Self) -> Self {
+            self + rhs
+        }
+
+        pub fn __iadd__(&mut self, rhs: &Self) {
+            *self += rhs;
+        }
+    }
+
+    impl ToJsonDict for Signature {
+        fn to_json_dict(&self, py: Python<'_>) -> PyResult<PyObject> {
+            let bytes = self.to_bytes();
+            Ok(("0x".to_string() + &hex::encode(bytes)).into_py(py))
+        }
+    }
+
+    impl FromJsonDict for Signature {
+        fn from_json_dict(o: &Bound<'_, PyAny>) -> PyResult<Self> {
+            Ok(Self::from_bytes(
+                parse_hex_string(o, 96, "Signature")?
+                    .as_slice()
+                    .try_into()
+                    .unwrap(),
+            )?)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -895,12 +892,12 @@ mod tests {
         assert!(aggregate_verify(
             &aggsig,
             [
-                (&pk1, &message1 as &[u8]),
-                (&pk2, &message2),
-                (&pk2, &message1),
-                (&pk1, &message3),
-                (&pk1, &message1),
-                (&pk1, &message4)
+                (&pk1, message1.as_ref()),
+                (&pk2, message2.as_ref()),
+                (&pk2, message1.as_ref()),
+                (&pk1, message3.as_ref()),
+                (&pk1, message1.as_ref()),
+                (&pk1, message4.as_ref())
             ]
         ));
 
@@ -955,7 +952,8 @@ mod tests {
         assert_eq!(aggsig, sig);
         assert_eq!(aggsig, Signature::default());
 
-        assert!(aggregate_verify(&aggsig, [] as [(&PublicKey, &[u8]); 0]));
+        let pairs: [(&PublicKey, &[u8]); 0] = [];
+        assert!(aggregate_verify(&aggsig, pairs));
     }
 
     #[test]
@@ -1085,7 +1083,7 @@ mod tests {
 
     #[test]
     fn test_hash() {
-        fn hash<T: std::hash::Hash>(v: T) -> u64 {
+        fn hash<T: Hash>(v: T) -> u64 {
             use std::collections::hash_map::DefaultHasher;
             let mut h = DefaultHasher::new();
             v.hash(&mut h);
@@ -1109,7 +1107,7 @@ mod tests {
         data[0] = 0xc0;
         let sig = Signature::from_bytes(&data).unwrap();
         assert_eq!(
-            format!("{:?}", sig),
+            format!("{sig:?}"),
             format!("<G2Element {}>", hex::encode(data))
         );
     }
@@ -1241,6 +1239,8 @@ mod tests {
 #[cfg(feature = "py-bindings")]
 mod pytests {
     use super::*;
+
+    use pyo3::{IntoPy, Python};
     use rand::rngs::StdRng;
     use rand::{Rng, SeedableRng};
     use rstest::rstest;

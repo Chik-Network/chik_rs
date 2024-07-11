@@ -1,3 +1,5 @@
+use std::{rc::Rc, sync::Arc};
+
 use num_bigint::{BigInt, Sign};
 
 use crate::{FromKlvmError, KlvmDecoder};
@@ -68,6 +70,33 @@ impl<N> FromKlvm<N> for bool {
     }
 }
 
+impl<N, T> FromKlvm<N> for Box<T>
+where
+    T: FromKlvm<N>,
+{
+    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+        T::from_klvm(decoder, node).map(Box::new)
+    }
+}
+
+impl<N, T> FromKlvm<N> for Rc<T>
+where
+    T: FromKlvm<N>,
+{
+    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+        T::from_klvm(decoder, node).map(Rc::new)
+    }
+}
+
+impl<N, T> FromKlvm<N> for Arc<T>
+where
+    T: FromKlvm<N>,
+{
+    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+        T::from_klvm(decoder, node).map(Arc::new)
+    }
+}
+
 impl<N, A, B> FromKlvm<N> for (A, B)
 where
     A: FromKlvm<N>,
@@ -105,20 +134,20 @@ where
             if let Ok((first, rest)) = decoder.decode_pair(&node) {
                 if items.len() >= LEN {
                     return Err(FromKlvmError::ExpectedAtom);
-                } else {
-                    items.push(T::from_klvm(decoder, first)?);
-                    node = rest;
                 }
+
+                items.push(T::from_klvm(decoder, first)?);
+                node = rest;
             } else {
                 let bytes = decoder.decode_atom(&node)?;
                 if bytes.as_ref().is_empty() {
                     return items.try_into().or(Err(FromKlvmError::ExpectedPair));
-                } else {
-                    return Err(FromKlvmError::WrongAtomLength {
-                        expected: 0,
-                        found: bytes.as_ref().len(),
-                    });
                 }
+
+                return Err(FromKlvmError::WrongAtomLength {
+                    expected: 0,
+                    found: bytes.as_ref().len(),
+                });
             }
         }
     }
@@ -138,12 +167,12 @@ where
                 let bytes = decoder.decode_atom(&node)?;
                 if bytes.as_ref().is_empty() {
                     return Ok(items);
-                } else {
-                    return Err(FromKlvmError::WrongAtomLength {
-                        expected: 0,
-                        found: bytes.as_ref().len(),
-                    });
                 }
+
+                return Err(FromKlvmError::WrongAtomLength {
+                    expected: 0,
+                    found: bytes.as_ref().len(),
+                });
             }
         }
     }
@@ -234,7 +263,15 @@ mod tests {
             Err(FromKlvmError::Custom(
                 "expected boolean value of either `()` or `1`".to_string(),
             ))
-        )
+        );
+    }
+
+    #[test]
+    fn test_smart_pointers() {
+        let a = &mut Allocator::new();
+        assert_eq!(decode(a, "80"), Ok(Box::new(0u8)));
+        assert_eq!(decode(a, "80"), Ok(Rc::new(0u8)));
+        assert_eq!(decode(a, "80"), Ok(Arc::new(0u8)));
     }
 
     #[test]
@@ -258,7 +295,7 @@ mod tests {
     fn test_array() {
         let a = &mut Allocator::new();
         assert_eq!(decode(a, "ff01ff02ff03ff0480"), Ok([1, 2, 3, 4]));
-        assert_eq!(decode(a, "80"), Ok([] as [i32; 0]));
+        assert_eq!(decode(a, "80"), Ok([0; 0]));
     }
 
     #[test]
@@ -276,14 +313,14 @@ mod tests {
 
         // Empty strings get decoded as None instead, since both values are represented by nil bytes.
         // This could be considered either intended behavior or not, depending on the way it's used.
-        assert_ne!(decode(a, "80"), Ok(Some("".to_string())));
+        assert_ne!(decode(a, "80"), Ok(Some(String::new())));
     }
 
     #[test]
     fn test_string() {
         let a = &mut Allocator::new();
         assert_eq!(decode(a, "8568656c6c6f"), Ok("hello".to_string()));
-        assert_eq!(decode(a, "80"), Ok("".to_string()));
+        assert_eq!(decode(a, "80"), Ok(String::new()));
     }
 
     #[cfg(feature = "chik-bls")]

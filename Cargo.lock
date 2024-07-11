@@ -224,8 +224,9 @@ dependencies = [
 
 [[package]]
 name = "blst"
-version = "0.3.11"
-source = "git+https://github.com/supranational/blst.git?rev=0d46eefa45fc1e57aceb42bba0e84eab3a7a9725#0d46eefa45fc1e57aceb42bba0e84eab3a7a9725"
+version = "0.3.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62dc83a094a71d43eeadd254b1ec2d24cb6a0bb6cadce00df51f0db594711a32"
 dependencies = [
  "cc",
  "glob",
@@ -276,15 +277,15 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chik"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
- "chik-bls 0.9.0",
+ "chik-bls 0.10.0",
  "chik-client",
  "chik-consensus",
  "chik-protocol",
  "chik-puzzles",
  "chik-ssl",
- "chik-traits 0.9.0",
+ "chik-traits 0.10.0",
  "klvm-traits",
  "klvm-utils",
 ]
@@ -308,12 +309,12 @@ dependencies = [
 
 [[package]]
 name = "chik-bls"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "anyhow",
  "arbitrary",
  "blst",
- "chik-traits 0.9.0",
+ "chik-traits 0.10.0",
  "chik_py_streamable_macro",
  "criterion",
  "hex",
@@ -321,27 +322,26 @@ dependencies = [
  "lru",
  "pyo3",
  "rand",
- "rstest 0.17.0",
+ "rstest",
  "sha2",
  "thiserror",
- "tiny-bip39",
 ]
 
 [[package]]
 name = "chik-bls-fuzz"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
- "chik-bls 0.9.0",
+ "chik-bls 0.10.0",
  "libfuzzer-sys",
  "pyo3",
 ]
 
 [[package]]
 name = "chik-client"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "chik-protocol",
- "chik-traits 0.9.0",
+ "chik-traits 0.10.0",
  "futures-util",
  "thiserror",
  "tokio",
@@ -351,14 +351,14 @@ dependencies = [
 
 [[package]]
 name = "chik-consensus"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
- "chik-bls 0.9.0",
+ "chik-bls 0.10.0",
  "chik-protocol",
  "chik-puzzles",
- "chik-traits 0.9.0",
+ "chik-traits 0.10.0",
  "chik_py_streamable_macro",
- "chik_streamable_macro 0.8.0",
+ "chik_streamable_macro 0.10.0",
  "criterion",
  "hex",
  "hex-literal",
@@ -369,7 +369,7 @@ dependencies = [
  "num-traits",
  "pyo3",
  "rand",
- "rstest 0.16.0",
+ "rstest",
  "sha2",
  "text-diff",
  "thiserror",
@@ -377,11 +377,11 @@ dependencies = [
 
 [[package]]
 name = "chik-fuzz"
-version = "0.6.0"
+version = "0.10.0"
 dependencies = [
  "chik-consensus",
  "chik-protocol",
- "chik-traits 0.9.0",
+ "chik-traits 0.10.0",
  "hex-literal",
  "klvm-traits",
  "klvm-utils",
@@ -391,29 +391,29 @@ dependencies = [
 
 [[package]]
 name = "chik-protocol"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "arbitrary",
- "chik-bls 0.9.0",
- "chik-traits 0.9.0",
+ "chik-bls 0.10.0",
+ "chik-traits 0.10.0",
  "chik_py_streamable_macro",
- "chik_streamable_macro 0.8.0",
+ "chik_streamable_macro 0.10.0",
  "hex",
  "klvm-traits",
  "klvm-utils",
  "klvmr",
  "pyo3",
- "rstest 0.17.0",
+ "rstest",
  "sha2",
 ]
 
 [[package]]
 name = "chik-protocol-fuzz"
-version = "0.8.0"
+version = "0.10.0"
 dependencies = [
  "arbitrary",
  "chik-protocol",
- "chik-traits 0.9.0",
+ "chik-traits 0.10.0",
  "hex",
  "klvm-traits",
  "klvmr",
@@ -423,10 +423,10 @@ dependencies = [
 
 [[package]]
 name = "chik-puzzles"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "arbitrary",
- "chik-bls 0.9.0",
+ "chik-bls 0.10.0",
  "chik-protocol",
  "hex",
  "hex-literal",
@@ -439,7 +439,7 @@ dependencies = [
 
 [[package]]
 name = "chik-puzzles-fuzz"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "chik-puzzles",
  "klvm-traits",
@@ -450,7 +450,7 @@ dependencies = [
 
 [[package]]
 name = "chik-ssl"
-version = "0.7.0"
+version = "0.10.0"
 dependencies = [
  "lazy_static",
  "rand",
@@ -462,14 +462,14 @@ dependencies = [
 
 [[package]]
 name = "chik-tools"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "blocking-threadpool",
- "chik-bls 0.9.0",
+ "chik-bls 0.10.0",
  "chik-consensus",
  "chik-protocol",
  "chik-puzzles",
- "chik-traits 0.9.0",
+ "chik-traits 0.10.0",
  "clap",
  "hex",
  "hex-literal",
@@ -494,9 +494,9 @@ dependencies = [
 
 [[package]]
 name = "chik-traits"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
- "chik_streamable_macro 0.8.0",
+ "chik_streamable_macro 0.10.0",
  "pyo3",
  "sha2",
  "thiserror",
@@ -504,7 +504,7 @@ dependencies = [
 
 [[package]]
 name = "chik_py_streamable_macro"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -514,14 +514,14 @@ dependencies = [
 
 [[package]]
 name = "chik_rs"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
- "chik-bls 0.9.0",
+ "chik-bls 0.10.0",
  "chik-consensus",
  "chik-protocol",
- "chik-traits 0.9.0",
+ "chik-traits 0.10.0",
  "chik_py_streamable_macro",
- "chik_streamable_macro 0.8.0",
+ "chik_streamable_macro 0.10.0",
  "hex",
  "klvm-traits",
  "klvm-utils",
@@ -544,7 +544,7 @@ dependencies = [
 
 [[package]]
 name = "chik_streamable_macro"
-version = "0.8.0"
+version = "0.10.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -554,7 +554,7 @@ dependencies = [
 
 [[package]]
 name = "chik_wasm"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "wasm-bindgen",
 ]
@@ -1247,7 +1247,7 @@ dependencies = [
 
 [[package]]
 name = "klvm-derive"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1256,9 +1256,9 @@ dependencies = [
 
 [[package]]
 name = "klvm-traits"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
- "chik-bls 0.9.0",
+ "chik-bls 0.10.0",
  "hex",
  "hex-literal",
  "klvm-derive",
@@ -1270,17 +1270,17 @@ dependencies = [
 
 [[package]]
 name = "klvm-utils"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "hex",
  "klvm-traits",
  "klvmr",
- "rstest 0.16.0",
+ "rstest",
 ]
 
 [[package]]
 name = "klvm-utils-fuzz"
-version = "0.8.0"
+version = "0.10.0"
 dependencies = [
  "chik-fuzz",
  "klvm-traits",
@@ -1933,40 +1933,14 @@ dependencies = [
 
 [[package]]
 name = "rstest"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b07f2d176c472198ec1e6551dc7da28f1c089652f66a7b722676c2238ebc0edf"
-dependencies = [
- "futures",
- "futures-timer",
- "rstest_macros 0.16.0",
- "rustc_version",
-]
-
-[[package]]
-name = "rstest"
 version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "de1bb486a691878cd320c2f0d319ba91eeaa2e894066d8b5f8f117c000e9d962"
 dependencies = [
  "futures",
  "futures-timer",
- "rstest_macros 0.17.0",
+ "rstest_macros",
  "rustc_version",
-]
-
-[[package]]
-name = "rstest_macros"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7229b505ae0706e64f37ffc54a9c163e11022a6636d58fe1f3f52018257ff9f7"
-dependencies = [
- "cfg-if",
- "proc-macro2",
- "quote",
- "rustc_version",
- "syn 1.0.109",
- "unicode-ident",
 ]
 
 [[package]]

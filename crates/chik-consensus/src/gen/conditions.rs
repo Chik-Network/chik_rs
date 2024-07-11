@@ -16,9 +16,9 @@ use super::opcodes::{
 };
 use super::sanitize_int::{sanitize_uint, SanitizedUint};
 use super::validation_error::{first, next, rest, ErrorCode, ValidationErr};
+use crate::consensus_constants::ConsensusConstants;
 use crate::gen::flags::{
-    AGG_SIG_ARGS, COND_ARGS_NIL, DISALLOW_INFINITY_G1, NO_RELATIVE_CONDITIONS_ON_EPHEMERAL,
-    NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
+    AGG_SIG_ARGS, COND_ARGS_NIL, DISALLOW_INFINITY_G1, NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
 };
 use crate::gen::messages::{Message, SpendId};
 use crate::gen::spend_visitor::SpendVisitor;
@@ -97,32 +97,17 @@ impl SpendVisitor for MempoolVisitor {
                     spend.flags &= !ELIGIBLE_FOR_FF;
                 }
             }
-            Condition::AggSigMe(_, _) => {
+            Condition::AggSigMe(_, _)
+            | Condition::AggSigParent(_, _)
+            | Condition::AggSigParentAmount(_, _)
+            | Condition::AggSigParentPuzzle(_, _) => {
                 spend.flags &= !ELIGIBLE_FOR_DEDUP;
                 spend.flags &= !ELIGIBLE_FOR_FF;
             }
-            Condition::AggSigParent(_, _) => {
-                spend.flags &= !ELIGIBLE_FOR_DEDUP;
-                spend.flags &= !ELIGIBLE_FOR_FF;
-            }
-            Condition::AggSigPuzzle(_, _) => {
-                spend.flags &= !ELIGIBLE_FOR_DEDUP;
-            }
-            Condition::AggSigAmount(_, _) => {
-                spend.flags &= !ELIGIBLE_FOR_DEDUP;
-            }
-            Condition::AggSigPuzzleAmount(_, _) => {
-                spend.flags &= !ELIGIBLE_FOR_DEDUP;
-            }
-            Condition::AggSigParentAmount(_, _) => {
-                spend.flags &= !ELIGIBLE_FOR_DEDUP;
-                spend.flags &= !ELIGIBLE_FOR_FF;
-            }
-            Condition::AggSigParentPuzzle(_, _) => {
-                spend.flags &= !ELIGIBLE_FOR_DEDUP;
-                spend.flags &= !ELIGIBLE_FOR_FF;
-            }
-            Condition::AggSigUnsafe(_, _) => {
+            Condition::AggSigPuzzle(_, _)
+            | Condition::AggSigAmount(_, _)
+            | Condition::AggSigPuzzleAmount(_, _)
+            | Condition::AggSigUnsafe(_, _) => {
                 spend.flags &= !ELIGIBLE_FOR_DEDUP;
             }
             Condition::SendMessage(src_mode, _dst, _msg) => {
@@ -253,6 +238,31 @@ pub enum Condition {
     SkipRelativeCondition,
 }
 
+fn check_agg_sig_unsafe_message(
+    a: &Allocator,
+    msg: NodePtr,
+    constants: &ConsensusConstants,
+) -> Result<(), ValidationErr> {
+    if a.atom_len(msg) < 32 {
+        return Ok(());
+    }
+    let buf = a.atom(msg);
+    for additional_data in &[
+        constants.agg_sig_me_additional_data.as_ref(),
+        constants.agg_sig_parent_additional_data.as_ref(),
+        constants.agg_sig_puzzle_additional_data.as_ref(),
+        constants.agg_sig_amount_additional_data.as_ref(),
+        constants.agg_sig_puzzle_amount_additional_data.as_ref(),
+        constants.agg_sig_parent_amount_additional_data.as_ref(),
+        constants.agg_sig_parent_puzzle_additional_data.as_ref(),
+    ] {
+        if buf.as_ref().ends_with(additional_data) {
+            return Err(ValidationErr(msg, ErrorCode::InvalidMessage));
+        }
+    }
+    Ok(())
+}
+
 fn maybe_check_args_terminator(
     a: &Allocator,
     arg: NodePtr,
@@ -285,7 +295,7 @@ pub fn parse_args(
                 // just any atom will do
                 match a.sexp(rest(a, c)?) {
                     SExp::Pair(_, _) => Err(ValidationErr(c, ErrorCode::InvalidCondition)),
-                    _ => Ok(Condition::AggSigUnsafe(pubkey, message)),
+                    SExp::Atom => Ok(Condition::AggSigUnsafe(pubkey, message)),
                 }
             } else {
                 Ok(Condition::AggSigUnsafe(pubkey, message))
@@ -305,7 +315,7 @@ pub fn parse_args(
                 // just any atom will do
                 match a.sexp(rest(a, c)?) {
                     SExp::Pair(_, _) => Err(ValidationErr(c, ErrorCode::InvalidCondition)),
-                    _ => Ok(Condition::AggSigMe(pubkey, message)),
+                    SExp::Atom => Ok(Condition::AggSigMe(pubkey, message)),
                 }
             } else {
                 Ok(Condition::AggSigMe(pubkey, message))
@@ -466,8 +476,9 @@ pub fn parse_args(
             let node = first(a, c)?;
             let code = ErrorCode::AssertMyBirthSecondsFailed;
             match sanitize_uint(a, node, 8, code)? {
-                SanitizedUint::PositiveOverflow => Err(ValidationErr(node, code)),
-                SanitizedUint::NegativeOverflow => Err(ValidationErr(node, code)),
+                SanitizedUint::PositiveOverflow | SanitizedUint::NegativeOverflow => {
+                    Err(ValidationErr(node, code))
+                }
                 SanitizedUint::Ok(r) => Ok(Condition::AssertMyBirthSeconds(r)),
             }
         }
@@ -476,8 +487,9 @@ pub fn parse_args(
             let node = first(a, c)?;
             let code = ErrorCode::AssertMyBirthHeightFailed;
             match sanitize_uint(a, node, 4, code)? {
-                SanitizedUint::PositiveOverflow => Err(ValidationErr(node, code)),
-                SanitizedUint::NegativeOverflow => Err(ValidationErr(node, code)),
+                SanitizedUint::PositiveOverflow | SanitizedUint::NegativeOverflow => {
+                    Err(ValidationErr(node, code))
+                }
                 SanitizedUint::Ok(r) => Ok(Condition::AssertMyBirthHeight(r as u32)),
             }
         }
@@ -830,6 +842,7 @@ pub fn process_single_spend<V: SpendVisitor>(
     conditions: NodePtr,
     flags: u32,
     max_cost: &mut Cost,
+    constants: &ConsensusConstants,
 ) -> Result<(), ValidationErr> {
     let parent_id = sanitize_hash(a, parent_id, 32, ErrorCode::InvalidParentId)?;
     let puzzle_hash = sanitize_hash(a, puzzle_hash, 32, ErrorCode::InvalidPuzzleHash)?;
@@ -869,6 +882,7 @@ pub fn process_single_spend<V: SpendVisitor>(
         conditions,
         flags,
         max_cost,
+        constants,
         &mut visitor,
     )
 }
@@ -914,6 +928,7 @@ pub fn parse_conditions<V: SpendVisitor>(
     mut iter: NodePtr,
     flags: u32,
     max_cost: &mut Cost,
+    constants: &ConsensusConstants,
     visitor: &mut V,
 ) -> Result<(), ValidationErr> {
     let mut announce_countdown: u32 = 1024;
@@ -1182,6 +1197,9 @@ pub fn parse_conditions<V: SpendVisitor>(
                 }
             }
             Condition::AggSigUnsafe(pk, msg) => {
+                // AGG_SIG_UNSAFE messages are not allowed to end with the
+                // suffix added to other AGG_SIG_* conditions
+                check_agg_sig_unsafe_message(a, msg, constants)?;
                 if let Some(pk) = to_key(a, pk, flags)? {
                     ret.agg_sig_unsafe.push((pk, msg));
                 }
@@ -1269,6 +1287,7 @@ pub fn parse_spends<V: SpendVisitor>(
     spends: NodePtr,
     max_cost: Cost,
     flags: u32,
+    constants: &ConsensusConstants,
 ) -> Result<SpendBundleConditions, ValidationErr> {
     let mut ret = SpendBundleConditions::default();
     let mut state = ParseState::default();
@@ -1295,6 +1314,7 @@ pub fn parse_spends<V: SpendVisitor>(
             conds,
             flags,
             &mut cost_left,
+            constants,
         )?;
     }
 
@@ -1309,7 +1329,7 @@ pub fn validate_conditions(
     ret: &SpendBundleConditions,
     state: ParseState,
     spends: NodePtr,
-    flags: u32,
+    _flags: u32,
 ) -> Result<(), ValidationErr> {
     if ret.removal_amount < ret.addition_amount {
         // The sum of removal amounts must not be less than the sum of addition
@@ -1411,15 +1431,15 @@ pub fn validate_conditions(
         }
     }
 
-    if (flags & NO_RELATIVE_CONDITIONS_ON_EPHEMERAL) != 0 {
-        for spend_idx in state.assert_not_ephemeral {
-            // make sure this coin was NOT created in this block
-            if is_ephemeral(a, spend_idx, &state.spent_coins, &ret.spends) {
-                return Err(ValidationErr(
-                    ret.spends[spend_idx].parent_id,
-                    ErrorCode::EphemeralRelativeCondition,
-                ));
-            }
+    for spend_idx in state.assert_not_ephemeral {
+        // make sure this coin was NOT created in this block
+        // because consensus rules do not allow relative conditions on
+        // ephemeral spends
+        if is_ephemeral(a, spend_idx, &state.spent_coins, &ret.spends) {
+            return Err(ValidationErr(
+                ret.spends[spend_idx].parent_id,
+                ErrorCode::EphemeralRelativeCondition,
+            ));
         }
     }
 
@@ -1452,7 +1472,7 @@ pub fn validate_conditions(
         let mut messages = HashMap::<Vec<u8>, i32>::new();
 
         for msg in &state.messages {
-            *messages.entry(msg.make_key(a)).or_insert(0) += msg.counter as i32;
+            *messages.entry(msg.make_key(a)).or_insert(0) += i32::from(msg.counter);
         }
 
         for count in messages.values() {
@@ -1485,6 +1505,8 @@ fn u64_to_bytes(n: u64) -> Vec<u8> {
     }
     buf
 }
+#[cfg(test)]
+use crate::consensus_constants::TEST_CONSTANTS;
 #[cfg(test)]
 use crate::gen::flags::ENABLE_SOFTFORK_CONDITION;
 #[cfg(test)]
@@ -1634,7 +1656,7 @@ fn parse_list_impl(
         let num = Number::from_str_radix(v, 10).unwrap();
         (a.new_number(num).unwrap(), v.len() + 1)
     } else {
-        panic!("atom not supported \"{}\"", input);
+        panic!("atom not supported \"{input}\"");
     }
 }
 
@@ -1711,6 +1733,7 @@ fn parse_list(a: &mut Allocator, input: &str, callback: &Callback) -> NodePtr {
 // string. Since the parser is recursive and simple, large structures have to be
 // constructed this way
 #[cfg(test)]
+#[allow(clippy::needless_pass_by_value)]
 fn cond_test_cb(
     input: &str,
     flags: u32,
@@ -1718,17 +1741,17 @@ fn cond_test_cb(
 ) -> Result<(Allocator, SpendBundleConditions), ValidationErr> {
     let mut a = Allocator::new();
 
-    println!("input: {}", input);
+    println!("input: {input}");
 
     let n = parse_list(&mut a, input, &callback);
     for c in node_to_bytes(&a, n).unwrap() {
-        print!("{:02x}", c);
+        print!("{c:02x}");
     }
     println!();
-    match parse_spends::<MempoolVisitor>(&a, n, 11000000000, flags) {
+    match parse_spends::<MempoolVisitor>(&a, n, 11_000_000_000, flags, &TEST_CONSTANTS) {
         Ok(list) => {
             for n in &list.spends {
-                println!("{:?}", n);
+                println!("{n:?}");
             }
             Ok((a, list))
         }
@@ -1951,10 +1974,7 @@ fn test_message_strict_args_count(
         flags | ENABLE_SOFTFORK_CONDITION | ENABLE_MESSAGE_CONDITIONS,
     );
     if flags == 0 {
-        if let Err(e) = ret {
-            println!("{:?}", e);
-        }
-        assert!(ret.is_ok());
+        ret.unwrap();
     } else {
         assert_eq!(ret.unwrap_err().1, ErrorCode::InvalidCondition);
     }
@@ -2029,7 +2049,7 @@ fn test_extra_arg(
     ]
     .contains(&condition);
 
-    let expected_cost = if has_agg_sig { 1200000 } else { 0 };
+    let expected_cost = if has_agg_sig { 1_200_000 } else { 0 };
 
     let expected_flags = if has_agg_sig { 0 } else { ELIGIBLE_FOR_DEDUP };
 
@@ -2665,15 +2685,15 @@ fn test_create_coin_max_amount() {
 
     assert_eq!(conds.cost, CREATE_COIN_COST);
     assert_eq!(conds.spends.len(), 1);
-    assert_eq!(conds.removal_amount, 0xffffffffffffffff);
-    assert_eq!(conds.addition_amount, 0xffffffffffffffff);
+    assert_eq!(conds.removal_amount, 0xffff_ffff_ffff_ffff);
+    assert_eq!(conds.addition_amount, 0xffff_ffff_ffff_ffff);
     let spend = &conds.spends[0];
-    assert_eq!(*spend.coin_id, test_coin_id(H1, H2, 0xffffffffffffffff));
+    assert_eq!(*spend.coin_id, test_coin_id(H1, H2, 0xffff_ffff_ffff_ffff));
     assert_eq!(a.atom(spend.puzzle_hash).as_ref(), H2);
     assert_eq!(spend.create_coin.len(), 1);
     for c in &spend.create_coin {
         assert_eq!(c.puzzle_hash.as_ref(), H2);
-        assert_eq!(c.amount, 0xffffffffffffffff_u64);
+        assert_eq!(c.amount, 0xffff_ffff_ffff_ffff_u64);
         assert_eq!(c.hint, a.nil());
     }
     assert_eq!(spend.flags, ELIGIBLE_FOR_DEDUP | ELIGIBLE_FOR_FF);
@@ -2980,7 +3000,7 @@ fn test_create_coin_exceed_cost() {
                     let coin = a.new_pair(val, coin).unwrap();
                     let val = a.new_atom(H2).unwrap();
                     let coin = a.new_pair(val, coin).unwrap();
-                    let val = a.new_atom(&u64_to_bytes(CREATE_COIN as u64)).unwrap();
+                    let val = a.new_atom(&u64_to_bytes(u64::from(CREATE_COIN))).unwrap();
                     let coin = a.new_pair(val, coin).unwrap();
 
                     // add the CREATE_COIN condition to the list (called rest)
@@ -3047,10 +3067,7 @@ fn test_single_agg_sig_me(
     #[values(MEMPOOL_MODE, 0)] mempool: u32,
 ) {
     let (a, conds) = cond_test_flag(
-        &format!(
-            "((({{h1}} ({{h2}} (123 ((({} ({{pubkey}} ({{msg1}} )))))",
-            condition
-        ),
+        &format!("((({{h1}} ({{h2}} (123 ((({condition} ({{pubkey}} ({{msg1}} )))))"),
         ENABLE_SOFTFORK_CONDITION | mempool,
     )
     .unwrap();
@@ -3229,7 +3246,7 @@ fn test_agg_sig_exceed_cost(#[case] condition: ConditionOpcode) {
                     let aggsig = a.new_pair(val, aggsig).unwrap();
                     let val = a.new_atom(PUBKEY).unwrap();
                     let aggsig = a.new_pair(val, aggsig).unwrap();
-                    let val = a.new_atom(&u64_to_bytes(condition as u64)).unwrap();
+                    let val = a.new_atom(&u64_to_bytes(u64::from(condition))).unwrap();
                     let aggsig = a.new_pair(val, aggsig).unwrap();
 
                     // add the condition to the list (called rest)
@@ -3295,7 +3312,7 @@ fn test_agg_sig_extra_arg(#[case] condition: ConditionOpcode) {
     )
     .unwrap();
 
-    assert_eq!(conds.cost, 1200000);
+    assert_eq!(conds.cost, 1_200_000);
     assert_eq!(conds.spends.len(), 1);
     let spend = &conds.spends[0];
     assert_eq!(*spend.coin_id, test_coin_id(H1, H2, 123));
@@ -3492,7 +3509,7 @@ fn test_agg_sig_unsafe_invalid_pubkey() {
 }
 
 #[test]
-fn test_agg_sig_unsafe_invalid_msg() {
+fn test_agg_sig_unsafe_long_msg() {
     // AGG_SIG_UNSAFE
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((49 ({pubkey} ({longmsg} )))))")
@@ -3500,6 +3517,40 @@ fn test_agg_sig_unsafe_invalid_msg() {
             .1,
         ErrorCode::InvalidMessage
     );
+}
+
+#[cfg(test)]
+#[rstest]
+// these are the suffixes used for AGG_SIG_* conditions (other than
+// AGG_SIG_UNSAFE)
+#[case("0xccd5bb71183532bff220ba46c268991a3ff07eb358e8255a65c30a2dce0e5fbb")]
+#[case("0xbaf5d69c647c91966170302d18521b0a85663433d161e72c826ed08677b53a74")]
+#[case("0x284fa2ef486c7a41cc29fc99c9d08376161e93dd37817edb8219f42dca7592c4")]
+#[case("0xcda186a9cd030f7a130fae45005e81cae7a90e0fa205b75f6aebc0d598e0348e")]
+#[case("0x0f7d90dff0613e6901e24dae59f1e690f18b8f5fbdcf1bb192ac9deaf7de22ad")]
+#[case("0x585796bd90bb553c0430b87027ffee08d88aba0162c6e1abbbcc6b583f2ae7f9")]
+#[case("0x2ebfdae17b29d83bae476a25ea06f0c4bd57298faddbbc3ec5ad29b9b86ce5df")]
+// The same suffixes, but 1 byte prepended
+#[case("0x01ccd5bb71183532bff220ba46c268991a3ff07eb358e8255a65c30a2dce0e5fbb")]
+#[case("0x01baf5d69c647c91966170302d18521b0a85663433d161e72c826ed08677b53a74")]
+#[case("0x01284fa2ef486c7a41cc29fc99c9d08376161e93dd37817edb8219f42dca7592c4")]
+#[case("0x01cda186a9cd030f7a130fae45005e81cae7a90e0fa205b75f6aebc0d598e0348e")]
+#[case("0x010f7d90dff0613e6901e24dae59f1e690f18b8f5fbdcf1bb192ac9deaf7de22ad")]
+#[case("0x01585796bd90bb553c0430b87027ffee08d88aba0162c6e1abbbcc6b583f2ae7f9")]
+#[case("0x012ebfdae17b29d83bae476a25ea06f0c4bd57298faddbbc3ec5ad29b9b86ce5df")]
+fn test_agg_sig_unsafe_invalid_msg(
+    #[case] msg: &str,
+    #[values(43, 44, 45, 46, 47, 48, 49, 50)] opcode: u16,
+) {
+    let ret = cond_test_flag(
+        format!("((({{h1}} ({{h2}} (123 ((({opcode} ({{pubkey}} ({msg} )))))").as_str(),
+        ENABLE_SOFTFORK_CONDITION,
+    );
+    if opcode == AGG_SIG_UNSAFE {
+        assert_eq!(ret.unwrap_err().1, ErrorCode::InvalidMessage);
+    } else {
+        assert!(ret.is_ok());
+    }
 }
 
 #[test]
@@ -3521,7 +3572,9 @@ fn test_agg_sig_unsafe_exceed_cost() {
                     let aggsig = a.new_pair(val, aggsig).unwrap();
                     let val = a.new_atom(PUBKEY).unwrap();
                     let aggsig = a.new_pair(val, aggsig).unwrap();
-                    let val = a.new_atom(&u64_to_bytes(AGG_SIG_UNSAFE as u64)).unwrap();
+                    let val = a
+                        .new_atom(&u64_to_bytes(u64::from(AGG_SIG_UNSAFE)))
+                        .unwrap();
                     let aggsig = a.new_pair(val, aggsig).unwrap();
 
                     // add the AGG_SIG_UNSAFE condition to the list (called rest)
@@ -4276,8 +4329,7 @@ fn test_assert_ephemeral_wrong_parent() {
 )]
 fn test_relative_condition_on_ephemeral(
     #[case] condition: ConditionOpcode,
-    #[case] mut expect_error: Option<ErrorCode>,
-    #[values(0, NO_RELATIVE_CONDITIONS_ON_EPHEMERAL)] no_rel_conds_on_ephemeral: u32,
+    #[case] expect_error: Option<ErrorCode>,
 ) {
     // this test ensures that we disallow relative conditions (including
     // assert-my-birth conditions) on ephemeral coin spends.
@@ -4286,11 +4338,6 @@ fn test_relative_condition_on_ephemeral(
     // ephemeral coins
 
     let cond = condition as u8;
-
-    if no_rel_conds_on_ephemeral == 0 {
-        // if we allow relative conditions, all cases should pass
-        expect_error = None;
-    }
 
     // the coin11 value is the coinID computed from (H1, H1, 123).
     // coin11 is the first coin we spend in this case.
@@ -4301,41 +4348,35 @@ fn test_relative_condition_on_ephemeral(
            ((51 ({{h2}} (123 ) \
            ))\
        (({{coin11}} ({{h2}} (123 (\
-           (({} (1000 ) \
+           (({cond} (1000 ) \
            ))\
-       ))",
-        cond
+       ))"
     );
 
-    let flags = no_rel_conds_on_ephemeral;
+    if let Some(err) = expect_error {
+        assert_eq!(cond_test(&test).unwrap_err().1, err);
+    } else {
+        // we don't expect any error
+        let (a, conds) = cond_test(&test).unwrap();
 
-    match expect_error {
-        Some(err) => {
-            assert_eq!(cond_test_flag(&test, flags).unwrap_err().1, err);
-        }
-        None => {
-            // we don't expect any error
-            let (a, conds) = cond_test_flag(&test, flags).unwrap();
+        assert_eq!(conds.reserve_fee, 0);
+        assert_eq!(conds.cost, CREATE_COIN_COST);
 
-            assert_eq!(conds.reserve_fee, 0);
-            assert_eq!(conds.cost, CREATE_COIN_COST);
+        assert_eq!(conds.spends.len(), 2);
+        let spend = &conds.spends[0];
+        assert_eq!(*spend.coin_id, test_coin_id(H1, H1, 123));
+        assert_eq!(a.atom(spend.puzzle_hash).as_ref(), H1);
+        assert_eq!(spend.agg_sig_me.len(), 0);
+        assert_eq!(spend.flags, ELIGIBLE_FOR_DEDUP);
 
-            assert_eq!(conds.spends.len(), 2);
-            let spend = &conds.spends[0];
-            assert_eq!(*spend.coin_id, test_coin_id(H1, H1, 123));
-            assert_eq!(a.atom(spend.puzzle_hash).as_ref(), H1);
-            assert_eq!(spend.agg_sig_me.len(), 0);
-            assert_eq!(spend.flags, ELIGIBLE_FOR_DEDUP);
-
-            let spend = &conds.spends[1];
-            assert_eq!(
-                *spend.coin_id,
-                test_coin_id((&(*conds.spends[0].coin_id)).into(), H2, 123)
-            );
-            assert_eq!(a.atom(spend.puzzle_hash).as_ref(), H2);
-            assert_eq!(spend.agg_sig_me.len(), 0);
-            assert!((spend.flags & ELIGIBLE_FOR_DEDUP) != 0);
-        }
+        let spend = &conds.spends[1];
+        assert_eq!(
+            *spend.coin_id,
+            test_coin_id((&(*conds.spends[0].coin_id)).into(), H2, 123)
+        );
+        assert_eq!(a.atom(spend.puzzle_hash).as_ref(), H2);
+        assert_eq!(spend.agg_sig_me.len(), 0);
+        assert!((spend.flags & ELIGIBLE_FOR_DEDUP) != 0);
     }
 }
 
@@ -4348,9 +4389,9 @@ fn test_relative_condition_on_ephemeral(
 // the cost accumulates
 #[case("((90 (1 ) ((90 (2 ) ((90 (3 )", (1 + 2 + 3) * 10000)]
 // the cost can be large
-#[case("((90 (10000 )", 100000000)]
+#[case("((90 (10000 )", 100_000_000)]
 // the upper cost limit in the test is 11000000000
-#[case("((90 (1100000 )", 11000000000)]
+#[case("((90 (1100000 )", 11_000_000_000)]
 // additional arguments are ignored
 #[case("((90 (1 ( 42 ( 1337 )", 10000)]
 // reserved opcodes with fixed cost
@@ -4365,14 +4406,14 @@ fn test_relative_condition_on_ephemeral(
 #[case("((264 )", 162)]
 #[case("((265 )", 172)]
 #[case("((266 )", 183)]
-#[case("((504 )", 338000000)]
-#[case("((505 )", 359000000)]
-#[case("((506 )", 382000000)]
-#[case("((507 )", 406000000)]
-#[case("((508 )", 431000000)]
-#[case("((509 )", 458000000)]
-#[case("((510 )", 487000000)]
-#[case("((511 )", 517000000)]
+#[case("((504 )", 338_000_000)]
+#[case("((505 )", 359_000_000)]
+#[case("((506 )", 382_000_000)]
+#[case("((507 )", 406_000_000)]
+#[case("((508 )", 431_000_000)]
+#[case("((509 )", 458_000_000)]
+#[case("((510 )", 487_000_000)]
+#[case("((511 )", 517_000_000)]
 #[case("((512 )", 100)]
 #[case("((513 )", 106)]
 #[case("((0xff00 )", 100)]
@@ -4380,7 +4421,7 @@ fn test_relative_condition_on_ephemeral(
 fn test_softfork_condition(#[case] conditions: &str, #[case] expected_cost: Cost) {
     // SOFTFORK (90)
     let (_, spends) = cond_test_flag(
-        &format!("((({{h1}} ({{h2}} (1234 ({}))))", conditions),
+        &format!("((({{h1}} ({{h2}} (1234 ({conditions}))))"),
         ENABLE_SOFTFORK_CONDITION,
     )
     .unwrap();
@@ -4390,7 +4431,7 @@ fn test_softfork_condition(#[case] conditions: &str, #[case] expected_cost: Cost
     // (because we don't know of any yet)
     assert_eq!(
         cond_test_flag(
-            &format!("((({{h1}} ({{h2}} (1234 ({}))))", conditions),
+            &format!("((({{h1}} ({{h2}} (1234 ({conditions}))))"),
             ENABLE_SOFTFORK_CONDITION | NO_UNKNOWN_CONDS
         )
         .unwrap_err()
@@ -4401,14 +4442,14 @@ fn test_softfork_condition(#[case] conditions: &str, #[case] expected_cost: Cost
     // if softfork conditions aren't enabled, they are just plain unknown
     // conditions (that don't incur a cost
     let (_, spends) =
-        cond_test_flag(&format!("((({{h1}} ({{h2}} (1234 ({}))))", conditions), 0).unwrap();
+        cond_test_flag(&format!("((({{h1}} ({{h2}} (1234 ({conditions}))))"), 0).unwrap();
     assert_eq!(spends.cost, 0);
 
     // if softfork conditions aren't enabled, but we don't allow unknown
     // conditions (mempool mode) they fail
     assert_eq!(
         cond_test_flag(
-            &format!("((({{h1}} ({{h2}} (1234 ({}))))", conditions),
+            &format!("((({{h1}} ({{h2}} (1234 ({conditions}))))"),
             NO_UNKNOWN_CONDS
         )
         .unwrap_err()
@@ -4430,7 +4471,7 @@ fn test_softfork_condition_failures(#[case] conditions: &str, #[case] expected_e
     // SOFTFORK (90)
     assert_eq!(
         cond_test_flag(
-            &format!("((({{h1}} ({{h2}} (1234 ({}))))", conditions),
+            &format!("((({{h1}} ({{h2}} (1234 ({conditions}))))"),
             ENABLE_SOFTFORK_CONDITION
         )
         .unwrap_err()
@@ -4495,7 +4536,7 @@ fn test_limit_announcements(
                 let ann = a.nil();
                 let val = a.new_atom(H2).unwrap();
                 let ann = a.new_pair(val, ann).unwrap();
-                let val = a.new_atom(&u64_to_bytes(cond as u64)).unwrap();
+                let val = a.new_atom(&u64_to_bytes(u64::from(cond))).unwrap();
                 let ann = a.new_pair(val, ann).unwrap();
 
                 // add the condition to the list
@@ -4567,10 +4608,9 @@ fn test_eligible_for_ff_output_coin(#[case] amount: u64, #[case] ph: &str, #[cas
     let test: &str = &format!(
         "(\
        (({{h1}} ({{h2}} (123 (\
-           ((51 ({} ({} ) \
+           ((51 ({ph} ({amount} ) \
            ))\
-       ))",
-        ph, amount
+       ))"
     );
 
     let (_a, cond) = cond_test(test).expect("cond_test");
@@ -4598,12 +4638,11 @@ fn test_eligible_for_ff_invalid_assert_parent(
     let test: &str = &format!(
         "(\
        (({{h1}} ({{h2}} (123 (\
-           (({} ({} ) \
+           (({condition} ({arg} ) \
            ((73 (123 ) \
            ((51 ({{h2}} (123 ) \
            ))\
-       ))",
-        condition, arg
+       ))"
     );
 
     let (_a, cond) = cond_test(test).expect("cond_test");
@@ -4629,11 +4668,10 @@ fn test_eligible_for_ff_invalid_agg_sig_me(
     let test: &str = &format!(
         "(\
        (({{h1}} ({{h2}} (1 (\
-           (({} ({{pubkey}} ({{msg1}} ) \
+           (({condition} ({{pubkey}} ({{msg1}} ) \
            ((51 ({{h2}} (1 ) \
            ))\
-       ))",
-        condition
+       ))"
     );
 
     let (_a, cond) = cond_test_flag(test, ENABLE_SOFTFORK_CONDITION).expect("cond_test");
@@ -5264,7 +5302,7 @@ fn test_message_conditions_two_spends(
 // generates all positive test cases between two spends
 #[test]
 fn test_all_message_conditions() {
-    for mode in 0..0b111111 {
+    for mode in 0..0b11_1111 {
         let coin1_case = match mode & 0b111 {
             0 => "",
             0b001 => "(456 ",
@@ -5323,7 +5361,7 @@ fn test_all_message_conditions() {
 
 #[test]
 fn test_message_eligible_for_ff() {
-    for mode in 0..0b111111 {
+    for mode in 0..0b11_1111 {
         let coin1_case = match mode & 0b111 {
             0 => "",
             0b001 => "(123 ",
@@ -5379,7 +5417,7 @@ fn test_message_eligible_for_ff() {
         assert!(cond.spends.len() == 2);
         assert_eq!(
             (cond.spends[0].flags & ELIGIBLE_FOR_FF) != 0,
-            (mode & 0b100000) == 0
+            (mode & 0b10_0000) == 0
         );
         assert_eq!((cond.spends[1].flags & ELIGIBLE_FOR_FF), 0);
 

@@ -1,6 +1,7 @@
 use clap::Parser;
 
 use chik_bls::PublicKey;
+use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::gen::conditions::{EmptyVisitor, NewCoin, Spend, SpendBundleConditions};
 use chik_consensus::gen::flags::{ALLOW_BACKREFS, MEMPOOL_MODE};
 use chik_consensus::gen::run_block_generator::{run_block_generator, run_block_generator2};
@@ -9,12 +10,14 @@ use klvmr::allocator::NodePtr;
 use klvmr::serde::{node_from_bytes, node_to_bytes_backrefs};
 use klvmr::Allocator;
 use std::collections::HashSet;
+use std::io::Write;
 use std::thread::available_parallelism;
 use std::time::{Duration, Instant};
 
 /// Analyze the blocks in a chik blockchain database
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
+#[allow(clippy::struct_excessive_bools)]
 struct Args {
     /// Path to blockchain database file to analyze
     #[arg(short, long)]
@@ -123,9 +126,10 @@ fn compare(a: &Allocator, lhs: &SpendBundleConditions, rhs: &SpendBundleConditio
 fn main() {
     let args = Args::parse();
 
-    if args.validate && !(args.mempool || args.rust_generator || args.test_backrefs) {
-        panic!("it doesn't make sense to validate the output against identical runs. Specify --mempool, --rust-generator or --test-backrefs");
-    }
+    // TODO: Use the real consants here
+    let constants = &TEST_CONSTANTS;
+
+    assert!(!(args.validate && !(args.mempool || args.rust_generator || args.test_backrefs)), "it doesn't make sense to validate the output against identical runs. Specify --mempool, --rust-generator or --test-backrefs");
 
     let num_cores = args
         .num_jobs
@@ -157,7 +161,7 @@ fn main() {
         args.max_height,
         |height, block, block_refs| {
             pool.execute(move || {
-                let mut a = Allocator::new_limited(500000000);
+                let mut a = Allocator::new_limited(500_000_000);
 
                 let ti = block.transactions_info.as_ref().expect("transactions_info");
                 let prg = block
@@ -175,8 +179,9 @@ fn main() {
                     prg.as_ref()
                 };
 
-                let mut conditions = block_runner(&mut a, generator, &block_refs, ti.cost, flags)
-                    .expect("failed to run block generator");
+                let mut conditions =
+                    block_runner(&mut a, generator, &block_refs, ti.cost, flags, constants)
+                        .expect("failed to run block generator");
 
                 if args.rust_generator || args.test_backrefs {
                     assert!(conditions.cost <= ti.cost);
@@ -197,6 +202,7 @@ fn main() {
                         &block_refs,
                         ti.cost,
                         0,
+                        constants,
                     )
                     .expect("failed to run block generator");
                     assert_eq!(baseline.cost, ti.cost);
@@ -211,8 +217,7 @@ fn main() {
 
             assert_eq!(pool.panic_count(), 0);
             if last_time.elapsed() > Duration::new(4, 0) {
-                let rate = (height - last_height) as f64 / last_time.elapsed().as_secs_f64();
-                use std::io::Write;
+                let rate = f64::from(height - last_height) / last_time.elapsed().as_secs_f64();
                 print!("\rheight: {height} ({rate:0.1} blocks/s)   ");
                 let _ = std::io::stdout().flush();
                 last_height = height;

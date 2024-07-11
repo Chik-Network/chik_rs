@@ -1,6 +1,6 @@
 [package]
 name = "chik-consensus"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Utility functions and types used by the Chik blockchain full node"
@@ -8,32 +8,35 @@ authors = ["Richard Kiss <him@richardkiss.com>", "Arvid Norberg <arvid@chiknetwo
 homepage = "https://github.com/Chik-Network/chik_rs"
 repository = "https://github.com/Chik-Network/chik_rs"
 
+[lints]
+workspace = true
+
 [features]
 py-bindings = ["dep:pyo3", "dep:chik_py_streamable_macro"]
 
 [dependencies]
-klvmr = "0.7.0"
-hex = "0.4.3"
-pyo3 = { version = "0.21.2", optional = true }
-sha2 = "0.10.8"
-chik_streamable_macro = { version = "0.8.0", path = "../chik_streamable_macro" }
-chik_py_streamable_macro = { version = "0.9.0", path = "../chik_py_streamable_macro", optional = true }
-klvm-utils = { version = "0.9.0", path = "../klvm-utils" }
-chik-traits = { version = "0.9.0", path = "../chik-traits" }
-klvm-traits = { version = "0.9.0", path = "../klvm-traits" }
-klvm-derive = { version = "0.9.0", path = "../klvm-derive" }
-chik-protocol = { version = "0.9.0", path = "../chik-protocol" }
-chik-puzzles = { version = "0.9.0", path = "../chik-puzzles" }
-chik-bls = { version = "0.9.0", path = "../chik-bls" }
-hex-literal = "0.4.1"
-thiserror = "1.0.44"
+klvmr = { workspace = true }
+hex = { workspace = true }
+pyo3 = { workspace = true, optional = true }
+sha2 = { workspace = true }
+chik_streamable_macro = { workspace = true }
+chik_py_streamable_macro = { workspace = true, optional = true }
+klvm-utils = { workspace = true }
+chik-traits = { workspace = true }
+klvm-traits = { workspace = true }
+klvm-derive = { workspace = true }
+chik-protocol = { workspace = true }
+chik-puzzles = { workspace = true }
+chik-bls = { workspace = true }
+hex-literal = { workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
-num-traits = "0.2.15"
-rstest = "0.16.0"
-text-diff = "0.4.0"
-criterion = "0.5.1"
-rand = { version = "0.8.5", features = [ "small_rng" ] }
+num-traits = { workspace = true }
+rstest = { workspace = true }
+text-diff = { workspace = true }
+criterion = { workspace = true }
+rand = { workspace = true, features = [ "small_rng" ] }
 
 [lib]
 bench = false

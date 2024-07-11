@@ -1,7 +1,6 @@
-use chik_bls::secret_key::SecretKey;
-use chik_bls::signature::sign;
-use chik_bls::PublicKey;
+use chik_bls::sign;
 use chik_bls::Signature;
+use chik_bls::{PublicKey, SecretKey};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};

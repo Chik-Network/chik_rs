@@ -22,15 +22,15 @@ def supports_fast_forward(spend: CoinSpend) -> bool : ...
 def fast_forward_singleton(spend: CoinSpend, new_coin: Coin, new_parent: Coin) -> bytes: ...
 
 def run_block_generator(
-    program: ReadableBuffer, args: List[ReadableBuffer], max_cost: int, flags: int
+    program: ReadableBuffer, args: List[ReadableBuffer], max_cost: int, flags: int, constants: ConsensusConstants
 ) -> Tuple[Optional[int], Optional[SpendBundleConditions]]: ...
 
 def run_block_generator2(
-    program: ReadableBuffer, args: List[ReadableBuffer], max_cost: int, flags: int
+    program: ReadableBuffer, args: List[ReadableBuffer], max_cost: int, flags: int, constants: ConsensusConstants
 ) -> Tuple[Optional[int], Optional[SpendBundleConditions]]: ...
 
 def run_puzzle(
-    puzzle: bytes, solution: bytes, parent_id: bytes32, amount: int, max_cost: int, flags: int
+    puzzle: bytes, solution: bytes, parent_id: bytes32, amount: int, max_cost: int, flags: int, constants: ConsensusConstants
 ) -> SpendBundleConditions: ...
 
 def deserialize_proof(
@@ -58,7 +58,6 @@ ENABLE_SOFTFORK_CONDITION: int = ...
 ENABLE_MESSAGE_CONDITIONS: int = ...
 DISALLOW_INFINITY_G1: int = ...
 MEMPOOL_MODE: int = ...
-NO_RELATIVE_CONDITIONS_ON_EPHEMERAL: int = ...
 ENABLE_BLS_OPS: int = ...
 ENABLE_SECP_OPS: int = ...
 ENABLE_BLS_OPS_OUTSIDE_GUARD: int = ...
@@ -4134,6 +4133,12 @@ class ConsensusConstants:
     NUMBER_OF_TIMESTAMPS: uint8
     GENESIS_CHALLENGE: bytes32
     AGG_SIG_ME_ADDITIONAL_DATA: bytes32
+    AGG_SIG_PARENT_ADDITIONAL_DATA: bytes32
+    AGG_SIG_PUZZLE_ADDITIONAL_DATA: bytes32
+    AGG_SIG_AMOUNT_ADDITIONAL_DATA: bytes32
+    AGG_SIG_PUZZLE_AMOUNT_ADDITIONAL_DATA: bytes32
+    AGG_SIG_PARENT_AMOUNT_ADDITIONAL_DATA: bytes32
+    AGG_SIG_PARENT_PUZZLE_ADDITIONAL_DATA: bytes32
     GENESIS_PRE_FARM_POOL_PUZZLE_HASH: bytes32
     GENESIS_PRE_FARM_FARMER_PUZZLE_HASH: bytes32
     MAX_VDF_WITNESS_SIZE: uint8
@@ -4179,6 +4184,12 @@ class ConsensusConstants:
         NUMBER_OF_TIMESTAMPS: uint8,
         GENESIS_CHALLENGE: bytes,
         AGG_SIG_ME_ADDITIONAL_DATA: bytes,
+        AGG_SIG_PARENT_ADDITIONAL_DATA: bytes,
+        AGG_SIG_PUZZLE_ADDITIONAL_DATA: bytes,
+        AGG_SIG_AMOUNT_ADDITIONAL_DATA: bytes,
+        AGG_SIG_PUZZLE_AMOUNT_ADDITIONAL_DATA: bytes,
+        AGG_SIG_PARENT_AMOUNT_ADDITIONAL_DATA: bytes,
+        AGG_SIG_PARENT_PUZZLE_ADDITIONAL_DATA: bytes,
         GENESIS_PRE_FARM_POOL_PUZZLE_HASH: bytes,
         GENESIS_PRE_FARM_FARMER_PUZZLE_HASH: bytes,
         MAX_VDF_WITNESS_SIZE: uint8,
@@ -4241,6 +4252,12 @@ class ConsensusConstants:
         NUMBER_OF_TIMESTAMPS: Union[ uint8, _Unspec] = _Unspec(),
         GENESIS_CHALLENGE: Union[ bytes32, _Unspec] = _Unspec(),
         AGG_SIG_ME_ADDITIONAL_DATA: Union[ bytes32, _Unspec] = _Unspec(),
+        AGG_SIG_PARENT_ADDITIONAL_DATA: Union[ bytes32, _Unspec] = _Unspec(),
+        AGG_SIG_PUZZLE_ADDITIONAL_DATA: Union[ bytes32, _Unspec] = _Unspec(),
+        AGG_SIG_AMOUNT_ADDITIONAL_DATA: Union[ bytes32, _Unspec] = _Unspec(),
+        AGG_SIG_PUZZLE_AMOUNT_ADDITIONAL_DATA: Union[ bytes32, _Unspec] = _Unspec(),
+        AGG_SIG_PARENT_AMOUNT_ADDITIONAL_DATA: Union[ bytes32, _Unspec] = _Unspec(),
+        AGG_SIG_PARENT_PUZZLE_ADDITIONAL_DATA: Union[ bytes32, _Unspec] = _Unspec(),
         GENESIS_PRE_FARM_POOL_PUZZLE_HASH: Union[ bytes32, _Unspec] = _Unspec(),
         GENESIS_PRE_FARM_FARMER_PUZZLE_HASH: Union[ bytes32, _Unspec] = _Unspec(),
         MAX_VDF_WITNESS_SIZE: Union[ uint8, _Unspec] = _Unspec(),

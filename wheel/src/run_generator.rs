@@ -1,10 +1,11 @@
 use chik_consensus::allocator::make_allocator;
+use chik_consensus::consensus_constants::ConsensusConstants;
 use chik_consensus::gen::conditions::{EmptyVisitor, MempoolVisitor};
 use chik_consensus::gen::flags::ANALYZE_SPENDS;
 use chik_consensus::gen::owned_conditions::OwnedSpendBundleConditions;
 use chik_consensus::gen::run_block_generator::run_block_generator as native_run_block_generator;
 use chik_consensus::gen::run_block_generator::run_block_generator2 as native_run_block_generator2;
-use chik_consensus::gen::validation_error::{ErrorCode, ValidationErr};
+use chik_consensus::gen::validation_error::ValidationErr;
 
 use klvmr::cost::Cost;
 
@@ -14,11 +15,12 @@ use pyo3::types::PyList;
 
 #[pyfunction]
 pub fn run_block_generator(
-    _py: Python,
+    _py: Python<'_>,
     program: PyBuffer<u8>,
-    block_refs: &Bound<PyList>,
+    block_refs: &Bound<'_, PyList>,
     max_cost: Cost,
     flags: u32,
+    constants: &ConsensusConstants,
 ) -> PyResult<(Option<u32>, Option<OwnedSpendBundleConditions>)> {
     let mut allocator = make_allocator(flags);
 
@@ -26,17 +28,19 @@ pub fn run_block_generator(
     for g in block_refs {
         let buf = g.extract::<PyBuffer<u8>>()?;
 
-        if !buf.is_c_contiguous() {
-            panic!("block_refs buffers must be contiguous");
-        }
+        assert!(
+            buf.is_c_contiguous(),
+            "block_refs buffers must be contiguous"
+        );
         let slice =
             unsafe { std::slice::from_raw_parts(buf.buf_ptr() as *const u8, buf.len_bytes()) };
         refs.push(slice);
     }
 
-    if !program.is_c_contiguous() {
-        panic!("program buffer must be contiguous");
-    }
+    assert!(
+        program.is_c_contiguous(),
+        "program buffer must be contiguous"
+    );
     let program =
         unsafe { std::slice::from_raw_parts(program.buf_ptr() as *const u8, program.len_bytes()) };
 
@@ -47,15 +51,14 @@ pub fn run_block_generator(
     };
 
     Ok(
-        match run_block(&mut allocator, program, &refs, max_cost, flags) {
-            Ok(spend_bundle_conds) => {
-                let conds = OwnedSpendBundleConditions::from(&allocator, spend_bundle_conds);
-                match conds {
-                    // everything was successful
-                    Ok(c) => (None, Some(c)),
-                    Err(_) => (Some(ErrorCode::InvalidPublicKey.into()), None),
-                }
-            }
+        match run_block(&mut allocator, program, &refs, max_cost, flags, constants) {
+            Ok(spend_bundle_conds) => (
+                None,
+                Some(OwnedSpendBundleConditions::from(
+                    &allocator,
+                    spend_bundle_conds,
+                )),
+            ),
             Err(ValidationErr(_, error_code)) => {
                 // a validation error occurred
                 (Some(error_code.into()), None)
@@ -66,11 +69,12 @@ pub fn run_block_generator(
 
 #[pyfunction]
 pub fn run_block_generator2(
-    _py: Python,
+    _py: Python<'_>,
     program: PyBuffer<u8>,
-    block_refs: &Bound<PyList>,
+    block_refs: &Bound<'_, PyList>,
     max_cost: Cost,
     flags: u32,
+    constants: &ConsensusConstants,
 ) -> PyResult<(Option<u32>, Option<OwnedSpendBundleConditions>)> {
     let mut allocator = make_allocator(flags);
 
@@ -78,17 +82,19 @@ pub fn run_block_generator2(
     for g in block_refs {
         let buf = g.extract::<PyBuffer<u8>>()?;
 
-        if !buf.is_c_contiguous() {
-            panic!("block_refs buffers must be contiguous");
-        }
+        assert!(
+            buf.is_c_contiguous(),
+            "block_refs buffers must be contiguous"
+        );
         let slice =
             unsafe { std::slice::from_raw_parts(buf.buf_ptr() as *const u8, buf.len_bytes()) };
         refs.push(slice);
     }
 
-    if !program.is_c_contiguous() {
-        panic!("program buffer must be contiguous");
-    }
+    assert!(
+        program.is_c_contiguous(),
+        "program buffer must be contiguous"
+    );
     let program =
         unsafe { std::slice::from_raw_parts(program.buf_ptr() as *const u8, program.len_bytes()) };
 
@@ -99,15 +105,14 @@ pub fn run_block_generator2(
     };
 
     Ok(
-        match run_block(&mut allocator, program, &refs, max_cost, flags) {
-            Ok(spend_bundle_conds) => {
-                let conds = OwnedSpendBundleConditions::from(&allocator, spend_bundle_conds);
-                match conds {
-                    // everything was successful
-                    Ok(c) => (None, Some(c)),
-                    Err(_) => (Some(ErrorCode::InvalidPublicKey.into()), None),
-                }
-            }
+        match run_block(&mut allocator, program, &refs, max_cost, flags, constants) {
+            Ok(spend_bundle_conds) => (
+                None,
+                Some(OwnedSpendBundleConditions::from(
+                    &allocator,
+                    spend_bundle_conds,
+                )),
+            ),
             Err(ValidationErr(_, error_code)) => {
                 // a validation error occurred
                 (Some(error_code.into()), None)

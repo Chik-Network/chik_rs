@@ -19,18 +19,21 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-impl std::convert::From<Error> for chik_traits::Error {
+impl From<Error> for chik_traits::Error {
     fn from(err: Error) -> chik_traits::Error {
         chik_traits::Error::Custom(format!("{err}"))
     }
 }
 
 #[cfg(feature = "py-bindings")]
-use pyo3::PyErr;
+mod pybindings {
+    use super::*;
 
-#[cfg(feature = "py-bindings")]
-impl std::convert::From<Error> for PyErr {
-    fn from(err: Error) -> PyErr {
-        pyo3::exceptions::PyValueError::new_err(format!("BLS Error {:?}", err))
+    use pyo3::{exceptions::PyValueError, PyErr};
+
+    impl From<Error> for PyErr {
+        fn from(err: Error) -> PyErr {
+            PyValueError::new_err(format!("BLS Error {err:?}"))
+        }
     }
 }

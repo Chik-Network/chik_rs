@@ -74,8 +74,15 @@ pub struct ConsensusConstants {
     /// We override this value based on the chain being run (testnet0, testnet1, mainnet, etc).
     genesis_challenge: Bytes32,
 
-    /// Forks of chik should change this value to provide replay attack protection.
+    /// Forks of chik should change these values to provide replay attack protection.
     agg_sig_me_additional_data: Bytes32,
+    /// By convention, the below additional data is derived from the agg_sig_me_additional_data
+    agg_sig_parent_additional_data: Bytes32,
+    agg_sig_puzzle_additional_data: Bytes32,
+    agg_sig_amount_additional_data: Bytes32,
+    agg_sig_puzzle_amount_additional_data: Bytes32,
+    agg_sig_parent_amount_additional_data: Bytes32,
+    agg_sig_parent_puzzle_additional_data: Bytes32,
 
     /// The block at height must pay out to this pool puzzle hash.
     genesis_pre_farm_pool_puzzle_hash: Bytes32,
@@ -163,6 +170,24 @@ pub const TEST_CONSTANTS: ConsensusConstants = ConsensusConstants {
     agg_sig_me_additional_data: Bytes32::new(hex!(
         "ccd5bb71183532bff220ba46c268991a3ff07eb358e8255a65c30a2dce0e5fbb"
     )),
+    agg_sig_parent_additional_data: Bytes32::new(hex!(
+        "baf5d69c647c91966170302d18521b0a85663433d161e72c826ed08677b53a74"
+    )),
+    agg_sig_puzzle_additional_data: Bytes32::new(hex!(
+        "284fa2ef486c7a41cc29fc99c9d08376161e93dd37817edb8219f42dca7592c4"
+    )),
+    agg_sig_amount_additional_data: Bytes32::new(hex!(
+        "cda186a9cd030f7a130fae45005e81cae7a90e0fa205b75f6aebc0d598e0348e"
+    )),
+    agg_sig_puzzle_amount_additional_data: Bytes32::new(hex!(
+        "0f7d90dff0613e6901e24dae59f1e690f18b8f5fbdcf1bb192ac9deaf7de22ad"
+    )),
+    agg_sig_parent_amount_additional_data: Bytes32::new(hex!(
+        "585796bd90bb553c0430b87027ffee08d88aba0162c6e1abbbcc6b583f2ae7f9"
+    )),
+    agg_sig_parent_puzzle_additional_data: Bytes32::new(hex!(
+        "2ebfdae17b29d83bae476a25ea06f0c4bd57298faddbbc3ec5ad29b9b86ce5df"
+    )),
     genesis_pre_farm_pool_puzzle_hash: Bytes32::new(hex!(
         "d23da14695a188ae5708dd152263c4db883eb27edeb936178d4d988b8f3ce5fc"
     )),
@@ -172,21 +197,21 @@ pub const TEST_CONSTANTS: ConsensusConstants = ConsensusConstants {
     max_vdf_witness_size: 64,
     mempool_block_buffer: 10,
     max_coin_amount: u64::MAX,
-    max_block_cost_klvm: 11000000000,
+    max_block_cost_klvm: 11_000_000_000,
     cost_per_byte: 12000,
     weight_proof_threshold: 2,
     blocks_cache_size: 4608 + (128 * 4),
     weight_proof_recent_blocks: 1000,
     max_block_count_per_requests: 32,
-    max_generator_size: 1000000,
+    max_generator_size: 1_000_000,
     max_generator_ref_list_size: 512,
-    pool_sub_slot_iters: 37600000000,
+    pool_sub_slot_iters: 37_600_000_000,
     soft_fork2_height: 0,
-    soft_fork4_height: 5716000,
-    soft_fork5_height: 5940000,
-    hard_fork_height: 5496000,
-    hard_fork_fix_height: 5496000,
-    plot_filter_128_height: 10542000,
-    plot_filter_64_height: 15592000,
-    plot_filter_32_height: 20643000,
+    soft_fork4_height: 5_716_000,
+    soft_fork5_height: 5_940_000,
+    hard_fork_height: 5_496_000,
+    hard_fork_fix_height: 5_496_000,
+    plot_filter_128_height: 10_542_000,
+    plot_filter_64_height: 15_592_000,
+    plot_filter_32_height: 20_643_000,
 };

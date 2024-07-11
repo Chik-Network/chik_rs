@@ -1,6 +1,6 @@
 [package]
 name = "chik_rs"
-version = "0.9.0"
+version = "0.10.0"
 authors = ["Richard Kiss <him@richardkiss.com>"]
 edition = "2021"
 license = "Apache-2.0"
@@ -9,24 +9,24 @@ homepage = "https://github.com/Chik-Network/chik_rs"
 repository = "https://github.com/Chik-Network/chik_rs"
 readme = "README.md"
 
+[lints]
+workspace = true
+
 [lib]
 name = "chik_rs"
 crate-type = ["cdylib"]
 path = "src/lib.rs"
 
-[package.metadata.maturin]
-python-source = "python"
-
 [dependencies]
-klvmr = "0.7.0"
-hex = "0.4.3"
-sha2 = "0.10.8"
-pyo3 = { version = "0.21.2", features = ["multiple-pymethods"] }
-chik-consensus = { version = "0.9.0", path = "../crates/chik-consensus", features = ["py-bindings"] }
-chik-bls = { version = "0.9.0", path = "../crates/chik-bls", features = ["py-bindings"]  }
-chik-protocol = { version = "0.9.0", path = "../crates/chik-protocol", features = ["py-bindings"]  }
-chik-traits = { version = "0.9.0", path = "../crates/chik-traits", features = ["py-bindings"]  }
-klvm-traits = { version = "0.9.0", path = "../crates/klvm-traits", features = ["derive", "py-bindings"] }
-klvm-utils = { version = "0.9.0", path = "../crates/klvm-utils" }
-chik_py_streamable_macro = { version = "0.9.0", path = "../crates/chik_py_streamable_macro" }
-chik_streamable_macro = { version = "0.8.0", path = "../crates/chik_streamable_macro" }
+klvmr = { workspace = true }
+hex = { workspace = true }
+sha2 = { workspace = true }
+pyo3 = { workspace = true, features = ["multiple-pymethods"] }
+chik-consensus = { workspace = true, features = ["py-bindings"] }
+chik-bls = { workspace = true, features = ["py-bindings"]  }
+chik-protocol = { workspace = true, features = ["py-bindings"]  }
+chik-traits = { workspace = true, features = ["py-bindings"]  }
+klvm-traits = { workspace = true, features = ["derive", "py-bindings"] }
+klvm-utils = { workspace = true }
+chik_py_streamable_macro = { workspace = true }
+chik_streamable_macro = { workspace = true }

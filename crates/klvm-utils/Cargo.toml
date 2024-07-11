@@ -1,6 +1,6 @@
 [package]
 name = "klvm-utils"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Utility functions for processing klvm programs and structures"
@@ -8,11 +8,14 @@ authors = ["Arvid Norberg <arvid@chiknetwork.com>"]
 homepage = "https://github.com/Chik-Network/chik_rs"
 repository = "https://github.com/Chik-Network/chik_rs"
 
+[lints]
+workspace = true
+
 [dependencies]
-klvmr = "0.7.0"
-klvm-traits = { version = "0.9.0", path = "../klvm-traits" }
-hex = "0.4.3"
+klvmr = { workspace = true }
+klvm-traits = { workspace = true }
+hex = { workspace = true }
 
 [dev-dependencies]
-rstest = "0.16.0"
-klvm-traits = { version = "0.9.0", path = "../klvm-traits", features = ["derive"] }
+rstest = { workspace = true }
+klvm-traits = { workspace = true, features = ["derive"] }

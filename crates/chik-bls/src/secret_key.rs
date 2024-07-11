@@ -9,23 +9,10 @@ use std::io::Cursor;
 use std::mem::MaybeUninit;
 use std::ops::{Add, AddAssign};
 
-#[cfg(feature = "py-bindings")]
-use crate::public_key::parse_hex_string;
-#[cfg(feature = "py-bindings")]
-use crate::Signature;
-#[cfg(feature = "py-bindings")]
-use chik_py_streamable_macro::PyStreamable;
-#[cfg(feature = "py-bindings")]
-use chik_traits::from_json_dict::FromJsonDict;
-#[cfg(feature = "py-bindings")]
-use chik_traits::to_json_dict::ToJsonDict;
-#[cfg(feature = "py-bindings")]
-use pyo3::{pyclass, pymethods, IntoPy, PyAny, PyObject, PyResult, Python};
-
 #[cfg_attr(
     feature = "py-bindings",
-    pyclass(frozen, name = "PrivateKey"),
-    derive(PyStreamable)
+    pyo3::pyclass(frozen, name = "PrivateKey"),
+    derive(chik_py_streamable_macro::PyStreamable)
 )]
 #[derive(PartialEq, Eq, Clone)]
 pub struct SecretKey(pub(crate) blst_scalar);
@@ -47,8 +34,8 @@ fn flip_bits(input: [u8; 32]) -> [u8; 32] {
     ret
 }
 
-fn ikm_to_lamport_sk(ikm: &[u8; 32], salt: &[u8; 4]) -> [u8; 255 * 32] {
-    let mut extracter = HkdfExtract::<Sha256>::new(Some(salt));
+fn ikm_to_lamport_sk(ikm: &[u8; 32], salt: [u8; 4]) -> [u8; 255 * 32] {
+    let mut extracter = HkdfExtract::<Sha256>::new(Some(&salt));
     extracter.input_ikm(ikm);
     let (_, h) = extracter.finalize();
 
@@ -61,8 +48,8 @@ fn to_lamport_pk(ikm: [u8; 32], idx: u32) -> [u8; 32] {
     let not_ikm = flip_bits(ikm);
     let salt = idx.to_be_bytes();
 
-    let mut lamport0 = ikm_to_lamport_sk(&ikm, &salt);
-    let mut lamport1 = ikm_to_lamport_sk(&not_ikm, &salt);
+    let mut lamport0 = ikm_to_lamport_sk(&ikm, salt);
+    let mut lamport1 = ikm_to_lamport_sk(&not_ikm, salt);
 
     for i in (0..32 * 255).step_by(32) {
         let hash = sha256(&lamport0[i..i + 32]);
@@ -94,6 +81,10 @@ pub fn is_all_zero(buf: &[u8]) -> bool {
 }
 
 impl SecretKey {
+    /// # Panics
+    ///
+    /// Panics if the seed produces an invalid SecretKey.
+    #[must_use]
     pub fn from_seed(seed: &[u8]) -> Self {
         // described here:
         // https://eips.ethereum.org/EIPS/eip-2333#derive_master_sk
@@ -109,7 +100,7 @@ impl SecretKey {
                 0,
             );
             let mut bytes = MaybeUninit::<[u8; 32]>::uninit();
-            blst_bendian_from_scalar(bytes.as_mut_ptr() as *mut u8, &scalar.assume_init());
+            blst_bendian_from_scalar(bytes.as_mut_ptr().cast::<u8>(), &scalar.assume_init());
             bytes.assume_init()
         };
         Self::from_bytes(&bytes).expect("from_seed")
@@ -137,7 +128,7 @@ impl SecretKey {
     pub fn to_bytes(&self) -> [u8; 32] {
         unsafe {
             let mut bytes = MaybeUninit::<[u8; 32]>::uninit();
-            blst_bendian_from_scalar(bytes.as_mut_ptr() as *mut u8, &self.0);
+            blst_bendian_from_scalar(bytes.as_mut_ptr().cast::<u8>(), &self.0);
             bytes.assume_init()
         }
     }
@@ -151,6 +142,7 @@ impl SecretKey {
         PublicKey(p1)
     }
 
+    #[must_use]
     pub fn derive_hardened(&self, idx: u32) -> SecretKey {
         // described here:
         // https://eips.ethereum.org/EIPS/eip-2333#derive_child_sk
@@ -179,7 +171,7 @@ impl Streamable for SecretKey {
 
 impl Hash for SecretKey {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write(&self.to_bytes())
+        state.write(&self.to_bytes());
     }
 }
 
@@ -214,31 +206,11 @@ impl AddAssign<&SecretKey> for SecretKey {
 }
 
 impl fmt::Debug for SecretKey {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_fmt(format_args!(
             "<PrivateKey {}>",
             &hex::encode(self.to_bytes())
         ))
-    }
-}
-
-#[cfg(feature = "py-bindings")]
-impl ToJsonDict for SecretKey {
-    fn to_json_dict(&self, py: Python) -> pyo3::PyResult<PyObject> {
-        let bytes = self.to_bytes();
-        Ok(("0x".to_string() + &hex::encode(bytes)).into_py(py))
-    }
-}
-
-#[cfg(feature = "py-bindings")]
-impl FromJsonDict for SecretKey {
-    fn from_json_dict(o: &pyo3::Bound<PyAny>) -> PyResult<Self> {
-        Ok(Self::from_bytes(
-            parse_hex_string(o, 32, "PrivateKey")?
-                .as_slice()
-                .try_into()
-                .unwrap(),
-        )?)
     }
 }
 
@@ -265,21 +237,48 @@ impl DerivableKey for SecretKey {
 }
 
 #[cfg(feature = "py-bindings")]
-#[pymethods]
-impl SecretKey {
-    #[classattr]
-    const PRIVATE_KEY_SIZE: usize = 32;
+mod pybindings {
+    use super::*;
 
-    pub fn sign_g2(&self, msg: &[u8]) -> Signature {
-        crate::sign(self, msg)
+    use crate::{parse_hex::parse_hex_string, PublicKey, Signature};
+
+    use chik_traits::{FromJsonDict, ToJsonDict};
+    use pyo3::prelude::*;
+
+    #[pymethods]
+    impl SecretKey {
+        #[classattr]
+        const PRIVATE_KEY_SIZE: usize = 32;
+
+        pub fn sign_g2(&self, msg: &[u8]) -> Signature {
+            crate::sign(self, msg)
+        }
+
+        pub fn get_g1(&self) -> PublicKey {
+            self.public_key()
+        }
+
+        fn __str__(&self) -> String {
+            hex::encode(self.to_bytes())
+        }
     }
 
-    pub fn get_g1(&self) -> PublicKey {
-        self.public_key()
+    impl ToJsonDict for SecretKey {
+        fn to_json_dict(&self, py: Python<'_>) -> PyResult<PyObject> {
+            let bytes = self.to_bytes();
+            Ok(("0x".to_string() + &hex::encode(bytes)).into_py(py))
+        }
     }
 
-    fn __str__(&self) -> pyo3::PyResult<String> {
-        Ok(hex::encode(self.to_bytes()))
+    impl FromJsonDict for SecretKey {
+        fn from_json_dict(o: &Bound<'_, PyAny>) -> PyResult<Self> {
+            Ok(Self::from_bytes(
+                parse_hex_string(o, 32, "PrivateKey")?
+                    .as_slice()
+                    .try_into()
+                    .unwrap(),
+            )?)
+        }
     }
 }
 
@@ -342,7 +341,7 @@ mod tests {
 
         for (i, hex) in derived_hex.iter().enumerate() {
             let derived = sk.derive_unhardened(i as u32);
-            assert_eq!(derived.to_bytes(), <[u8; 32]>::from_hex(hex).unwrap())
+            assert_eq!(derived.to_bytes(), <[u8; 32]>::from_hex(hex).unwrap());
         }
     }
 
@@ -407,7 +406,7 @@ mod tests {
 
         for (i, hex) in derived_hex.iter().enumerate() {
             let derived = sk.derive_hardened(i as u32);
-            assert_eq!(derived.to_bytes(), <[u8; 32]>::from_hex(hex).unwrap())
+            assert_eq!(derived.to_bytes(), <[u8; 32]>::from_hex(hex).unwrap());
         }
     }
 
@@ -415,12 +414,12 @@ mod tests {
     fn test_debug() {
         let sk_hex = "52d75c4707e39595b27314547f9723e5530c01198af3fc5849d9a7af65631efb";
         let sk = SecretKey::from_bytes(&<[u8; 32]>::from_hex(sk_hex).unwrap()).unwrap();
-        assert_eq!(format!("{:?}", sk), format!("<PrivateKey {}>", sk_hex));
+        assert_eq!(format!("{sk:?}"), format!("<PrivateKey {sk_hex}>"));
     }
 
     #[test]
     fn test_hash() {
-        fn hash<T: std::hash::Hash>(v: &T) -> u64 {
+        fn hash<T: Hash>(v: &T) -> u64 {
             use std::collections::hash_map::DefaultHasher;
             let mut h = DefaultHasher::new();
             v.hash(&mut h);
@@ -512,6 +511,7 @@ mod tests {
 #[cfg(feature = "py-bindings")]
 mod pytests {
     use super::*;
+    use pyo3::{IntoPy, Python};
     use rand::rngs::StdRng;
     use rand::{Rng, SeedableRng};
     use rstest::rstest;

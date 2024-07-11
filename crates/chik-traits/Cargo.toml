@@ -1,16 +1,19 @@
 [package]
 name = "chik-traits"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Chik traits for Streamable types (chik's serialization format)"
 authors = ["Arvid Norberg <arvid@chiknetwork.com>"]
 
+[lints]
+workspace = true
+
 [features]
 py-bindings = ["dep:pyo3"]
 
 [dependencies]
-pyo3 = { version = "0.21.2", features = ["multiple-pymethods"], optional = true }
-chik_streamable_macro = { version = "0.8.0", path = "../chik_streamable_macro" }
-sha2 = "0.10.8"
-thiserror = "1.0.44"
+pyo3 = { workspace = true, features = ["multiple-pymethods"], optional = true }
+chik_streamable_macro = { workspace = true }
+sha2 = { workspace = true }
+thiserror = { workspace = true }

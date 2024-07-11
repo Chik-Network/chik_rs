@@ -1,5 +1,6 @@
 use crate::secret_key::is_all_zero;
 use crate::{DerivableKey, Error, Result};
+
 use blst::*;
 use chik_traits::{read_bytes, Streamable};
 use sha2::{digest::FixedOutput, Digest, Sha256};
@@ -9,23 +10,10 @@ use std::io::Cursor;
 use std::mem::MaybeUninit;
 use std::ops::{Add, AddAssign, Neg, SubAssign};
 
-#[cfg(feature = "py-bindings")]
-use crate::{GTElement, Signature};
-#[cfg(feature = "py-bindings")]
-use chik_py_streamable_macro::PyStreamable;
-#[cfg(feature = "py-bindings")]
-use chik_traits::from_json_dict::FromJsonDict;
-#[cfg(feature = "py-bindings")]
-use chik_traits::to_json_dict::ToJsonDict;
-#[cfg(feature = "py-bindings")]
-use pyo3::prelude::PyAnyMethods;
-#[cfg(feature = "py-bindings")]
-use pyo3::{pyclass, pymethods, IntoPy, PyAny, PyObject, PyResult, Python};
-
 #[cfg_attr(
     feature = "py-bindings",
-    pyclass(name = "G1Element"),
-    derive(PyStreamable)
+    pyo3::pyclass(name = "G1Element"),
+    derive(chik_py_streamable_macro::PyStreamable)
 )]
 #[derive(Clone, Copy, Default)]
 pub struct PublicKey(pub(crate) blst_p1);
@@ -51,18 +39,18 @@ impl PublicKey {
             }
             // return infinity element (point all zero)
             return Ok(Self::default());
-        } else {
-            if (bytes[0] & 0xc0) != 0x80 {
-                return Err(Error::G1InfinityInvalidBits);
-            }
-            if zeros_only {
-                return Err(Error::G1InfinityNotZero);
-            }
+        }
+
+        if (bytes[0] & 0xc0) != 0x80 {
+            return Err(Error::G1InfinityInvalidBits);
+        }
+        if zeros_only {
+            return Err(Error::G1InfinityNotZero);
         }
 
         let p1 = unsafe {
             let mut p1_affine = MaybeUninit::<blst_p1_affine>::uninit();
-            let ret = blst_p1_uncompress(p1_affine.as_mut_ptr(), bytes as *const u8);
+            let ret = blst_p1_uncompress(p1_affine.as_mut_ptr(), bytes.as_ptr());
             if ret != BLST_ERROR::BLST_SUCCESS {
                 return Err(Error::InvalidPublicKey(ret));
             }
@@ -89,7 +77,7 @@ impl PublicKey {
             blst_p1_mult(
                 p1.as_mut_ptr(),
                 blst_p1_generator(),
-                scalar.as_ptr() as *const u8,
+                scalar.as_ptr().cast::<u8>(),
                 256,
             );
             p1.assume_init()
@@ -99,17 +87,17 @@ impl PublicKey {
 
     pub fn from_bytes(bytes: &[u8; 48]) -> Result<Self> {
         let ret = Self::from_bytes_unchecked(bytes)?;
-        if !ret.is_valid() {
-            Err(Error::InvalidPublicKey(BLST_ERROR::BLST_POINT_NOT_ON_CURVE))
-        } else {
+        if ret.is_valid() {
             Ok(ret)
+        } else {
+            Err(Error::InvalidPublicKey(BLST_ERROR::BLST_POINT_NOT_ON_CURVE))
         }
     }
 
     pub fn from_uncompressed(buf: &[u8; 96]) -> Result<Self> {
         let p1 = unsafe {
             let mut p1_affine = MaybeUninit::<blst_p1_affine>::uninit();
-            let ret = blst_p1_deserialize(p1_affine.as_mut_ptr(), buf as *const u8);
+            let ret = blst_p1_deserialize(p1_affine.as_mut_ptr(), buf.as_ptr());
             if ret != BLST_ERROR::BLST_SUCCESS {
                 return Err(Error::InvalidSignature(ret));
             }
@@ -123,7 +111,7 @@ impl PublicKey {
     pub fn to_bytes(&self) -> [u8; 48] {
         unsafe {
             let mut bytes = MaybeUninit::<[u8; 48]>::uninit();
-            blst_p1_compress(bytes.as_mut_ptr() as *mut u8, &self.0);
+            blst_p1_compress(bytes.as_mut_ptr().cast::<u8>(), &self.0);
             bytes.assume_init()
         }
     }
@@ -148,7 +136,7 @@ impl PublicKey {
         unsafe {
             let mut scalar = MaybeUninit::<blst_scalar>::uninit();
             blst_scalar_from_be_bytes(scalar.as_mut_ptr(), int_bytes.as_ptr(), int_bytes.len());
-            blst_p1_mult(&mut self.0, &self.0, scalar.as_ptr() as *const u8, 256);
+            blst_p1_mult(&mut self.0, &self.0, scalar.as_ptr().cast::<u8>(), 256);
         }
     }
 
@@ -157,45 +145,6 @@ impl PublicKey {
         hasher.update(self.to_bytes());
         let hash: [u8; 32] = hasher.finalize_fixed().into();
         u32::from_be_bytes(hash[0..4].try_into().unwrap())
-    }
-}
-
-#[cfg(feature = "py-bindings")]
-#[pymethods]
-impl PublicKey {
-    #[classattr]
-    const SIZE: usize = 48;
-
-    #[new]
-    pub fn init() -> Self {
-        Self::default()
-    }
-
-    #[staticmethod]
-    #[pyo3(name = "generator")]
-    pub fn py_generator() -> Self {
-        Self::generator()
-    }
-
-    pub fn pair(&self, other: &Signature) -> GTElement {
-        other.pair(self)
-    }
-
-    #[pyo3(name = "get_fingerprint")]
-    pub fn py_get_fingerprint(&self) -> u32 {
-        self.get_fingerprint()
-    }
-
-    fn __str__(&self) -> pyo3::PyResult<String> {
-        Ok(hex::encode(self.to_bytes()))
-    }
-
-    pub fn __add__(&self, rhs: &Self) -> Self {
-        self + rhs
-    }
-
-    pub fn __iadd__(&mut self, rhs: &Self) {
-        *self += rhs;
     }
 }
 
@@ -228,7 +177,7 @@ impl Streamable for PublicKey {
 
 impl Hash for PublicKey {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write(&self.to_bytes())
+        state.write(&self.to_bytes());
     }
 }
 
@@ -290,75 +239,11 @@ impl Add<&PublicKey> for PublicKey {
 }
 
 impl fmt::Debug for PublicKey {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_fmt(format_args!(
             "<G1Element {}>",
             &hex::encode(self.to_bytes())
         ))
-    }
-}
-
-#[cfg(feature = "py-bindings")]
-impl ToJsonDict for PublicKey {
-    fn to_json_dict(&self, py: Python) -> pyo3::PyResult<PyObject> {
-        let bytes = self.to_bytes();
-        Ok(("0x".to_string() + &hex::encode(bytes)).into_py(py))
-    }
-}
-
-#[cfg(feature = "py-bindings")]
-pub fn parse_hex_string(o: &pyo3::Bound<PyAny>, len: usize, name: &str) -> PyResult<Vec<u8>> {
-    use pyo3::exceptions::{PyTypeError, PyValueError};
-    if let Ok(s) = o.extract::<String>() {
-        let s = if let Some(st) = s.strip_prefix("0x") {
-            st
-        } else {
-            &s[..]
-        };
-        let buf = match hex::decode(s) {
-            Err(_) => {
-                return Err(PyValueError::new_err("invalid hex"));
-            }
-            Ok(v) => v,
-        };
-        if buf.len() != len {
-            Err(PyValueError::new_err(format!(
-                "{}, invalid length {} expected {}",
-                name,
-                buf.len(),
-                len
-            )))
-        } else {
-            Ok(buf)
-        }
-    } else if let Ok(buf) = o.extract::<Vec<u8>>() {
-        if buf.len() != len {
-            Err(PyValueError::new_err(format!(
-                "{}, invalid length {} expected {}",
-                name,
-                buf.len(),
-                len
-            )))
-        } else {
-            Ok(buf)
-        }
-    } else {
-        Err(PyTypeError::new_err(format!(
-            "invalid input type for {}",
-            name
-        )))
-    }
-}
-
-#[cfg(feature = "py-bindings")]
-impl FromJsonDict for PublicKey {
-    fn from_json_dict(o: &pyo3::Bound<PyAny>) -> PyResult<Self> {
-        Ok(Self::from_bytes(
-            parse_hex_string(o, 48, "PublicKey")?
-                .as_slice()
-                .try_into()
-                .unwrap(),
-        )?)
     }
 }
 
@@ -373,12 +258,12 @@ impl DerivableKey for PublicKey {
             let mut nonce = MaybeUninit::<blst_scalar>::uninit();
             blst_scalar_from_lendian(nonce.as_mut_ptr(), digest.as_ptr());
             let mut bte = MaybeUninit::<[u8; 48]>::uninit();
-            blst_bendian_from_scalar(bte.as_mut_ptr() as *mut u8, nonce.as_ptr());
+            blst_bendian_from_scalar(bte.as_mut_ptr().cast::<u8>(), nonce.as_ptr());
             let mut p1 = MaybeUninit::<blst_p1>::uninit();
             blst_p1_mult(
                 p1.as_mut_ptr(),
                 blst_p1_generator(),
-                bte.as_ptr() as *const u8,
+                bte.as_ptr().cast::<u8>(),
                 256,
             );
             blst_p1_add(p1.as_mut_ptr(), p1.as_mut_ptr(), &self.0);
@@ -409,6 +294,73 @@ pub fn hash_to_g1_with_dst(msg: &[u8], dst: &[u8]) -> PublicKey {
         p1.assume_init()
     };
     PublicKey(p1)
+}
+
+#[cfg(feature = "py-bindings")]
+mod pybindings {
+    use super::*;
+
+    use crate::{parse_hex::parse_hex_string, GTElement, Signature};
+
+    use chik_traits::{FromJsonDict, ToJsonDict};
+    use pyo3::prelude::*;
+
+    #[pymethods]
+    impl PublicKey {
+        #[classattr]
+        const SIZE: usize = 48;
+
+        #[new]
+        pub fn init() -> Self {
+            Self::default()
+        }
+
+        #[staticmethod]
+        #[pyo3(name = "generator")]
+        pub fn py_generator() -> Self {
+            Self::generator()
+        }
+
+        pub fn pair(&self, other: &Signature) -> GTElement {
+            other.pair(self)
+        }
+
+        #[pyo3(name = "get_fingerprint")]
+        pub fn py_get_fingerprint(&self) -> u32 {
+            self.get_fingerprint()
+        }
+
+        fn __str__(&self) -> String {
+            hex::encode(self.to_bytes())
+        }
+
+        #[must_use]
+        pub fn __add__(&self, rhs: &Self) -> Self {
+            self + rhs
+        }
+
+        pub fn __iadd__(&mut self, rhs: &Self) {
+            *self += rhs;
+        }
+    }
+
+    impl ToJsonDict for PublicKey {
+        fn to_json_dict(&self, py: Python<'_>) -> PyResult<PyObject> {
+            let bytes = self.to_bytes();
+            Ok(("0x".to_string() + &hex::encode(bytes)).into_py(py))
+        }
+    }
+
+    impl FromJsonDict for PublicKey {
+        fn from_json_dict(o: &Bound<'_, PyAny>) -> PyResult<Self> {
+            Ok(Self::from_bytes(
+                parse_hex_string(o, 48, "PublicKey")?
+                    .as_slice()
+                    .try_into()
+                    .unwrap(),
+            )?)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -490,7 +442,7 @@ mod tests {
         .try_into()
         .unwrap();
         let pk = PublicKey::from_bytes(&bytes).unwrap();
-        assert_eq!(pk.get_fingerprint(), 651010559);
+        assert_eq!(pk.get_fingerprint(), 651_010_559);
     }
 
     #[test]
@@ -582,7 +534,7 @@ mod tests {
 
     #[test]
     fn test_hash() {
-        fn hash<T: std::hash::Hash>(v: T) -> u64 {
+        fn hash<T: Hash>(v: T) -> u64 {
             use std::collections::hash_map::DefaultHasher;
             let mut h = DefaultHasher::new();
             v.hash(&mut h);
@@ -608,7 +560,7 @@ mod tests {
         data[0] = 0xc0;
         let pk = PublicKey::from_bytes(&data).unwrap();
         assert_eq!(
-            format!("{:?}", pk),
+            format!("{pk:?}"),
             format!("<G1Element {}>", hex::encode(data))
         );
     }
@@ -758,6 +710,7 @@ mod tests {
 mod pytests {
     use super::*;
     use crate::SecretKey;
+    use pyo3::{IntoPy, Python};
     use rand::rngs::StdRng;
     use rand::{Rng, SeedableRng};
     use rstest::rstest;

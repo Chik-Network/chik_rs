@@ -1,6 +1,6 @@
 [package]
 name = "klvm-utils-fuzz"
-version = "0.8.0"
+version = "0.10.0"
 authors = ["Automatically generated"]
 publish = false
 edition = "2021"
@@ -8,12 +8,15 @@ edition = "2021"
 [package.metadata]
 cargo-fuzz = true
 
+[lints]
+workspace = true
+
 [dependencies]
-libfuzzer-sys = "0.4"
-klvmr = "0.7.0"
-chik-fuzz = { path = "../../chik-consensus/fuzz" }
-klvm-utils = { path = ".." }
-klvm-traits = { path = "../../klvm-traits" }
+libfuzzer-sys = { workspace = true }
+klvmr ={ workspace = true }
+chik-fuzz = { workspace = true }
+klvm-utils = { workspace = true }
+klvm-traits = { workspace = true }
 
 [[bin]]
 name = "tree-hash"

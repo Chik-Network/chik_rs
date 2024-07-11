@@ -5,6 +5,7 @@ use chik_consensus::gen::conditions::{parse_spends, MempoolVisitor};
 use fuzzing_utils::{make_list, BitCursor};
 use klvmr::{Allocator, NodePtr};
 
+use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::gen::flags::{
     COND_ARGS_NIL, ENABLE_MESSAGE_CONDITIONS, ENABLE_SOFTFORK_CONDITION, NO_UNKNOWN_CONDS,
     STRICT_ARGS_COUNT,
@@ -23,6 +24,7 @@ fuzz_target!(|data: &[u8]| {
         ENABLE_SOFTFORK_CONDITION,
         ENABLE_MESSAGE_CONDITIONS,
     ] {
-        let _ret = parse_spends::<MempoolVisitor>(&a, input, 33000000000, *flags);
+        let _ret =
+            parse_spends::<MempoolVisitor>(&a, input, 33_000_000_000, *flags, &TEST_CONSTANTS);
     }
 });

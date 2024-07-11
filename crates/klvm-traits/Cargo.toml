@@ -1,6 +1,6 @@
 [package]
 name = "klvm-traits"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Traits for encoding and decoding KLVM objects."
@@ -11,19 +11,22 @@ repository = "https://github.com/Chik-Network/chik_rs"
 [package.metadata.docs.rs]
 features = ["derive", "chik-bls"]
 
+[lints]
+workspace = true
+
 [features]
 derive = ["dep:klvm-derive"]
 chik-bls = ["dep:chik-bls"]
 py-bindings = ["dep:pyo3"]
 
 [dependencies]
-pyo3 = { version = "0.21.2", optional = true }
-klvmr = "0.7.0"
-klvm-derive = { version = "0.9.0", path = "../klvm-derive", optional = true }
-chik-bls = { version = "0.9.0", path = "../chik-bls", optional = true }
-num-bigint = "0.4.3"
-thiserror = "1.0.44"
+pyo3 = { workspace = true, optional = true }
+klvmr = { workspace = true }
+klvm-derive = { workspace = true, optional = true }
+chik-bls = { workspace = true, optional = true }
+num-bigint = { workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
-hex = "0.4.3"
-hex-literal = "0.4.1"
+hex = { workspace = true }
+hex-literal = { workspace = true }

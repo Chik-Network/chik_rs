@@ -22,8 +22,7 @@ impl<N, const BYTE: u8> FromKlvm<N> for MatchByte<BYTE> {
             [] if BYTE == 0 => Ok(Self),
             [byte] if *byte == BYTE && BYTE > 0 => Ok(Self),
             _ => Err(FromKlvmError::Custom(format!(
-                "expected an atom with a single byte value of {}",
-                BYTE
+                "expected an atom with a single byte value of {BYTE}"
             ))),
         }
     }

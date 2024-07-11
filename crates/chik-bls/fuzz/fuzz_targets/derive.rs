@@ -1,10 +1,8 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use chik_bls::derivable_key::DerivableKey;
-use chik_bls::public_key::PublicKey;
-use chik_bls::secret_key::SecretKey;
-use chik_bls::signature::{sign, verify};
+use chik_bls::{sign, verify};
+use chik_bls::{DerivableKey, PublicKey, SecretKey};
 
 fuzz_target!(|data: &[u8]| {
     if data.len() < 32 {

@@ -1,6 +1,6 @@
 [package]
 name = "chik-fuzz"
-version = "0.6.0"
+version = "0.10.0"
 authors = ["Automatically generated"]
 publish = false
 edition = "2021"
@@ -8,15 +8,18 @@ edition = "2021"
 [package.metadata]
 cargo-fuzz = true
 
+[lints]
+workspace = true
+
 [dependencies]
-libfuzzer-sys = "0.4"
-klvmr = "0.7.0"
-klvm-utils = { path = "../../klvm-utils" }
-klvm-traits = { path = "../../klvm-traits" }
-chik-protocol = { path = "../../chik-protocol" }
-chik-traits = { path = "../../chik-traits" }
-chik-consensus = { path = ".." }
-hex-literal = "=0.4.1"
+libfuzzer-sys = { workspace = true }
+klvmr = { workspace = true }
+klvm-utils = { workspace = true }
+klvm-traits = { workspace = true }
+chik-protocol = { workspace = true }
+chik-traits = { workspace = true }
+chik-consensus = { workspace = true }
+hex-literal = { workspace = true }
 
 [lib]
 name = "fuzzing_utils"

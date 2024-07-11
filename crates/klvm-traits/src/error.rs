@@ -33,14 +33,14 @@ pub enum FromKlvmError {
 use pyo3::PyErr;
 
 #[cfg(feature = "py-bindings")]
-impl std::convert::From<ToKlvmError> for PyErr {
+impl From<ToKlvmError> for PyErr {
     fn from(err: ToKlvmError) -> PyErr {
         pyo3::exceptions::PyValueError::new_err(err.to_string())
     }
 }
 
 #[cfg(feature = "py-bindings")]
-impl std::convert::From<FromKlvmError> for PyErr {
+impl From<FromKlvmError> for PyErr {
     fn from(err: FromKlvmError) -> PyErr {
         pyo3::exceptions::PyValueError::new_err(err.to_string())
     }

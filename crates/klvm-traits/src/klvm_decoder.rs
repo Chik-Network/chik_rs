@@ -8,7 +8,7 @@ use crate::{
 pub trait KlvmDecoder: Sized {
     type Node: Clone + FromKlvm<Self::Node>;
 
-    fn decode_atom(&self, node: &Self::Node) -> Result<Atom, FromKlvmError>;
+    fn decode_atom(&self, node: &Self::Node) -> Result<Atom<'_>, FromKlvmError>;
     fn decode_pair(&self, node: &Self::Node) -> Result<(Self::Node, Self::Node), FromKlvmError>;
 
     fn decode_curried_arg(
@@ -34,7 +34,7 @@ pub trait KlvmDecoder: Sized {
 impl KlvmDecoder for Allocator {
     type Node = NodePtr;
 
-    fn decode_atom(&self, node: &Self::Node) -> Result<Atom, FromKlvmError> {
+    fn decode_atom(&self, node: &Self::Node) -> Result<Atom<'_>, FromKlvmError> {
         if let SExp::Atom = self.sexp(*node) {
             Ok(self.atom(*node))
         } else {

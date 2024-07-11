@@ -1,3 +1,5 @@
+use std::{rc::Rc, sync::Arc};
+
 use num_bigint::BigInt;
 
 use crate::{KlvmEncoder, ToKlvmError};
@@ -42,7 +44,7 @@ klvm_primitive!(isize);
 
 impl<N> ToKlvm<N> for bool {
     fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
-        (if *self { 1 } else { 0 }).to_klvm(encoder)
+        i32::from(*self).to_klvm(encoder)
     }
 }
 
@@ -52,6 +54,33 @@ where
 {
     fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
         T::to_klvm(*self, encoder)
+    }
+}
+
+impl<N, T> ToKlvm<N> for Box<T>
+where
+    T: ToKlvm<N>,
+{
+    fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
+        T::to_klvm(self, encoder)
+    }
+}
+
+impl<N, T> ToKlvm<N> for Rc<T>
+where
+    T: ToKlvm<N>,
+{
+    fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
+        T::to_klvm(self, encoder)
+    }
+}
+
+impl<N, T> ToKlvm<N> for Arc<T>
+where
+    T: ToKlvm<N>,
+{
+    fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
+        T::to_klvm(self, encoder)
     }
 }
 
@@ -154,7 +183,7 @@ mod tests {
     where
         T: ToKlvm<NodePtr>,
     {
-        let actual = value.to_klvm(a).unwrap();
+        let actual = value.to_klvm(a)?;
         let actual_bytes = node_to_bytes(a, actual).unwrap();
         Ok(actual_bytes.encode_hex())
     }
@@ -193,6 +222,14 @@ mod tests {
         assert_eq!(encode(a, Some(42)), encode(a, Some(42)));
         assert_eq!(encode(a, Some(&42)), encode(a, Some(42)));
         assert_eq!(encode(a, Some(&42)), encode(a, Some(42)));
+    }
+
+    #[test]
+    fn test_smart_pointers() {
+        let a = &mut Allocator::new();
+        assert_eq!(encode(a, Box::new(42)), encode(a, 42));
+        assert_eq!(encode(a, Rc::new(42)), encode(a, 42));
+        assert_eq!(encode(a, Arc::new(42)), encode(a, 42));
     }
 
     #[test]
@@ -264,7 +301,7 @@ mod tests {
             encode(a, "hello".to_string()),
             Ok("8568656c6c6f".to_owned())
         );
-        assert_eq!(encode(a, "".to_string()), Ok("80".to_owned()));
+        assert_eq!(encode(a, String::new()), Ok("80".to_owned()));
     }
 
     #[cfg(feature = "chik-bls")]

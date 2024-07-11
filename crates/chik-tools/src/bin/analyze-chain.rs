@@ -7,6 +7,7 @@ use std::time::SystemTime;
 
 use rusqlite::Connection;
 
+use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::gen::conditions::{parse_spends, MempoolVisitor};
 use chik_consensus::gen::flags::MEMPOOL_MODE;
 use chik_consensus::generator_rom::{COST_PER_BYTE, GENERATOR_ROM};
@@ -60,7 +61,7 @@ fn main() {
 
     // We only create a single allocator, load it with the generator ROM and
     // then we keep reusing it
-    let mut a = Allocator::new_limited(500000000);
+    let mut a = Allocator::new_limited(500_000_000);
     let generator_rom =
         node_from_bytes(&mut a, &GENERATOR_ROM).expect("failed to parse generator ROM");
     let allocator_checkpoint = a.checkpoint();
@@ -161,9 +162,14 @@ fn main() {
         let start_conditions = SystemTime::now();
         // we pass in what's left of max_cost here, to fail early in case the
         // cost of a condition brings us over the cost limit
-        let Ok(conds) =
-            parse_spends::<MempoolVisitor>(&a, generator_output, ti.cost - klvm_cost, MEMPOOL_MODE)
-        else {
+        // TODO: Use real constants
+        let Ok(conds) = parse_spends::<MempoolVisitor>(
+            &a,
+            generator_output,
+            ti.cost - klvm_cost,
+            MEMPOOL_MODE,
+            &TEST_CONSTANTS,
+        ) else {
             panic!("failed to parse conditions in block {height}");
         };
         let conditions_timing = start_conditions

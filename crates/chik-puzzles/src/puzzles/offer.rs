@@ -21,27 +21,26 @@ pub struct NotarizedPayment {
 
 #[derive(Debug, Clone, PartialEq, Eq, ToKlvm, FromKlvm)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(transparent)]
-pub enum Payment {
-    WithoutMemos(PaymentWithoutMemos),
-    WithMemos(PaymentWithMemos),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[klvm(list)]
-pub struct PaymentWithoutMemos {
+pub struct Payment {
     pub puzzle_hash: Bytes32,
     pub amount: u64,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ToKlvm, FromKlvm)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(list)]
-pub struct PaymentWithMemos {
-    pub puzzle_hash: Bytes32,
-    pub amount: u64,
+    #[klvm(default)]
     pub memos: Vec<Bytes>,
+}
+
+impl Payment {
+    pub fn new(puzzle_hash: Bytes32, amount: u64) -> Self {
+        Self::with_memos(puzzle_hash, amount, Vec::new())
+    }
+
+    pub fn with_memos(puzzle_hash: Bytes32, amount: u64, memos: Vec<Bytes>) -> Self {
+        Self {
+            puzzle_hash,
+            amount,
+            memos,
+        }
+    }
 }
 
 /// This is the puzzle reveal of the [offer settlement payments](https://chiklisp.com/offers) puzzle.

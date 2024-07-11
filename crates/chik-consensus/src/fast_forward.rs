@@ -80,9 +80,8 @@ pub fn fast_forward_singleton(
     let singleton = CurriedProgram::<NodePtr, SingletonArgs<NodePtr>>::from_klvm(a, puzzle)?;
     let mut new_solution = SingletonSolution::<NodePtr>::from_klvm(a, solution)?;
 
-    let lineage_proof = match &mut new_solution.lineage_proof {
-        Proof::Lineage(proof) => proof,
-        _ => return Err(Error::ExpectedLineageProof),
+    let Proof::Lineage(lineage_proof) = &mut new_solution.lineage_proof else {
+        return Err(Error::ExpectedLineageProof);
     };
 
     // this is the tree hash of the singleton top layer puzzle
@@ -116,7 +115,7 @@ pub fn fast_forward_singleton(
     // now that we know the parent coin's puzzle hash, we have all the pieces to
     // compute the coin being spent (before the fast-forward).
     let parent_coin = Coin {
-        parent_coin_info: lineage_proof.parent_parent_coin_id,
+        parent_coin_info: lineage_proof.parent_parent_coin_info,
         puzzle_hash: parent_puzzle_hash,
         amount: lineage_proof.parent_amount,
     };
@@ -140,7 +139,7 @@ pub fn fast_forward_singleton(
     }
 
     // update the solution to use the new parent coin's information
-    lineage_proof.parent_parent_coin_id = new_parent.parent_coin_info;
+    lineage_proof.parent_parent_coin_info = new_parent.parent_coin_info;
     lineage_proof.parent_amount = new_parent.amount;
     new_solution.amount = new_coin.amount;
 
@@ -156,6 +155,7 @@ pub fn fast_forward_singleton(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::consensus_constants::TEST_CONSTANTS;
     use crate::gen::conditions::MempoolVisitor;
     use crate::gen::run_puzzle::run_puzzle;
     use chik_protocol::CoinSpend;
@@ -188,7 +188,7 @@ mod tests {
         let spend = CoinSpend::from_bytes(&spend_bytes).expect("parse CoinSpend");
         let new_parents_parent = hex::decode(new_parents_parent).unwrap();
 
-        let mut a = Allocator::new_limited(500000000);
+        let mut a = Allocator::new_limited(500_000_000);
         let puzzle = spend.puzzle_reveal.to_node_ptr(&mut a).expect("to_klvm");
         let solution = spend.solution.to_node_ptr(&mut a).expect("to_klvm");
         let puzzle_hash = Bytes32::from(tree_hash(&a, puzzle));
@@ -232,8 +232,9 @@ mod tests {
             spend.solution.as_slice(),
             &spend.coin.parent_coin_info,
             spend.coin.amount,
-            11000000000,
+            11_000_000_000,
             0,
+            &TEST_CONSTANTS,
         )
         .expect("run_puzzle");
 
@@ -244,14 +245,16 @@ mod tests {
             new_solution.as_slice(),
             &new_coin.parent_coin_info,
             new_coin.amount,
-            11000000000,
+            11_000_000_000,
             0,
+            &TEST_CONSTANTS,
         )
         .expect("run_puzzle");
 
         assert!(conditions1.spends[0].create_coin == conditions2.spends[0].create_coin);
     }
 
+    #[allow(clippy::needless_pass_by_value)]
     fn run_ff_test(
         mutate: fn(&mut Allocator, &mut Coin, &mut Coin, &mut Coin, &mut Vec<u8>, &mut Vec<u8>),
         expected_err: Error,
@@ -261,7 +264,7 @@ mod tests {
         let new_parents_parent: &[u8] =
             &hex!("abababababababababababababababababababababababababababababababab");
 
-        let mut a = Allocator::new_limited(500000000);
+        let mut a = Allocator::new_limited(500_000_000);
         let puzzle = spend.puzzle_reveal.to_node_ptr(&mut a).expect("to_klvm");
         let puzzle_hash = Bytes32::from(tree_hash(&a, puzzle));
 
@@ -379,7 +382,7 @@ mod tests {
                 };
 
                 // corrupt the lineage proof
-                lineage_proof.parent_parent_coin_id = Bytes32::from(hex!(
+                lineage_proof.parent_parent_coin_info = Bytes32::from(hex!(
                     "fefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefe"
                 ));
 
@@ -452,7 +455,7 @@ mod tests {
                 );
 
                 *new_parent = Coin {
-                    parent_coin_info: lineage_proof.parent_parent_coin_id,
+                    parent_coin_info: lineage_proof.parent_parent_coin_info,
                     puzzle_hash: parent_puzzle_hash,
                     amount: lineage_proof.parent_amount,
                 };

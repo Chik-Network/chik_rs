@@ -10,10 +10,12 @@ const GROUP_ORDER_BYTES: [u8; 32] =
 
 pub trait DeriveSynthetic {
     /// Derive a synthetic key that includes a custom hidden puzzle hash.
+    #[must_use]
     fn derive_synthetic_hidden(&self, hidden_puzzle_hash: &[u8; 32]) -> Self;
 
     /// Derive a synthetic key that includes [`DEFAULT_HIDDEN_PUZZLE_HASH`].
     /// The default hidden puzzle is `(=)`.
+    #[must_use]
     fn derive_synthetic(&self) -> Self
     where
         Self: Sized,
@@ -58,7 +60,7 @@ fn synthetic_offset(public_key: &PublicKey, hidden_puzzle_hash: &[u8; 32]) -> Se
 mod tests {
     use super::*;
 
-    use chik_bls::{derive_keys::master_to_wallet_unhardened_intermediate, DerivableKey};
+    use chik_bls::{master_to_wallet_unhardened_intermediate, DerivableKey};
     use hex::ToHex;
     use hex_literal::hex;
 

@@ -78,7 +78,7 @@ impl DebugPrint for Condition {
                 amount,
                 hint.debug_print(a)
             ),
-            Self::ReserveFee(amount) => format!("RESERVE_FEE {}", amount),
+            Self::ReserveFee(amount) => format!("RESERVE_FEE {amount}"),
             Self::CreateCoinAnnouncement(msg) => {
                 format!("CREATE_COIN_ANNOUNCEMENT {}", msg.debug_print(a))
             }
@@ -188,7 +188,7 @@ fn print_puzzle_info(a: &Allocator, puzzle: NodePtr, solution: NodePtr) {
             };
             println!(
                 "    recovery_did_list_hash: {:?}",
-                uncurried.args.recovery_did_list_hash
+                uncurried.args.recovery_list_hash
             );
             println!(
                 "    num_verifications_required: {:?}",
@@ -205,7 +205,9 @@ fn print_puzzle_info(a: &Allocator, puzzle: NodePtr, solution: NodePtr) {
             };
 
             println!("\nInner Puzzle\n");
-            let DidSolution::InnerSpend(inner_sol) = sol;
+            let DidSolution::Spend(inner_sol) = sol else {
+                unimplemented!();
+            };
             print_puzzle_info(a, uncurried.args.inner_puzzle, inner_sol);
         }
         SINGLETON_TOP_LAYER_PUZZLE_HASH => {
@@ -285,7 +287,7 @@ fn main() {
     println!("   coin-id: {}\n", hex::encode(spend.coin.coin_id()));
     let dialect = ChikDialect::new(0);
     let Reduction(_klvm_cost, conditions) =
-        match run_program(&mut a, &dialect, puzzle, solution, 11000000000) {
+        match run_program(&mut a, &dialect, puzzle, solution, 11_000_000_000) {
             Ok(r) => r,
             Err(EvalErr(_, e)) => {
                 println!("Eval Error: {e:?}");

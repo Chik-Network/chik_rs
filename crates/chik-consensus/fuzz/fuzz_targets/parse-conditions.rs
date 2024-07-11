@@ -1,6 +1,7 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
+use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::gen::conditions::{
     parse_conditions, MempoolVisitor, ParseState, Spend, SpendBundleConditions,
 };
@@ -72,7 +73,7 @@ fuzz_target!(|data: &[u8]| {
             flags: 0_u32,
         };
         let mut visitor = MempoolVisitor::new_spend(&mut coin_spend);
-        let mut max_cost: u64 = 3300000000;
+        let mut max_cost = 3_300_000_000;
         let _ret = parse_conditions(
             &a,
             &mut ret,
@@ -81,6 +82,7 @@ fuzz_target!(|data: &[u8]| {
             input,
             *flags,
             &mut max_cost,
+            &TEST_CONSTANTS,
             &mut visitor,
         );
     }

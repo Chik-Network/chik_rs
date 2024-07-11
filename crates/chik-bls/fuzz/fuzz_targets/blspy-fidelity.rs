@@ -10,12 +10,11 @@
 use libfuzzer_sys::fuzz_target;
 use pyo3::prelude::*;
 
-use chik_bls::derivable_key::DerivableKey;
-use chik_bls::secret_key::SecretKey;
-use chik_bls::signature::{aggregate, sign};
+use chik_bls::{aggregate, sign};
+use chik_bls::{DerivableKey, SecretKey};
 use pyo3::types::{PyBytes, PyList, PyTuple};
 
-fn to_bytes(obj: &Bound<PyAny>) -> Vec<u8> {
+fn to_bytes(obj: &Bound<'_, PyAny>) -> Vec<u8> {
     obj.call_method0("__bytes__")
         .unwrap()
         .downcast::<PyBytes>()
