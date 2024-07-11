@@ -64,23 +64,35 @@ for g in sorted(glob.glob("../generator-tests/*.txt")):
     name = f"{Path(g).name:43s}"
     stdout.write(f"{name} running generator...\r")
     stdout.flush()
-    consensus = run_generator(g, ALLOW_BACKREFS | ENABLE_MESSAGE_CONDITIONS, version=1)
+    consensus = run_generator(
+        g,
+        ALLOW_BACKREFS | ENABLE_MESSAGE_CONDITIONS,
+        version=1,
+    )
 
     stdout.write(f"{name} running generator2...\r")
     stdout.flush()
-    consensus2 = run_generator(g, ALLOW_BACKREFS | ENABLE_MESSAGE_CONDITIONS, version=2)
+    consensus2 = run_generator(
+        g,
+        ALLOW_BACKREFS | ENABLE_MESSAGE_CONDITIONS,
+        version=2,
+    )
     validate_except_cost(consensus.output, consensus2.output)
 
     stdout.write(f"{name} running generator (mempool mode) ...\r")
     stdout.flush()
     mempool = run_generator(
-        g, ALLOW_BACKREFS | MEMPOOL_MODE | ENABLE_MESSAGE_CONDITIONS, version=1
+        g,
+        ALLOW_BACKREFS | MEMPOOL_MODE | ENABLE_MESSAGE_CONDITIONS,
+        version=1,
     )
 
     stdout.write(f"{name} running generator2 (mempool mode)...\r")
     stdout.flush()
     mempool2 = run_generator(
-        g, ALLOW_BACKREFS | MEMPOOL_MODE | ENABLE_MESSAGE_CONDITIONS, version=2
+        g,
+        ALLOW_BACKREFS | MEMPOOL_MODE | ENABLE_MESSAGE_CONDITIONS,
+        version=2,
     )
     validate_except_cost(mempool.output, mempool2.output)
 

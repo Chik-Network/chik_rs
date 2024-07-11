@@ -17,6 +17,9 @@ name = "chik_rs"
 crate-type = ["cdylib"]
 path = "src/lib.rs"
 
+[package.metadata.maturin]
+python-source = "python"
+
 [dependencies]
 klvmr = { workspace = true }
 hex = { workspace = true }

@@ -3,9 +3,8 @@ use chik_consensus::allocator::make_allocator;
 use chik_consensus::consensus_constants::ConsensusConstants;
 use chik_consensus::gen::conditions::MempoolVisitor;
 use chik_consensus::gen::flags::{
-    AGG_SIG_ARGS, ALLOW_BACKREFS, ANALYZE_SPENDS, COND_ARGS_NIL, DISALLOW_INFINITY_G1,
-    ENABLE_MESSAGE_CONDITIONS, ENABLE_SOFTFORK_CONDITION, MEMPOOL_MODE, NO_UNKNOWN_CONDS,
-    STRICT_ARGS_COUNT,
+    ALLOW_BACKREFS, ANALYZE_SPENDS, DISALLOW_INFINITY_G1, ENABLE_MESSAGE_CONDITIONS, MEMPOOL_MODE,
+    NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
 };
 use chik_consensus::gen::owned_conditions::{OwnedSpend, OwnedSpendBundleConditions};
 use chik_consensus::gen::run_puzzle::run_puzzle as native_run_puzzle;
@@ -395,12 +394,9 @@ pub fn chik_rs(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(confirm_not_included_already_hashed, m)?)?;
 
     // klvm functions
-    m.add("COND_ARGS_NIL", COND_ARGS_NIL)?;
     m.add("NO_UNKNOWN_CONDS", NO_UNKNOWN_CONDS)?;
     m.add("STRICT_ARGS_COUNT", STRICT_ARGS_COUNT)?;
-    m.add("AGG_SIG_ARGS", AGG_SIG_ARGS)?;
     m.add("ENABLE_FIXED_DIV", ENABLE_FIXED_DIV)?;
-    m.add("ENABLE_SOFTFORK_CONDITION", ENABLE_SOFTFORK_CONDITION)?;
     m.add("ENABLE_MESSAGE_CONDITIONS", ENABLE_MESSAGE_CONDITIONS)?;
     m.add("MEMPOOL_MODE", MEMPOOL_MODE)?;
     m.add("ALLOW_BACKREFS", ALLOW_BACKREFS)?;
