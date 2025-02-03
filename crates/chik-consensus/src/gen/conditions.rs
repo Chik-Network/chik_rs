@@ -25,7 +25,7 @@ use chik_bls::PublicKey;
 use chik_protocol::Bytes32;
 use klvmr::allocator::{Allocator, NodePtr, SExp};
 use klvmr::cost::Cost;
-use klvmr::sha2::{Digest, Sha256};
+use klvmr::sha2::Sha256;
 use std::cmp::{max, min};
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
@@ -1369,7 +1369,7 @@ pub fn validate_conditions(
             let mut hasher = Sha256::new();
             hasher.update(*coin_id);
             hasher.update(a.atom(announce));
-            let announcement_id: [u8; 32] = hasher.finalize().into();
+            let announcement_id: [u8; 32] = hasher.finalize();
             announcements.insert(announcement_id.into());
         }
 
@@ -1412,7 +1412,7 @@ pub fn validate_conditions(
             let mut hasher = Sha256::new();
             hasher.update(a.atom(puzzle_hash));
             hasher.update(a.atom(announce));
-            let announcement_id: [u8; 32] = hasher.finalize().into();
+            let announcement_id: [u8; 32] = hasher.finalize();
             announcements.insert(announcement_id.into());
         }
 
@@ -1455,7 +1455,7 @@ pub fn validate_conditions(
 }
 
 #[cfg(test)]
-fn u64_to_bytes(n: u64) -> Vec<u8> {
+pub(crate) fn u64_to_bytes(n: u64) -> Vec<u8> {
     let mut buf = Vec::<u8>::new();
     buf.extend_from_slice(&n.to_be_bytes());
     if (buf[0] & 0x80) != 0 {
@@ -1556,7 +1556,7 @@ fn test_coin_id(parent_id: &[u8; 32], puzzle_hash: &[u8; 32], amount: u64) -> By
     hasher.update(puzzle_hash);
     let buf = u64_to_bytes(amount);
     hasher.update(&buf);
-    let coin_id: [u8; 32] = hasher.finalize().into();
+    let coin_id: [u8; 32] = hasher.finalize();
     coin_id.into()
 }
 

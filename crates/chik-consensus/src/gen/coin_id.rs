@@ -1,6 +1,6 @@
 use chik_protocol::Bytes32;
 use klvmr::allocator::{Allocator, NodePtr};
-use klvmr::sha2::{Digest, Sha256};
+use klvmr::sha2::Sha256;
 
 pub fn compute_coin_id(
     a: &Allocator,
@@ -12,7 +12,7 @@ pub fn compute_coin_id(
     hasher.update(a.atom(parent_id));
     hasher.update(a.atom(puzzle_hash));
     hasher.update(amount);
-    let coin_id: [u8; 32] = hasher.finalize().into();
+    let coin_id: [u8; 32] = hasher.finalize();
     coin_id.into()
 }
 

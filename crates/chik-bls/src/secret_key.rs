@@ -2,7 +2,7 @@ use crate::{DerivableKey, Error, PublicKey, Result};
 use blst::*;
 use chik_traits::{read_bytes, Streamable};
 use hkdf::HkdfExtract;
-use sha2::{Digest, Sha256};
+use klvmr::sha2::Sha256;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::io::Cursor;
@@ -35,7 +35,7 @@ fn flip_bits(input: [u8; 32]) -> [u8; 32] {
 }
 
 fn ikm_to_lamport_sk(ikm: &[u8; 32], salt: [u8; 4]) -> [u8; 255 * 32] {
-    let mut extracter = HkdfExtract::<Sha256>::new(Some(&salt));
+    let mut extracter = HkdfExtract::<sha2::Sha256>::new(Some(&salt));
     extracter.input_ikm(ikm);
     let (_, h) = extracter.finalize();
 
@@ -63,13 +63,13 @@ fn to_lamport_pk(ikm: [u8; 32], idx: u32) -> [u8; 32] {
     let mut hasher = Sha256::new();
     hasher.update(lamport0);
     hasher.update(lamport1);
-    hasher.finalize().into()
+    hasher.finalize()
 }
 
 fn sha256(bytes: &[u8]) -> [u8; 32] {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
-    hasher.finalize().into()
+    hasher.finalize()
 }
 
 pub fn is_all_zero(buf: &[u8]) -> bool {
@@ -242,8 +242,15 @@ impl SecretKey {
     #[classattr]
     pub const PRIVATE_KEY_SIZE: usize = 32;
 
-    pub fn sign_g2(&self, msg: &[u8]) -> crate::Signature {
-        crate::sign(self, msg)
+    pub fn sign(&self, msg: &[u8], final_pk: Option<PublicKey>) -> crate::Signature {
+        match final_pk {
+            Some(prefix) => {
+                let mut aug_msg = prefix.to_bytes().to_vec();
+                aug_msg.extend_from_slice(msg);
+                crate::sign_raw(self, aug_msg)
+            }
+            None => crate::sign(self, msg),
+        }
     }
 
     pub fn get_g1(&self) -> PublicKey {

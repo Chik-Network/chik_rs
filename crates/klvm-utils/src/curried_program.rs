@@ -9,24 +9,24 @@ pub struct CurriedProgram<P, A> {
     pub args: A,
 }
 
-impl<N, P, A> FromKlvm<N> for CurriedProgram<P, A>
+impl<N, D: KlvmDecoder<Node = N>, P, A> FromKlvm<D> for CurriedProgram<P, A>
 where
-    P: FromKlvm<N>,
-    A: FromKlvm<N>,
+    P: FromKlvm<D>,
+    A: FromKlvm<D>,
 {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
         let destructure_list!(_, destructure_quote!(program), args) =
             <match_list!(MatchByte<2>, match_quote!(P), A)>::from_klvm(decoder, node)?;
         Ok(Self { program, args })
     }
 }
 
-impl<N, P, A> ToKlvm<N> for CurriedProgram<P, A>
+impl<N, E: KlvmEncoder<Node = N>, P, A> ToKlvm<E> for CurriedProgram<P, A>
 where
-    P: ToKlvm<N>,
-    A: ToKlvm<N>,
+    P: ToKlvm<E>,
+    A: ToKlvm<E>,
 {
-    fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
+    fn to_klvm(&self, encoder: &mut E) -> Result<N, ToKlvmError> {
         klvm_list!(2, klvm_quote!(&self.program), &self.args).to_klvm(encoder)
     }
 }
@@ -36,14 +36,14 @@ mod tests {
     use std::fmt::Debug;
 
     use klvm_traits::klvm_curried_args;
-    use klvmr::{serde::node_to_bytes, Allocator, NodePtr};
+    use klvmr::{serde::node_to_bytes, Allocator};
 
     use super::*;
 
     fn check<P, A>(program: &P, args: &A, expected: &str)
     where
-        P: Debug + PartialEq + ToKlvm<NodePtr> + FromKlvm<NodePtr>,
-        A: Debug + PartialEq + ToKlvm<NodePtr> + FromKlvm<NodePtr>,
+        P: Debug + PartialEq + ToKlvm<Allocator> + FromKlvm<Allocator>,
+        A: Debug + PartialEq + ToKlvm<Allocator> + FromKlvm<Allocator>,
     {
         let a = &mut Allocator::new();
 

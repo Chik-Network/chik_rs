@@ -1,4 +1,5 @@
 use klvmr::{allocator::SExp, Allocator, Atom, NodePtr};
+use num_bigint::BigInt;
 
 use crate::{
     destructure_list, destructure_quote, match_list, match_quote, FromKlvm, FromKlvmError,
@@ -6,10 +7,15 @@ use crate::{
 };
 
 pub trait KlvmDecoder: Sized {
-    type Node: Clone + FromKlvm<Self::Node>;
+    type Node: Clone + FromKlvm<Self>;
 
     fn decode_atom(&self, node: &Self::Node) -> Result<Atom<'_>, FromKlvmError>;
     fn decode_pair(&self, node: &Self::Node) -> Result<(Self::Node, Self::Node), FromKlvmError>;
+
+    fn decode_bigint(&self, node: &Self::Node) -> Result<BigInt, FromKlvmError> {
+        let atom = self.decode_atom(node)?;
+        Ok(BigInt::from_signed_bytes_be(atom.as_ref()))
+    }
 
     fn decode_curried_arg(
         &self,
@@ -49,31 +55,18 @@ impl KlvmDecoder for Allocator {
             Err(FromKlvmError::ExpectedPair)
         }
     }
-}
 
-pub trait FromNodePtr {
-    fn from_node_ptr(a: &Allocator, node: NodePtr) -> Result<Self, FromKlvmError>
-    where
-        Self: Sized;
-}
-
-impl<T> FromNodePtr for T
-where
-    T: FromKlvm<NodePtr>,
-{
-    fn from_node_ptr(a: &Allocator, node: NodePtr) -> Result<Self, FromKlvmError>
-    where
-        Self: Sized,
-    {
-        T::from_klvm(a, node)
+    fn decode_bigint(&self, node: &Self::Node) -> Result<BigInt, FromKlvmError> {
+        if let SExp::Atom = self.sexp(*node) {
+            Ok(self.number(*node))
+        } else {
+            Err(FromKlvmError::ExpectedAtom)
+        }
     }
 }
 
-impl FromKlvm<NodePtr> for NodePtr {
-    fn from_klvm(
-        _decoder: &impl KlvmDecoder<Node = NodePtr>,
-        node: NodePtr,
-    ) -> Result<Self, FromKlvmError> {
+impl FromKlvm<Allocator> for NodePtr {
+    fn from_klvm(_decoder: &Allocator, node: NodePtr) -> Result<Self, FromKlvmError> {
         Ok(node)
     }
 }

@@ -1,64 +1,59 @@
 use std::{rc::Rc, sync::Arc};
 
-use num_bigint::{BigInt, Sign};
+use num_bigint::BigInt;
 
-use crate::{FromKlvmError, KlvmDecoder};
+use crate::{decode_number, FromKlvmError, KlvmDecoder};
 
-pub trait FromKlvm<N>: Sized {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError>;
+pub trait FromKlvm<D>: Sized
+where
+    D: KlvmDecoder,
+{
+    fn from_klvm(decoder: &D, node: D::Node) -> Result<Self, FromKlvmError>;
 }
 
 macro_rules! klvm_primitive {
-    ($primitive:ty) => {
-        impl<N> FromKlvm<N> for $primitive {
-            fn from_klvm(
-                decoder: &impl KlvmDecoder<Node = N>,
-                node: N,
-            ) -> Result<Self, FromKlvmError> {
+    ($primitive:ty, $signed:expr) => {
+        impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for $primitive {
+            fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
                 const LEN: usize = std::mem::size_of::<$primitive>();
 
-                let bytes = decoder.decode_atom(&node)?;
-                let number = BigInt::from_signed_bytes_be(bytes.as_ref());
-                let (sign, mut vec) = number.to_bytes_be();
+                let atom = decoder.decode_atom(&node)?;
+                let slice = atom.as_ref();
 
-                if vec.len() < std::mem::size_of::<$primitive>() {
-                    let mut zeros = vec![0; LEN - vec.len()];
-                    zeros.extend(vec);
-                    vec = zeros;
-                }
-
-                let value = <$primitive>::from_be_bytes(vec.as_slice().try_into().or(Err(
-                    FromKlvmError::WrongAtomLength {
+                let Some(bytes) = decode_number(slice, $signed) else {
+                    return Err(FromKlvmError::WrongAtomLength {
                         expected: LEN,
-                        found: bytes.as_ref().len(),
-                    },
-                ))?);
+                        found: slice.len(),
+                    });
+                };
 
-                Ok(if sign == Sign::Minus {
-                    value.wrapping_neg()
-                } else {
-                    value
-                })
+                Ok(<$primitive>::from_be_bytes(bytes))
             }
         }
     };
 }
 
-klvm_primitive!(u8);
-klvm_primitive!(i8);
-klvm_primitive!(u16);
-klvm_primitive!(i16);
-klvm_primitive!(u32);
-klvm_primitive!(i32);
-klvm_primitive!(u64);
-klvm_primitive!(i64);
-klvm_primitive!(u128);
-klvm_primitive!(i128);
-klvm_primitive!(usize);
-klvm_primitive!(isize);
+klvm_primitive!(u8, false);
+klvm_primitive!(i8, true);
+klvm_primitive!(u16, false);
+klvm_primitive!(i16, true);
+klvm_primitive!(u32, false);
+klvm_primitive!(i32, true);
+klvm_primitive!(u64, false);
+klvm_primitive!(i64, true);
+klvm_primitive!(u128, false);
+klvm_primitive!(i128, true);
+klvm_primitive!(usize, false);
+klvm_primitive!(isize, true);
 
-impl<N> FromKlvm<N> for bool {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for BigInt {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
+        decoder.decode_bigint(&node)
+    }
+}
+
+impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for bool {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
         let atom = decoder.decode_atom(&node)?;
         match atom.as_ref() {
             [] => Ok(false),
@@ -70,39 +65,39 @@ impl<N> FromKlvm<N> for bool {
     }
 }
 
-impl<N, T> FromKlvm<N> for Box<T>
+impl<N, D: KlvmDecoder<Node = N>, T> FromKlvm<D> for Box<T>
 where
-    T: FromKlvm<N>,
+    T: FromKlvm<D>,
 {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
         T::from_klvm(decoder, node).map(Box::new)
     }
 }
 
-impl<N, T> FromKlvm<N> for Rc<T>
+impl<N, D: KlvmDecoder<Node = N>, T> FromKlvm<D> for Rc<T>
 where
-    T: FromKlvm<N>,
+    T: FromKlvm<D>,
 {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
         T::from_klvm(decoder, node).map(Rc::new)
     }
 }
 
-impl<N, T> FromKlvm<N> for Arc<T>
+impl<N, D: KlvmDecoder<Node = N>, T> FromKlvm<D> for Arc<T>
 where
-    T: FromKlvm<N>,
+    T: FromKlvm<D>,
 {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
         T::from_klvm(decoder, node).map(Arc::new)
     }
 }
 
-impl<N, A, B> FromKlvm<N> for (A, B)
+impl<N, D: KlvmDecoder<Node = N>, A, B> FromKlvm<D> for (A, B)
 where
-    A: FromKlvm<N>,
-    B: FromKlvm<N>,
+    A: FromKlvm<D>,
+    B: FromKlvm<D>,
 {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
         let (first, rest) = decoder.decode_pair(&node)?;
         let first = A::from_klvm(decoder, first)?;
         let rest = B::from_klvm(decoder, rest)?;
@@ -110,8 +105,8 @@ where
     }
 }
 
-impl<N> FromKlvm<N> for () {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for () {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
         let bytes = decoder.decode_atom(&node)?;
         if bytes.as_ref().is_empty() {
             Ok(())
@@ -124,11 +119,11 @@ impl<N> FromKlvm<N> for () {
     }
 }
 
-impl<N, T, const LEN: usize> FromKlvm<N> for [T; LEN]
+impl<N, D: KlvmDecoder<Node = N>, T, const LEN: usize> FromKlvm<D> for [T; LEN]
 where
-    T: FromKlvm<N>,
+    T: FromKlvm<D>,
 {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, mut node: N) -> Result<Self, FromKlvmError> {
+    fn from_klvm(decoder: &D, mut node: N) -> Result<Self, FromKlvmError> {
         let mut items = Vec::with_capacity(LEN);
         loop {
             if let Ok((first, rest)) = decoder.decode_pair(&node) {
@@ -153,11 +148,11 @@ where
     }
 }
 
-impl<N, T> FromKlvm<N> for Vec<T>
+impl<N, D: KlvmDecoder<Node = N>, T> FromKlvm<D> for Vec<T>
 where
-    T: FromKlvm<N>,
+    T: FromKlvm<D>,
 {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, mut node: N) -> Result<Self, FromKlvmError> {
+    fn from_klvm(decoder: &D, mut node: N) -> Result<Self, FromKlvmError> {
         let mut items = Vec::new();
         loop {
             if let Ok((first, rest)) = decoder.decode_pair(&node) {
@@ -178,11 +173,11 @@ where
     }
 }
 
-impl<N, T> FromKlvm<N> for Option<T>
+impl<N, D: KlvmDecoder<Node = N>, T> FromKlvm<D> for Option<T>
 where
-    T: FromKlvm<N>,
+    T: FromKlvm<D>,
 {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
         if let Ok(atom) = decoder.decode_atom(&node) {
             if atom.as_ref().is_empty() {
                 return Ok(None);
@@ -192,16 +187,16 @@ where
     }
 }
 
-impl<N> FromKlvm<N> for String {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for String {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
         let bytes = decoder.decode_atom(&node)?;
         Ok(Self::from_utf8(bytes.as_ref().to_vec())?)
     }
 }
 
 #[cfg(feature = "chik-bls")]
-impl<N> FromKlvm<N> for chik_bls::PublicKey {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for chik_bls::PublicKey {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
         let bytes = decoder.decode_atom(&node)?;
         let error = Err(FromKlvmError::WrongAtomLength {
             expected: 48,
@@ -213,8 +208,8 @@ impl<N> FromKlvm<N> for chik_bls::PublicKey {
 }
 
 #[cfg(feature = "chik-bls")]
-impl<N> FromKlvm<N> for chik_bls::Signature {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for chik_bls::Signature {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
         let bytes = decoder.decode_atom(&node)?;
         let error = Err(FromKlvmError::WrongAtomLength {
             expected: 96,
@@ -227,13 +222,13 @@ impl<N> FromKlvm<N> for chik_bls::Signature {
 
 #[cfg(test)]
 mod tests {
-    use klvmr::{serde::node_from_bytes, Allocator, NodePtr};
+    use klvmr::{serde::node_from_bytes, Allocator};
 
     use super::*;
 
     fn decode<T>(a: &mut Allocator, hex: &str) -> Result<T, FromKlvmError>
     where
-        T: FromKlvm<NodePtr>,
+        T: FromKlvm<Allocator>,
     {
         let bytes = hex::decode(hex).unwrap();
         let actual = node_from_bytes(a, &bytes).unwrap();

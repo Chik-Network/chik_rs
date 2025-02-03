@@ -9,7 +9,7 @@ use chik_protocol::Coin;
 use chik_protocol::CoinSpend;
 use chik_traits::streamable::Streamable;
 use hex_literal::hex;
-use klvm_traits::ToNodePtr;
+use klvm_traits::ToKlvm;
 use klvm_utils::tree_hash;
 use klvmr::serde::node_to_bytes;
 use klvmr::{Allocator, NodePtr};
@@ -24,10 +24,10 @@ fuzz_target!(|data: &[u8]| {
         hex!("abababababababababababababababababababababababababababababababab");
 
     let mut a = Allocator::new_limited(500_000_000);
-    let Ok(puzzle) = spend.puzzle_reveal.to_node_ptr(&mut a) else {
+    let Ok(puzzle) = spend.puzzle_reveal.to_klvm(&mut a) else {
         return;
     };
-    let Ok(solution) = spend.solution.to_node_ptr(&mut a) else {
+    let Ok(solution) = spend.solution.to_klvm(&mut a) else {
         return;
     };
     let puzzle_hash = Bytes32::from(tree_hash(&a, puzzle));

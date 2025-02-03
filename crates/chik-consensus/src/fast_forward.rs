@@ -161,7 +161,7 @@ mod tests {
     use chik_protocol::CoinSpend;
     use chik_traits::streamable::Streamable;
     use hex_literal::hex;
-    use klvm_traits::ToNodePtr;
+    use klvm_traits::ToKlvm;
     use klvmr::serde::{node_from_bytes, node_to_bytes};
     use rstest::rstest;
     use std::fs;
@@ -189,8 +189,8 @@ mod tests {
         let new_parents_parent = hex::decode(new_parents_parent).unwrap();
 
         let mut a = Allocator::new_limited(500_000_000);
-        let puzzle = spend.puzzle_reveal.to_node_ptr(&mut a).expect("to_klvm");
-        let solution = spend.solution.to_node_ptr(&mut a).expect("to_klvm");
+        let puzzle = spend.puzzle_reveal.to_klvm(&mut a).expect("to_klvm");
+        let solution = spend.solution.to_klvm(&mut a).expect("to_klvm");
         let puzzle_hash = Bytes32::from(tree_hash(&a, puzzle));
 
         let new_parent_coin = Coin {
@@ -265,7 +265,7 @@ mod tests {
             &hex!("abababababababababababababababababababababababababababababababab");
 
         let mut a = Allocator::new_limited(500_000_000);
-        let puzzle = spend.puzzle_reveal.to_node_ptr(&mut a).expect("to_klvm");
+        let puzzle = spend.puzzle_reveal.to_klvm(&mut a).expect("to_klvm");
         let puzzle_hash = Bytes32::from(tree_hash(&a, puzzle));
 
         let mut new_parent_coin = Coin {

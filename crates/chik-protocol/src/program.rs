@@ -1,7 +1,7 @@
 use crate::bytes::Bytes;
 use chik_traits::chik_error::{Error, Result};
 use chik_traits::Streamable;
-use klvm_traits::{FromKlvmError, FromNodePtr, ToKlvmError, ToNodePtr};
+use klvm_traits::{FromKlvm, FromKlvmError, ToKlvm, ToKlvmError};
 use klvmr::allocator::NodePtr;
 use klvmr::cost::Cost;
 use klvmr::reduction::EvalErr;
@@ -10,8 +10,8 @@ use klvmr::serde::{
     node_from_bytes, node_from_bytes_backrefs, node_to_bytes, serialized_length_from_bytes,
     serialized_length_from_bytes_trusted,
 };
+use klvmr::sha2::Sha256;
 use klvmr::{Allocator, ChikDialect};
-use sha2::{Digest, Sha256};
 use std::io::Cursor;
 use std::ops::Deref;
 
@@ -54,14 +54,14 @@ impl Program {
         self.0.into_inner()
     }
 
-    pub fn run<A: ToNodePtr>(
+    pub fn run<A: ToKlvm<Allocator>>(
         &self,
         a: &mut Allocator,
         flags: u32,
         max_cost: Cost,
         arg: &A,
     ) -> std::result::Result<(Cost, NodePtr), EvalErr> {
-        let arg = arg.to_node_ptr(a).map_err(|_| {
+        let arg = arg.to_klvm(a).map_err(|_| {
             EvalErr(
                 a.nil(),
                 "failed to convert argument to KLVM objects".to_string(),
@@ -316,7 +316,7 @@ impl Program {
     fn py_to(args: &Bound<'_, PyAny>) -> PyResult<Program> {
         let mut a = Allocator::new_limited(500_000_000);
         let klvm = klvm_convert(&mut a, args)?;
-        Program::from_node_ptr(&a, klvm)
+        Program::from_klvm(&a, klvm)
             .map_err(|error| PyErr::new::<PyTypeError, _>(error.to_string()))
     }
 
@@ -416,7 +416,7 @@ impl Program {
 
         let mut a = Allocator::new_limited(500_000_000);
         let prg = node_from_bytes_backrefs(&mut a, self.0.as_ref())?;
-        let Ok(uncurried) = CurriedProgram::<NodePtr, NodePtr>::from_node_ptr(&a, prg) else {
+        let Ok(uncurried) = CurriedProgram::<NodePtr, NodePtr>::from_klvm(&a, prg) else {
             let a = Rc::new(a);
             let prg = LazyNode::new(a.clone(), prg);
             let ret = a.nil();
@@ -432,11 +432,12 @@ impl Program {
             }
             // the args of curried puzzles are in the form of:
             // (c . ((q . <arg1>) . (<rest> . ())))
-            let (_, ((_, arg), (rest, ()))) = <(
-                klvm_traits::MatchByte<4>,
-                (klvm_traits::match_quote!(NodePtr), (NodePtr, ())),
-            ) as FromNodePtr>::from_node_ptr(&a, args)
-            .map_err(|error| PyErr::new::<PyTypeError, _>(error.to_string()))?;
+            let (_, ((_, arg), (rest, ()))) =
+                <(
+                    klvm_traits::MatchByte<4>,
+                    (klvm_traits::match_quote!(NodePtr), (NodePtr, ())),
+                ) as FromKlvm<Allocator>>::from_klvm(&a, args)
+                .map_err(|error| PyErr::new::<PyTypeError, _>(error.to_string()))?;
             curried_args.push(arg);
             args = rest;
         }
@@ -501,8 +502,8 @@ impl FromJsonDict for Program {
     }
 }
 
-impl FromNodePtr for Program {
-    fn from_node_ptr(a: &Allocator, node: NodePtr) -> std::result::Result<Self, FromKlvmError> {
+impl FromKlvm<Allocator> for Program {
+    fn from_klvm(a: &Allocator, node: NodePtr) -> std::result::Result<Self, FromKlvmError> {
         Ok(Self(
             node_to_bytes(a, node)
                 .map_err(|error| FromKlvmError::Custom(error.to_string()))?
@@ -511,8 +512,8 @@ impl FromNodePtr for Program {
     }
 }
 
-impl ToNodePtr for Program {
-    fn to_node_ptr(&self, a: &mut Allocator) -> std::result::Result<NodePtr, ToKlvmError> {
+impl ToKlvm<Allocator> for Program {
+    fn to_klvm(&self, a: &mut Allocator) -> std::result::Result<NodePtr, ToKlvmError> {
         node_from_bytes(a, self.0.as_ref()).map_err(|error| ToKlvmError::Custom(error.to_string()))
     }
 }
@@ -528,9 +529,9 @@ mod tests {
         let expected_bytes = hex::decode(expected).unwrap();
 
         let ptr = node_from_bytes(a, &expected_bytes).unwrap();
-        let program = Program::from_node_ptr(a, ptr).unwrap();
+        let program = Program::from_klvm(a, ptr).unwrap();
 
-        let round_trip = program.to_node_ptr(a).unwrap();
+        let round_trip = program.to_klvm(a).unwrap();
         assert_eq!(expected, hex::encode(node_to_bytes(a, round_trip).unwrap()));
     }
 

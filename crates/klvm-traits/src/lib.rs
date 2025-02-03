@@ -11,6 +11,7 @@ pub use klvm_derive::*;
 
 mod error;
 mod from_klvm;
+mod int_encoding;
 mod klvm_decoder;
 mod klvm_encoder;
 mod macros;
@@ -20,11 +21,14 @@ mod wrappers;
 
 pub use error::*;
 pub use from_klvm::*;
+pub use int_encoding::*;
 pub use klvm_decoder::*;
 pub use klvm_encoder::*;
 pub use match_byte::*;
 pub use to_klvm::*;
 pub use wrappers::*;
+
+pub use klvmr::Atom;
 
 #[cfg(test)]
 #[cfg(feature = "derive")]
@@ -35,11 +39,11 @@ mod derive_tests {
 
     use std::fmt::Debug;
 
-    use klvmr::{serde::node_to_bytes, Allocator, NodePtr};
+    use klvmr::{serde::node_to_bytes, Allocator};
 
     fn check<T>(value: &T, expected: &str)
     where
-        T: Debug + PartialEq + ToKlvm<NodePtr> + FromKlvm<NodePtr>,
+        T: Debug + PartialEq + ToKlvm<Allocator> + FromKlvm<Allocator>,
     {
         let a = &mut Allocator::new();
 
@@ -54,8 +58,8 @@ mod derive_tests {
 
     fn coerce_into<A, B>(value: A) -> B
     where
-        A: ToKlvm<NodePtr>,
-        B: FromKlvm<NodePtr>,
+        A: ToKlvm<Allocator>,
+        B: FromKlvm<Allocator>,
     {
         let a = &mut Allocator::new();
         let ptr = value.to_klvm(a).unwrap();

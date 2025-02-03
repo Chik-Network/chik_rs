@@ -1,5 +1,5 @@
 use crate::chik_error::{Error, Result};
-use sha2::{Digest, Sha256};
+use klvmr::sha2::Sha256;
 use std::io::Cursor;
 use std::mem;
 
@@ -69,7 +69,7 @@ pub trait Streamable {
     fn hash(&self) -> [u8; 32] {
         let mut ctx = Sha256::new();
         self.update_digest(&mut ctx);
-        ctx.finalize().into()
+        ctx.finalize()
     }
 }
 

@@ -4,7 +4,7 @@ use klvm_traits::{
     destructure_list, klvm_list, match_list, FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder,
     ToKlvm, ToKlvmError,
 };
-use sha2::{Digest, Sha256};
+use klvmr::sha2::Sha256;
 
 #[cfg(feature = "py-bindings")]
 use pyo3::prelude::*;
@@ -55,14 +55,14 @@ impl Coin {
     }
 }
 
-impl<N> ToKlvm<N> for Coin {
-    fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
+impl<N, E: KlvmEncoder<Node = N>> ToKlvm<E> for Coin {
+    fn to_klvm(&self, encoder: &mut E) -> Result<N, ToKlvmError> {
         klvm_list!(self.parent_coin_info, self.puzzle_hash, self.amount).to_klvm(encoder)
     }
 }
 
-impl<N> FromKlvm<N> for Coin {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for Coin {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
         let destructure_list!(parent_coin_info, puzzle_hash, amount) =
             <match_list!(BytesImpl<32>, BytesImpl<32>, u64)>::from_klvm(decoder, node)?;
         Ok(Coin {

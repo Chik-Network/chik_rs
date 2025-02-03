@@ -2,7 +2,7 @@ use chik_consensus::gen::conditions::Condition;
 use chik_puzzles::Proof;
 use chik_traits::Streamable;
 use clap::Parser;
-use klvm_traits::{FromKlvm, ToNodePtr};
+use klvm_traits::{FromKlvm, ToKlvm};
 use klvm_utils::tree_hash;
 use klvm_utils::CurriedProgram;
 use klvmr::{allocator::NodePtr, Allocator};
@@ -275,11 +275,11 @@ fn main() {
 
     let puzzle = spend
         .puzzle_reveal
-        .to_node_ptr(&mut a)
+        .to_klvm(&mut a)
         .expect("deserialize puzzle");
     let solution = spend
         .solution
-        .to_node_ptr(&mut a)
+        .to_klvm(&mut a)
         .expect("deserialize solution");
 
     println!("Spending {:?}", &spend.coin);

@@ -4,7 +4,7 @@ use std::fmt;
 
 use chik_puzzles::{nft::NftMetadata, Proof};
 use klvm_traits::{FromKlvm, ToKlvm};
-use klvmr::{allocator::NodePtr, Allocator};
+use klvmr::Allocator;
 use libfuzzer_sys::arbitrary::{Arbitrary, Unstructured};
 use libfuzzer_sys::fuzz_target;
 
@@ -16,7 +16,7 @@ fuzz_target!(|data: &[u8]| {
 
 fn roundtrip<'a, T>(u: &mut Unstructured<'a>)
 where
-    T: Arbitrary<'a> + ToKlvm<NodePtr> + FromKlvm<NodePtr> + PartialEq + fmt::Debug,
+    T: Arbitrary<'a> + ToKlvm<Allocator> + FromKlvm<Allocator> + PartialEq + fmt::Debug,
 {
     let obj = T::arbitrary(u).unwrap();
     let mut a = Allocator::new();

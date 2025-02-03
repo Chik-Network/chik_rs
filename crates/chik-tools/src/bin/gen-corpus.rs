@@ -11,7 +11,7 @@ use chik_traits::streamable::Streamable;
 use chik_bls::G2Element;
 use chik_protocol::{Bytes32, Coin, CoinSpend, Program, SpendBundle};
 use chik_puzzles::singleton::SINGLETON_TOP_LAYER_PUZZLE_HASH;
-use klvm_traits::{FromKlvm, FromNodePtr};
+use klvm_traits::FromKlvm;
 use klvm_utils::{tree_hash, CurriedProgram};
 use klvmr::allocator::NodePtr;
 use klvmr::Allocator;
@@ -100,9 +100,8 @@ fn main() {
                         if !run_puzzle && !fast_forward && !args.spend_bundles {
                             return;
                         }
-                        let puzzle_reveal =
-                            Program::from_node_ptr(a, puzzle).expect("puzzle reveal");
-                        let solution = Program::from_node_ptr(a, solution).expect("solution");
+                        let puzzle_reveal = Program::from_klvm(a, puzzle).expect("puzzle reveal");
+                        let solution = Program::from_klvm(a, solution).expect("solution");
                         let coin = Coin {
                             parent_coin_info,
                             puzzle_hash,

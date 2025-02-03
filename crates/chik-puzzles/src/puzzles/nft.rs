@@ -195,8 +195,8 @@ impl Default for NftMetadata {
     }
 }
 
-impl<N> FromKlvm<N> for NftMetadata {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for NftMetadata {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
         let items: Vec<(String, Raw<N>)> = FromKlvm::from_klvm(decoder, node)?;
         let mut metadata = Self::default();
 
@@ -218,8 +218,8 @@ impl<N> FromKlvm<N> for NftMetadata {
     }
 }
 
-impl<N> ToKlvm<N> for NftMetadata {
-    fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
+impl<N, E: KlvmEncoder<Node = N>> ToKlvm<E> for NftMetadata {
+    fn to_klvm(&self, encoder: &mut E) -> Result<N, ToKlvmError> {
         let mut items: Vec<(&str, Raw<N>)> = Vec::new();
 
         if !self.data_uris.is_empty() {

@@ -1,7 +1,8 @@
 use chik_traits::{chik_error, read_bytes, Streamable};
 use klvm_traits::{FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder, ToKlvm, ToKlvmError};
 use klvm_utils::TreeHash;
-use sha2::{Digest, Sha256};
+use klvmr::sha2::Sha256;
+use klvmr::Atom;
 use std::array::TryFromSliceError;
 use std::fmt;
 use std::io::Cursor;
@@ -109,14 +110,14 @@ impl FromJsonDict for Bytes {
     }
 }
 
-impl<N> ToKlvm<N> for Bytes {
-    fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
-        encoder.encode_atom(self.0.as_slice())
+impl<N, E: KlvmEncoder<Node = N>> ToKlvm<E> for Bytes {
+    fn to_klvm(&self, encoder: &mut E) -> Result<N, ToKlvmError> {
+        encoder.encode_atom(Atom::Borrowed(self.0.as_slice()))
     }
 }
 
-impl<N> FromKlvm<N> for Bytes {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for Bytes {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
         let bytes = decoder.decode_atom(&node)?;
         Ok(Self(bytes.as_ref().to_vec()))
     }
@@ -256,14 +257,14 @@ impl<const N: usize> FromJsonDict for BytesImpl<N> {
     }
 }
 
-impl<N, const LEN: usize> ToKlvm<N> for BytesImpl<LEN> {
-    fn to_klvm(&self, encoder: &mut impl KlvmEncoder<Node = N>) -> Result<N, ToKlvmError> {
-        encoder.encode_atom(self.0.as_slice())
+impl<N, E: KlvmEncoder<Node = N>, const LEN: usize> ToKlvm<E> for BytesImpl<LEN> {
+    fn to_klvm(&self, encoder: &mut E) -> Result<N, ToKlvmError> {
+        encoder.encode_atom(Atom::Borrowed(self.0.as_slice()))
     }
 }
 
-impl<N, const LEN: usize> FromKlvm<N> for BytesImpl<LEN> {
-    fn from_klvm(decoder: &impl KlvmDecoder<Node = N>, node: N) -> Result<Self, FromKlvmError> {
+impl<N, D: KlvmDecoder<Node = N>, const LEN: usize> FromKlvm<D> for BytesImpl<LEN> {
+    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
         let bytes = decoder.decode_atom(&node)?;
         if bytes.as_ref().len() != LEN {
             return Err(FromKlvmError::WrongAtomLength {

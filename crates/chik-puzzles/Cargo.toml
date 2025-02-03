@@ -1,6 +1,6 @@
 [package]
 name = "chik-puzzles"
-version = "0.10.0"
+version = "0.11.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Chik primitives needed for building wallets."
@@ -16,7 +16,6 @@ arbitrary = ["dep:arbitrary", "chik-protocol/arbitrary"]
 
 [dependencies]
 klvmr = { workspace = true }
-sha2 = { workspace = true }
 num-bigint = { workspace = true }
 hex-literal = { workspace = true }
 klvm-utils = { workspace = true }

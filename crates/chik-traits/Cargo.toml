@@ -1,6 +1,6 @@
 [package]
 name = "chik-traits"
-version = "0.10.0"
+version = "0.11.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Chik traits for Streamable types (chik's serialization format)"
@@ -15,5 +15,5 @@ py-bindings = ["dep:pyo3"]
 [dependencies]
 pyo3 = { workspace = true, features = ["multiple-pymethods"], optional = true }
 chik_streamable_macro = { workspace = true }
-sha2 = { workspace = true }
+klvmr = { workspace = true }
 thiserror = { workspace = true }

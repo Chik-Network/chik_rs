@@ -1,6 +1,6 @@
 [package]
 name = "chik-protocol"
-version = "0.10.0"
+version = "0.11.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Chik network protocol message types"
@@ -17,7 +17,6 @@ arbitrary = ["dep:arbitrary", "chik-bls/arbitrary"]
 
 [dependencies]
 pyo3 = { workspace = true, features = ["multiple-pymethods", "num-bigint"], optional = true }
-sha2 = { workspace = true }
 hex = { workspace = true }
 chik_streamable_macro = { workspace = true }
 chik_py_streamable_macro = { workspace = true, optional = true }

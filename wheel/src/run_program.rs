@@ -1,4 +1,3 @@
-use super::adapt_response::eval_err_to_pyresult;
 use chik_consensus::allocator::make_allocator;
 use chik_consensus::gen::flags::ALLOW_BACKREFS;
 use chik_protocol::LazyNode;
@@ -6,8 +5,11 @@ use klvmr::chik_dialect::ChikDialect;
 use klvmr::cost::Cost;
 use klvmr::reduction::Response;
 use klvmr::run_program::run_program;
-use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs, serialized_length_from_bytes};
+use klvmr::serde::{
+    node_from_bytes, node_from_bytes_backrefs, node_to_bytes, serialized_length_from_bytes,
+};
 use pyo3::buffer::PyBuffer;
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::rc::Rc;
 
@@ -31,7 +33,7 @@ pub fn run_chik_program(
 ) -> PyResult<(Cost, LazyNode)> {
     let mut allocator = make_allocator(flags);
 
-    let r: Response = (|| -> PyResult<Response> {
+    let reduction = (|| -> PyResult<Response> {
         let deserialize = if (flags & ALLOW_BACKREFS) != 0 {
             node_from_bytes_backrefs
         } else {
@@ -42,12 +44,11 @@ pub fn run_chik_program(
         let dialect = ChikDialect::new(flags);
 
         Ok(py.allow_threads(|| run_program(&mut allocator, &dialect, program, args, max_cost)))
-    })()?;
-    match r {
-        Ok(reduction) => {
-            let val = LazyNode::new(Rc::new(allocator), reduction.1);
-            Ok((reduction.0, val))
-        }
-        Err(eval_err) => eval_err_to_pyresult(eval_err, &allocator),
-    }
+    })()?
+    .map_err(|e| {
+        let blob = node_to_bytes(&allocator, e.0).ok().map(hex::encode);
+        PyValueError::new_err((e.1, blob))
+    })?;
+    let val = LazyNode::new(Rc::new(allocator), reduction.1);
+    Ok((reduction.0, val))
 }
