@@ -14,6 +14,7 @@ from chik_rs import (
 )
 from chik_rs.sized_bytes import bytes32
 from chik_rs.sized_ints import uint8, uint16, uint32, uint64, uint128
+from typing import List
 from chik.util.hash import std_hash
 from chik.util.lru_cache import LRUCache
 from chik.types.blockchain_format.program import Program as ChikProgram
@@ -82,7 +83,7 @@ DEFAULT_CONSTANTS = ConsensusConstants(
     MAX_GENERATOR_SIZE=uint32(1000000),
     MAX_GENERATOR_REF_LIST_SIZE=uint32(512),
     POOL_SUB_SLOT_ITERS=uint64(37600000000),
-    SOFT_FORK6_HEIGHT=uint32(0),
+    SOFT_FORK5_HEIGHT=uint32(0),
     HARD_FORK_HEIGHT=uint32(5496000),
     PLOT_FILTER_128_HEIGHT=uint32(10542000),
     PLOT_FILTER_64_HEIGHT=uint32(15592000),
@@ -102,8 +103,8 @@ def test_instantiation() -> None:
     pk: G1Element = sk.get_g1()
     msg = b"hello"
     sig: G2Element = AugSchemeMPL.sign(sk, msg)
-    pks: list[G1Element] = [pk]
-    msgs: list[bytes] = [msg]
+    pks: List[G1Element] = [pk]
+    msgs: List[bytes] = [msg]
     result = bls_cache.aggregate_verify(pks, msgs, sig)
     assert result
     assert bls_cache.len() == 1
@@ -130,9 +131,9 @@ def test_cache_limit() -> None:
 
     sk: PrivateKey = AugSchemeMPL.key_gen(seed)
     pk: G1Element = sk.get_g1()
-    pks: list[G1Element] = []
-    msgs: list[bytes] = []
-    sigs: list[G2Element] = []
+    pks: List[G1Element] = []
+    msgs: List[bytes] = []
+    sigs: List[G2Element] = []
     for i in [0xCAFE, 0xF00D, 0xABCD, 0x1234]:
         msgs.append(i.to_bytes(8, byteorder="little"))
         pks.append(pk)

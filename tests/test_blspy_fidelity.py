@@ -2,7 +2,7 @@ import blspy
 import chik_rs
 from random import getrandbits
 import sys
-from typing import Any
+from typing import Any, Type
 import pytest
 from concurrent.futures import ThreadPoolExecutor
 

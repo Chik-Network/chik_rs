@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, TextIO
+from typing import List, Optional, Tuple, TextIO
 from glob import glob
 
 output_file = Path(__file__).parent.resolve() / "python" / "chik_rs" / "chik_rs.pyi"
@@ -12,8 +12,8 @@ enums = set(["NodeType", "ProtocolMessageTypes", "RejectStateReason"])
 
 def transform_type(m: str) -> str:
     n, t = m.split(":")
-    if "list[" in t:
-        t = t.replace("list[", "Sequence[")
+    if "List[" in t:
+        t = t.replace("List[", "Sequence[")
     elif "bytes32" == t.strip():
         t = " bytes"
     elif t.strip() in enums:
@@ -22,21 +22,10 @@ def transform_type(m: str) -> str:
 
 
 def print_class(
-    file: TextIO,
-    name: str,
-    members: list[str],
-    extra: Optional[list[str]] = None,
-    martial_for_json_hint: Optional[str] = None,
-    unmartial_from_json_hint: Optional[str] = None,
+    file: TextIO, name: str, members: List[str], extra: Optional[List[str]] = None
 ):
     def add_indent(x: str):
         return "\n    " + x
-
-    if martial_for_json_hint is None:
-        martial_for_json_hint = "dict[str, Any]"
-
-    if unmartial_from_json_hint is None:
-        unmartial_from_json_hint = martial_for_json_hint
 
     init_args = "".join([(",\n        " + transform_type(x)) for x in members])
 
@@ -73,14 +62,14 @@ class {name}:{"".join(map(add_indent, members))}
     @classmethod
     def from_bytes_unchecked(cls, blob: bytes) -> Self: ...
     @classmethod
-    def parse_rust(cls, blob: ReadableBuffer, trusted: bool = False) -> tuple[Self, int]: ...
+    def parse_rust(cls, blob: ReadableBuffer, trusted: bool = False) -> Tuple[Self, int]: ...
     def to_bytes(self) -> bytes: ...
     def __bytes__(self) -> bytes: ...
     def stream_to_bytes(self) -> bytes: ...
     def get_hash(self) -> bytes32: ...
-    def to_json_dict(self) -> {martial_for_json_hint}: ...
+    def to_json_dict(self) -> Any: ...
     @classmethod
-    def from_json_dict(cls, json_dict: {unmartial_from_json_hint}) -> Self: ...
+    def from_json_dict(cls, json_dict: Any) -> Self: ...
 """
     )
 
@@ -96,9 +85,9 @@ def rust_type_to_python(t: str) -> str:
     ret = (
         t.replace("<", "[")
         .replace(">", "]")
-        .replace("(", "tuple[")
+        .replace("(", "Tuple[")
         .replace(")", "]")
-        .replace("Vec", "list")
+        .replace("Vec", "List")
         .replace("Option", "Optional")
         .replace("Bytes", "bytes")
         .replace("String", "str")
@@ -119,10 +108,10 @@ def rust_type_to_python(t: str) -> str:
     return ret
 
 
-def parse_rust_source(filename: str, upper_case: bool) -> list[tuple[str, list[str]]]:
-    ret: list[tuple[str, list[str]]] = []
+def parse_rust_source(filename: str, upper_case: bool) -> List[Tuple[str, List[str]]]:
+    ret: List[Tuple[str, List[str]]] = []
     in_struct: Optional[str] = None
-    members: list[str] = []
+    members: List[str] = []
     with open(filename) as f:
         for line in f:
             if not in_struct:
@@ -196,7 +185,7 @@ extra_members = {
         "total_iters: uint128",
         "height: uint32",
         "weight: uint128",
-        "def get_included_reward_coins(self) -> list[Coin]: ...",
+        "def get_included_reward_coins(self) -> List[Coin]: ...",
         "def is_fully_compactified(self) -> bool: ...",
     ],
     "HeaderBlock": [
@@ -226,19 +215,19 @@ extra_members = {
         "def get_tree_hash(self) -> bytes32: ...",
         "@staticmethod\n    def default() -> Program: ...",
         "@staticmethod\n    def fromhex(h: str) -> Program: ...",
-        "def run_mempool_with_cost(self, max_cost: int, args: object) -> tuple[int, ChikProgram]: ...",
-        "def run_with_cost(self, max_cost: int, args: object) -> tuple[int, ChikProgram]: ...",
-        "def _run(self, max_cost: int, flags: int, args: object) -> tuple[int, ChikProgram]: ...",
+        "def run_mempool_with_cost(self, max_cost: int, args: object) -> Tuple[int, ChikProgram]: ...",
+        "def run_with_cost(self, max_cost: int, args: object) -> Tuple[int, ChikProgram]: ...",
+        "def _run(self, max_cost: int, flags: int, args: object) -> Tuple[int, ChikProgram]: ...",
         "@staticmethod\n    def to(o: object) -> Program: ...",
         "@staticmethod\n    def from_program(p: ChikProgram) -> Program: ...",
         "def to_program(self) -> ChikProgram: ...",
-        "def uncurry(self) -> tuple[ChikProgram, ChikProgram]: ...",
+        "def uncurry(self) -> Tuple[ChikProgram, ChikProgram]: ...",
     ],
     "SpendBundle": [
-        "@classmethod\n    def aggregate(cls, spend_bundles: list[SpendBundle]) -> Self: ...",
+        "@classmethod\n    def aggregate(cls, spend_bundles: List[SpendBundle]) -> Self: ...",
         "def name(self) -> bytes32: ...",
-        "def removals(self) -> list[Coin]: ...",
-        "def additions(self) -> list[Coin]: ...",
+        "def removals(self) -> List[Coin]: ...",
+        "def additions(self) -> List[Coin]: ...",
     ],
     "BlockRecord": [
         "is_transaction_block: bool",
@@ -272,7 +261,7 @@ with open(output_file, "w") as file:
 # this file is generated by generate_type_stubs.py
 #
 
-from typing import Optional, Sequence, Union, Any, ClassVar, final
+from typing import List, Optional, Sequence, Tuple, Union, Dict, Any, ClassVar, final
 from .sized_bytes import bytes32, bytes100
 from .sized_ints import uint8, uint16, uint32, uint64, uint128, int8, int16, int32, int64
 from typing_extensions import Self
@@ -283,8 +272,8 @@ ReadableBuffer = Union[bytes, bytearray, memoryview]
 class _Unspec:
     pass
 
-def solution_generator(spends: Sequence[tuple[Coin, bytes, bytes]]) -> bytes: ...
-def solution_generator_backrefs(spends: Sequence[tuple[Coin, bytes, bytes]]) -> bytes: ...
+def solution_generator(spends: Sequence[Tuple[Coin, bytes, bytes]]) -> bytes: ...
+def solution_generator_backrefs(spends: Sequence[Tuple[Coin, bytes, bytes]]) -> bytes: ...
 
 def compute_merkle_set_root(values: Sequence[bytes]) -> bytes: ...
 
@@ -292,16 +281,16 @@ def supports_fast_forward(spend: CoinSpend) -> bool : ...
 def fast_forward_singleton(spend: CoinSpend, new_coin: Coin, new_parent: Coin) -> bytes: ...
 
 def run_block_generator(
-    program: ReadableBuffer, block_refs: list[ReadableBuffer], max_cost: int, flags: int, signature: G2Element, bls_cache: Optional[BLSCache], constants: ConsensusConstants
-) -> tuple[Optional[int], Optional[SpendBundleConditions]]: ...
+    program: ReadableBuffer, block_refs: List[ReadableBuffer], max_cost: int, flags: int, signature: G2Element, bls_cache: Optional[BLSCache], constants: ConsensusConstants
+) -> Tuple[Optional[int], Optional[SpendBundleConditions]]: ...
 
 def run_block_generator2(
-    program: ReadableBuffer, block_refs: list[ReadableBuffer], max_cost: int, flags: int, signature: G2Element, bls_cache: Optional[BLSCache], constants: ConsensusConstants
-) -> tuple[Optional[int], Optional[SpendBundleConditions]]: ...
+    program: ReadableBuffer, block_refs: List[ReadableBuffer], max_cost: int, flags: int, signature: G2Element, bls_cache: Optional[BLSCache], constants: ConsensusConstants
+) -> Tuple[Optional[int], Optional[SpendBundleConditions]]: ...
 
 def additions_and_removals(
-    program: ReadableBuffer, block_refs: list[ReadableBuffer], flags: int, constants: ConsensusConstants
-) -> tuple[list[tuple[Coin, Optional[bytes]]], list[Coin]]: ...
+    program: ReadableBuffer, block_refs: List[ReadableBuffer], flags: int, constants: ConsensusConstants
+) -> Tuple[List[Tuple[Coin, Optional[bytes]]], List[Coin]]: ...
 
 def confirm_included_already_hashed(
     root: bytes32,
@@ -320,7 +309,7 @@ def validate_klvm_and_signature(
     max_cost: int,
     constants: ConsensusConstants,
     peak_height: int,
-) -> tuple[SpendBundleConditions, list[tuple[bytes32, GTElement]], float]: ...
+) -> Tuple[SpendBundleConditions, List[Tuple[bytes32, GTElement]], float]: ...
 
 def get_conditions_from_spendbundle(
     spend_bundle: SpendBundle,
@@ -349,26 +338,25 @@ NO_UNKNOWN_OPS: int = ...
 
 def run_chik_program(
     program: bytes, args: bytes, max_cost: int, flags: int
-) -> tuple[int, LazyNode]: ...
+) -> Tuple[int, LazyNode]: ...
 
 @final
 class LazyNode:
-    pair: Optional[tuple[LazyNode, LazyNode]]
+    pair: Optional[Tuple[LazyNode, LazyNode]]
     atom: Optional[bytes]
 
 def serialized_length(program: ReadableBuffer) -> int: ...
 def tree_hash(blob: ReadableBuffer) -> bytes32: ...
-def get_puzzle_and_solution_for_coin(program: ReadableBuffer, args: ReadableBuffer, max_cost: int, find_parent: bytes32, find_amount: int, find_ph: bytes32, flags: int) -> tuple[bytes, bytes]: ...
-def get_puzzle_and_solution_for_coin2(generator: Program, block_refs: list[ReadableBuffer], max_cost: int, find_coin: Coin, flags: int) -> tuple[Program, Program]: ...
+def get_puzzle_and_solution_for_coin(program: ReadableBuffer, args: ReadableBuffer, max_cost: int, find_parent: bytes32, find_amount: int, find_ph: bytes32, flags: int) -> Tuple[bytes, bytes]: ...
+def get_puzzle_and_solution_for_coin2(generator: Program, block_refs: List[ReadableBuffer], max_cost: int, find_coin: Coin, flags: int) -> Tuple[Program, Program]: ...
 
 @final
 class BLSCache:
     def __init__(self, cache_size: Optional[int] = 50000) -> None: ...
     def len(self) -> int: ...
-    def aggregate_verify(self, pks: list[G1Element], msgs: list[bytes], sig: G2Element) -> bool: ...
-    def items(self) -> list[tuple[bytes, GTElement]]: ...
-    def update(self, other: Sequence[tuple[bytes, GTElement]]) -> None: ...
-    def evict(self, pks: list[G1Element], msgs: list[bytes]) -> None: ...
+    def aggregate_verify(self, pks: List[G1Element], msgs: List[bytes], sig: G2Element) -> bool: ...
+    def items(self) -> List[Tuple[bytes, GTElement]]: ...
+    def update(self, other: Sequence[Tuple[bytes, GTElement]]) -> None: ...
 
 @final
 class AugSchemeMPL:
@@ -394,10 +382,10 @@ class AugSchemeMPL:
 @final
 class MerkleSet:
     def get_root(self) -> bytes32: ...
-    def is_included_already_hashed(self, included_leaf: bytes32) -> tuple[bool, bytes]: ...
+    def is_included_already_hashed(self, included_leaf: bytes32) -> Tuple[bool, bytes]: ...
     def __init__(
         self,
-        leafs: list[bytes32],
+        leafs: List[bytes32],
     ) -> None: ...
 """
     )
@@ -419,8 +407,6 @@ class MerkleSet:
             "def __iadd__(self, other: G1Element) -> G1Element: ...",
             "def derive_unhardened(self, idx: int) -> G1Element: ...",
         ],
-        martial_for_json_hint="str",
-        unmartial_from_json_hint="Union[str, bytes]",
     )
     print_class(
         file,
@@ -436,8 +422,6 @@ class MerkleSet:
             "def __add__(self, other: G2Element) -> G2Element: ...",
             "def __iadd__(self, other: G2Element) -> G2Element: ...",
         ],
-        martial_for_json_hint="str",
-        unmartial_from_json_hint="Union[str, bytes]",
     )
     print_class(
         file,
@@ -449,7 +433,6 @@ class MerkleSet:
             "def __mul__(self, rhs: GTElement) -> GTElement: ...",
             "def __imul__(self, rhs: GTElement) -> GTElement : ...",
         ],
-        martial_for_json_hint="str",
     )
     print_class(
         file,
@@ -466,7 +449,6 @@ class MerkleSet:
             "@staticmethod",
             "def from_seed(seed: bytes) -> PrivateKey: ...",
         ],
-        martial_for_json_hint="str",
     )
 
     print_class(
@@ -483,14 +465,14 @@ class MerkleSet:
             "before_seconds_relative: Optional[int]",
             "birth_height: Optional[int]",
             "birth_seconds: Optional[int]",
-            "create_coin: list[tuple[bytes, int, Optional[bytes]]]",
-            "agg_sig_me: list[tuple[G1Element, bytes]]",
-            "agg_sig_parent: list[tuple[G1Element, bytes]]",
-            "agg_sig_puzzle: list[tuple[G1Element, bytes]]",
-            "agg_sig_amount: list[tuple[G1Element, bytes]]",
-            "agg_sig_puzzle_amount: list[tuple[G1Element, bytes]]",
-            "agg_sig_parent_amount: list[tuple[G1Element, bytes]]",
-            "agg_sig_parent_puzzle: list[tuple[G1Element, bytes]]",
+            "create_coin: List[Tuple[bytes, int, Optional[bytes]]]",
+            "agg_sig_me: List[Tuple[G1Element, bytes]]",
+            "agg_sig_parent: List[Tuple[G1Element, bytes]]",
+            "agg_sig_puzzle: List[Tuple[G1Element, bytes]]",
+            "agg_sig_amount: List[Tuple[G1Element, bytes]]",
+            "agg_sig_puzzle_amount: List[Tuple[G1Element, bytes]]",
+            "agg_sig_parent_amount: List[Tuple[G1Element, bytes]]",
+            "agg_sig_parent_puzzle: List[Tuple[G1Element, bytes]]",
             "flags: int",
         ],
     )
@@ -499,13 +481,13 @@ class MerkleSet:
         file,
         "SpendBundleConditions",
         [
-            "spends: list[SpendConditions]",
+            "spends: List[SpendConditions]",
             "reserve_fee: int",
             "height_absolute: int",
             "seconds_absolute: int",
             "before_height_absolute: Optional[int]",
             "before_seconds_absolute: Optional[int]",
-            "agg_sig_unsafe: list[tuple[G1Element, bytes]]",
+            "agg_sig_unsafe: List[Tuple[G1Element, bytes]]",
             "cost: int",
             "removal_amount: int",
             "addition_amount: int",
@@ -514,15 +496,4 @@ class MerkleSet:
     )
 
     for item in classes:
-        # TODO: adjust the system to provide this control via more paths
-        martial_for_json_hint = None
-        if item[0] == "Program":
-            martial_for_json_hint = "str"
-
-        print_class(
-            file,
-            item[0],
-            item[1],
-            extra_members.get(item[0]),
-            martial_for_json_hint=martial_for_json_hint,
-        )
+        print_class(file, item[0], item[1], extra_members.get(item[0]))

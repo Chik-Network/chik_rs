@@ -1,6 +1,6 @@
 [package]
 name = "chik-tools"
-version = "0.16.0"
+version = "0.15.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Utility functions and types used by the Chik blockchain full node"
@@ -25,7 +25,6 @@ clap = { workspace = true, features = ["derive"] }
 zstd = { workspace = true }
 blocking-threadpool = { workspace = true }
 hex = { workspace = true }
-hex-literal = { workspace = true }
 
 [lib]
 name = "chik_tools"
@@ -68,10 +67,5 @@ bench = false
 
 [[bin]]
 name = "get-generator"
-test = false
-bench = false
-
-[[bin]]
-name = "validate-blockchain-db"
 test = false
 bench = false

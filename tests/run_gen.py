@@ -13,7 +13,7 @@ from chik_rs.sized_ints import uint8, uint16, uint32, uint64, uint128
 from time import time
 import sys
 from time import perf_counter
-from typing import Optional
+from typing import Optional, Tuple
 
 DEFAULT_CONSTANTS = ConsensusConstants(
     SLOT_BLOCKS_TARGET=uint32(32),
@@ -77,7 +77,7 @@ DEFAULT_CONSTANTS = ConsensusConstants(
     MAX_GENERATOR_SIZE=uint32(1000000),
     MAX_GENERATOR_REF_LIST_SIZE=uint32(512),
     POOL_SUB_SLOT_ITERS=uint64(37600000000),
-    SOFT_FORK6_HEIGHT=uint32(0),
+    SOFT_FORK5_HEIGHT=uint32(0),
     HARD_FORK_HEIGHT=uint32(5496000),
     PLOT_FILTER_128_HEIGHT=uint32(10542000),
     PLOT_FILTER_64_HEIGHT=uint32(15592000),
@@ -87,7 +87,7 @@ DEFAULT_CONSTANTS = ConsensusConstants(
 
 def run_gen(
     fn: str, flags: int = 0, args: Optional[str] = None, version: int = 1
-) -> tuple[Optional[int], Optional[SpendBundleConditions], float]:
+) -> Tuple[Optional[int], Optional[SpendBundleConditions], float]:
 
     # constants from the main chik blockchain:
     # https://github.com/Chik-Network/chik-blockchain/blob/main/chik/consensus/default_constants.py

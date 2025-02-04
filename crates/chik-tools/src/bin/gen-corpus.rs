@@ -5,7 +5,7 @@
 
 use clap::Parser;
 
-use chik_tools::{iterate_blocks, visit_spends};
+use chik_tools::{iterate_tx_blocks, visit_spends};
 use chik_traits::streamable::Streamable;
 
 use chik_bls::G2Element;
@@ -78,14 +78,11 @@ fn main() {
     let mut last_height = 0;
     let mut last_time = Instant::now();
     let corpus_counter = Arc::new(AtomicUsize::new(0));
-    iterate_blocks(
+    iterate_tx_blocks(
         &args.file,
         args.start_height,
         args.max_height,
         |height, block, block_refs| {
-            if block.transactions_generator.is_none() {
-                return;
-            }
             // this is called for each transaction block
             let max_cost = block.transactions_info.unwrap().cost;
             let prg = block.transactions_generator.unwrap();

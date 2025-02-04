@@ -5,7 +5,7 @@ use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::gen::conditions::{NewCoin, SpendBundleConditions, SpendConditions};
 use chik_consensus::gen::flags::{ALLOW_BACKREFS, DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE};
 use chik_consensus::gen::run_block_generator::{run_block_generator, run_block_generator2};
-use chik_tools::iterate_blocks;
+use chik_tools::iterate_tx_blocks;
 use klvmr::allocator::NodePtr;
 use klvmr::Allocator;
 use std::collections::HashSet;
@@ -165,14 +165,11 @@ fn main() {
     let mut last_height = args.start_height;
     let mut last_time = Instant::now();
     println!("opening blockchain database file: {}", args.file);
-    iterate_blocks(
+    iterate_tx_blocks(
         &args.file,
         args.start_height,
         max_height,
         |height, block, block_refs| {
-            if block.transactions_generator.is_none() {
-                return;
-            }
             pool.execute(move || {
                 let mut a = Allocator::new_limited(500_000_000);
 

@@ -1,5 +1,6 @@
+from typing import Dict, List
 
-all_counters: dict[str, list[int]] = {}
+all_counters: Dict[str, List[int]] = {}
 
 keys = ["atoms:",
      "small_atoms:",

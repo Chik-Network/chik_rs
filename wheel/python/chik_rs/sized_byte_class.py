@@ -8,6 +8,7 @@ from typing import (
     Optional,
     SupportsBytes,
     SupportsIndex,
+    Type,
     TypeVar,
     Union,
 )
@@ -45,7 +46,7 @@ class SizedBytes(bytes):
             raise ValueError(f"bad {type(self).__name__} initializer {v}")
 
     @classmethod
-    def parse(cls: type[_T_SizedBytes], f: BinaryIO) -> _T_SizedBytes:
+    def parse(cls: Type[_T_SizedBytes], f: BinaryIO) -> _T_SizedBytes:
         b = f.read(cls._size)
         return cls(b)
 
@@ -53,18 +54,18 @@ class SizedBytes(bytes):
         f.write(self)
 
     @classmethod
-    def from_bytes(cls: type[_T_SizedBytes], blob: bytes) -> _T_SizedBytes:
+    def from_bytes(cls: Type[_T_SizedBytes], blob: bytes) -> _T_SizedBytes:
         return cls(blob)
 
     @classmethod
-    def from_hexstr(cls: type[_T_SizedBytes], input_str: str) -> _T_SizedBytes:
+    def from_hexstr(cls: Type[_T_SizedBytes], input_str: str) -> _T_SizedBytes:
         if input_str.startswith("0x") or input_str.startswith("0X"):
             return cls.fromhex(input_str[2:])
         return cls.fromhex(input_str)
 
     @classmethod
     def random(
-        cls: type[_T_SizedBytes], r: Optional[random.Random] = None
+        cls: Type[_T_SizedBytes], r: Optional[random.Random] = None
     ) -> _T_SizedBytes:
         if r is None:
             getrandbits = random.getrandbits
@@ -74,7 +75,7 @@ class SizedBytes(bytes):
         return cls(getrandbits(cls._size * 8).to_bytes(cls._size, "big"))
 
     @classmethod
-    def secret(cls: type[_T_SizedBytes]) -> _T_SizedBytes:
+    def secret(cls: Type[_T_SizedBytes]) -> _T_SizedBytes:
         return cls.random(r=system_random)
 
     def __str__(self) -> str:

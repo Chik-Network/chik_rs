@@ -1,4 +1,4 @@
-from typing import Optional, Any, Callable
+from typing import List, Optional, Any, Callable
 
 import sys
 import time
@@ -46,9 +46,9 @@ def get_optional(rng: Random, gen: Callable[[Random], Any]) -> Optional[Any]:
         return gen(rng)
 
 
-def get_list(rng: Random, gen: Callable[[Random], Any]) -> list[Any]:
+def get_list(rng: Random, gen: Callable[[Random], Any]) -> List[Any]:
     length = rng.sample([0, 1, 5, 32, 500], 1)[0]
-    ret: list[Any] = []
+    ret: List[Any] = []
     for i in range(length):
         ret.append(gen(rng))
     return ret

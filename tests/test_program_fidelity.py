@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 import string
 import chik_rs
@@ -24,7 +24,7 @@ def rand_int(rnd: Random) -> int:
     return rnd.randint(0, 100000000000000)
 
 
-def rand_list(rnd: Random) -> list:
+def rand_list(rnd: Random) -> List:
     size = rnd.randint(0, 3)
     ret = []
     for _ in range(size):

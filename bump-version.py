@@ -7,7 +7,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Set
 
 v = sys.argv[1]
 tag = sys.argv[2]
@@ -31,7 +31,7 @@ our_crates = [
     "crates/klvm-utils/fuzz",
 ]
 
-def crates_with_changes() -> set[str]:
+def crates_with_changes() -> Set[str]:
     ret = set()
     for c in our_crates:
         diff = os.popen(f"git diff {tag} -- {c}").read().strip()
@@ -42,7 +42,7 @@ def crates_with_changes() -> set[str]:
     ret.add("wheel")
     return ret
 
-def update_cargo(name: str, crates: set[str]) -> None:
+def update_cargo(name: str, crates: Set[str]) -> None:
     subst = ""
     with open(f"{name}/Cargo.toml") as f:
         for line in f:

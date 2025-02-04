@@ -8,7 +8,6 @@ use chik_bls::GTElement;
 use chik_bls::{aggregate_verify_gt, hash_to_g2};
 use chik_protocol::SpendBundle;
 use chik_sha2::Sha256;
-use klvmr::chik_dialect::ENABLE_KECCAK;
 use klvmr::LIMIT_HEAP;
 use std::time::{Duration, Instant};
 
@@ -79,14 +78,6 @@ pub fn get_flags_for_height_and_constants(height: u32, constants: &ConsensusCons
         //   serialization format (with back-references)
         flags |= ALLOW_BACKREFS;
     }
-
-    // The soft fork initiated with 2.5.0. The activation date is still TBD.
-    // Adds a new keccak256 operator under the softfork guard with extension 1.
-    // This operator can be hard forked in later, but is not included in a hard fork yet.
-    if height >= constants.soft_fork6_height {
-        flags |= ENABLE_KECCAK;
-    }
-
     flags
 }
 

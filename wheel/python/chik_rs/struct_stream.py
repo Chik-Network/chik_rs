@@ -6,6 +6,7 @@ from typing import (
     Optional,
     SupportsIndex,
     SupportsInt,
+    Type,
     TypeVar,
     Union,
 )
@@ -20,7 +21,7 @@ class SupportsTrunc(Protocol):
     def __trunc__(self) -> int: ...
 
 
-def parse_metadata_from_name(cls: type[_T_StructStream]) -> type[_T_StructStream]:
+def parse_metadata_from_name(cls: Type[_T_StructStream]) -> Type[_T_StructStream]:
     name_signedness, _, name_bit_size = cls.__name__.partition("int")
     cls.SIGNED = False if name_signedness == "u" else True
     try:
@@ -83,7 +84,7 @@ class StructStream(int):
 
     @classmethod
     def construct_optional(
-        cls: type[_T_StructStream], val: Optional[int]
+        cls: Type[_T_StructStream], val: Optional[int]
     ) -> Optional[_T_StructStream]:
         if val is None:
             return None
@@ -91,7 +92,7 @@ class StructStream(int):
             return cls(val)
 
     @classmethod
-    def parse(cls: type[_T_StructStream], f: BinaryIO) -> _T_StructStream:
+    def parse(cls: Type[_T_StructStream], f: BinaryIO) -> _T_StructStream:
         read_bytes = f.read(cls.SIZE)
         return cls.from_bytes(read_bytes)
 
@@ -99,7 +100,7 @@ class StructStream(int):
         f.write(self.stream_to_bytes())
 
     @classmethod
-    def from_bytes(cls: type[_T_StructStream], blob: bytes) -> _T_StructStream:  # type: ignore[override]
+    def from_bytes(cls: Type[_T_StructStream], blob: bytes) -> _T_StructStream:  # type: ignore[override]
         if len(blob) != cls.SIZE:
             raise ValueError(
                 f"{cls.__name__}.from_bytes() requires {cls.SIZE} bytes but got: {len(blob)}"

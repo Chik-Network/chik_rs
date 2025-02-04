@@ -47,8 +47,7 @@ pub fn py_streamable_macro(input: proc_macro::TokenStream) -> proc_macro::TokenS
         syn::Data::Enum(_) => {
             return quote! {
                 impl<'a> pyo3::conversion::FromPyObject<'a> for #ident {
-                    fn extract_bound(ob: &pyo3::Bound<'a, pyo3::PyAny>) -> pyo3::PyResult<Self> {
-                        use pyo3::types::PyAnyMethods;
+                    fn extract(ob: &'a pyo3::PyAny) -> pyo3::PyResult<Self> {
                         let v: u8 = ob.extract()?;
                         <Self as #crate_name::Streamable>::parse::<false>(&mut std::io::Cursor::<&[u8]>::new(&[v])).map_err(|e| e.into())
                     }
@@ -133,13 +132,11 @@ pub fn py_streamable_macro(input: proc_macro::TokenStream) -> proc_macro::TokenS
                     #[pyo3::pymethods]
                     impl #ident {
                         #[pyo3(signature = (**kwargs))]
-                        fn replace(&self, kwargs: Option<&pyo3::Bound<pyo3::types::PyDict>>) -> pyo3::PyResult<Self> {
+                        fn replace(&self, kwargs: Option<&pyo3::types::PyDict>) -> pyo3::PyResult<Self> {
                             let mut ret = self.clone();
                             if let Some(kwargs) = kwargs {
-                                use pyo3::prelude::PyDictMethods;
-                                let iter = kwargs.iter();
+                                let iter: pyo3::types::iter::PyDictIterator = kwargs.iter();
                                 for (field, value) in iter {
-                                    use pyo3::prelude::PyAnyMethods;
                                     let field = field.extract::<String>()?;
                                     match field.as_str() {
                                         #(stringify!(#fnames_maybe_upper) => {
@@ -309,7 +306,7 @@ pub fn py_streamable_macro(input: proc_macro::TokenStream) -> proc_macro::TokenS
                 self.py_to_bytes(py)
             }
 
-            pub fn __deepcopy__<'p>(&self, memo: &pyo3::Bound<pyo3::PyAny>) -> pyo3::PyResult<Self> {
+            pub fn __deepcopy__<'p>(&self, memo: &pyo3::PyAny) -> pyo3::PyResult<Self> {
                 Ok(self.clone())
             }
 
@@ -326,10 +323,9 @@ pub fn py_streamable_macro(input: proc_macro::TokenStream) -> proc_macro::TokenS
             impl #ident {
                 pub fn __setstate__(
                     &mut self,
-                    state: &pyo3::Bound<pyo3::types::PyBytes>,
+                    state: &pyo3::types::PyBytes,
                 ) -> pyo3::PyResult<()> {
                     use chik_traits::Streamable;
-                    use pyo3::types::PyBytesMethods;
 
                     *self = Self::parse::<true>(&mut std::io::Cursor::new(state.as_bytes()))?;
 

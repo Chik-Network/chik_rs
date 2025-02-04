@@ -12,7 +12,7 @@ use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
 use klvmr::Allocator;
 use rusqlite::Connection;
 
-pub fn iterate_blocks(
+pub fn iterate_tx_blocks(
     db: &str,
     start_height: u32,
     max_height: Option<u32>,
@@ -52,8 +52,10 @@ pub fn iterate_blocks(
         let block =
             FullBlock::from_bytes_unchecked(&block_buffer).expect("failed to parse FullBlock");
 
+        if block.transactions_info.is_none() {
+            continue;
+        }
         if block.transactions_generator.is_none() {
-            callback(height, block, vec![]);
             continue;
         }
 
