@@ -2,7 +2,7 @@
 use libfuzzer_sys::fuzz_target;
 
 use chik_consensus::gen::messages::SpendId;
-use fuzzing_utils::{make_list, BitCursor};
+use chik_fuzz::{make_list, BitCursor};
 use klvmr::allocator::Allocator;
 
 fuzz_target!(|data: &[u8]| {

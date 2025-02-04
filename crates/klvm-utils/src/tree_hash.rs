@@ -1,6 +1,6 @@
+use chik_sha2::Sha256;
 use klvmr::allocator::{Allocator, NodePtr, SExp};
 use klvmr::serde::node_from_bytes_backrefs_record;
-use klvmr::sha2::Sha256;
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::{fmt, io};

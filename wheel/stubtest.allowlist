@@ -1,0 +1,52 @@
+# just ignore all of the private path of chik_rs.chik_rs
+# TODO: consider making the extension module private
+#       https://github.com/Chik-Network/chik_rs/pull/731
+chik_rs\.chik_rs\..*
+
+# this is offered to help with hinting only and is not intended to be
+# runtime accessible.  is there a better option for handling this?
+chik_rs\.ReadableBuffer
+
+# TODO: perhaps these should be private as _*
+chik_rs\.BlockRecord\.ip_iters_impl
+chik_rs\.BlockRecord\.ip_sub_slot_total_iters_impl
+chik_rs\.BlockRecord\.sp_iters_impl
+chik_rs\.BlockRecord\.sp_sub_slot_total_iters_impl
+chik_rs\.BlockRecord\.sp_total_iters_impl
+
+# TODO: G1Element->PublicKey expects *args
+chik_rs\.G1Element\.__init__
+
+# TODO: G2Element->Signature expects *args
+chik_rs\.G2Element\.__init__
+
+# TODO: expects *args
+chik_rs\.GTElement\.__init__
+
+# TODO: PrivateKey->SecretKey expects *args
+chik_rs\.PrivateKey\.__init__
+
+# TODO: expects *args
+chik_rs\.RequestPeers\.__init__
+
+# TODO: ask stubtest/mypy about these as they seem unlikely to be our doing
+chik_rs\.sized_byte_class\.Iterable
+chik_rs\.sized_byte_class\.BinaryIO\.write
+chik_rs\.struct_stream\.BinaryIO\.write
+
+# these raise unimplemented
+chik_rs\.G1Element\.from_parent
+chik_rs\.G2Element\.from_parent
+chik_rs\.GTElement\.from_parent
+chik_rs\.PrivateKey\.from_parent
+chik_rs\.Program\.from_parent
+chik_rs\.Spend\.from_parent
+chik_rs\.SpendBundleConditions\.from_parent
+chik_rs\.SpendConditions\.from_parent
+chik_rs\.spend\.Spend\.from_parent
+chik_rs\.spend\.SpendConditions\.from_parent
+
+# these are implemented but not intended to be called from python
+chik_rs\.Coin\.from_parent
+chik_rs\.CoinSpend\.from_parent
+chik_rs\.SpendBundle\.from_parent

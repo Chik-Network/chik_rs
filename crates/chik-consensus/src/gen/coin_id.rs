@@ -1,6 +1,6 @@
 use chik_protocol::Bytes32;
+use chik_sha2::Sha256;
 use klvmr::allocator::{Allocator, NodePtr};
-use klvmr::sha2::Sha256;
 
 pub fn compute_coin_id(
     a: &Allocator,

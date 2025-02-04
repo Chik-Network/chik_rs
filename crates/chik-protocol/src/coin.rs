@@ -1,13 +1,17 @@
 use crate::{Bytes32, BytesImpl};
+use chik_sha2::Sha256;
 use chik_streamable_macro::streamable;
 use klvm_traits::{
     destructure_list, klvm_list, match_list, FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder,
     ToKlvm, ToKlvmError,
 };
-use klvmr::sha2::Sha256;
 
 #[cfg(feature = "py-bindings")]
+use pyo3::exceptions::PyNotImplementedError;
+#[cfg(feature = "py-bindings")]
 use pyo3::prelude::*;
+#[cfg(feature = "py-bindings")]
+use pyo3::types::PyType;
 
 #[streamable]
 #[derive(Copy)]
@@ -52,6 +56,18 @@ impl Coin {
 impl Coin {
     fn name<'p>(&self, py: Python<'p>) -> Bound<'p, pyo3::types::PyBytes> {
         pyo3::types::PyBytes::new_bound(py, &self.coin_id())
+    }
+}
+
+#[cfg(feature = "py-bindings")]
+#[pymethods]
+impl Coin {
+    #[classmethod]
+    #[pyo3(name = "from_parent")]
+    pub fn from_parent(_cls: &Bound<'_, PyType>, _coin: Self) -> PyResult<PyObject> {
+        Err(PyNotImplementedError::new_err(
+            "Coin does not support from_parent().",
+        ))
     }
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "klvm-utils"
-version = "0.11.0"
+version = "0.16.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Utility functions for processing klvm programs and structures"
@@ -12,6 +12,7 @@ repository = "https://github.com/Chik-Network/chik_rs"
 workspace = true
 
 [dependencies]
+chik-sha2 = { workspace = true }
 klvmr = { workspace = true }
 klvm-traits = { workspace = true }
 hex = { workspace = true }

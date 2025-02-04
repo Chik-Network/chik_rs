@@ -3,18 +3,18 @@ use libfuzzer_sys::fuzz_target;
 
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::gen::conditions::{
-    parse_conditions, MempoolVisitor, ParseState, Spend, SpendBundleConditions,
+    parse_conditions, MempoolVisitor, ParseState, SpendBundleConditions, SpendConditions,
 };
 use chik_consensus::gen::spend_visitor::SpendVisitor;
+use chik_fuzz::{make_list, BitCursor};
 use chik_protocol::Bytes32;
 use chik_protocol::Coin;
-use fuzzing_utils::{make_list, BitCursor};
 use klvm_utils::tree_hash;
 use klvmr::{Allocator, NodePtr};
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use chik_consensus::gen::flags::{ENABLE_MESSAGE_CONDITIONS, NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT};
+use chik_consensus::gen::flags::{NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT};
 
 fuzz_target!(|data: &[u8]| {
     let mut a = Allocator::new();
@@ -40,13 +40,8 @@ fuzz_target!(|data: &[u8]| {
 
     let mut state = ParseState::default();
 
-    for flags in &[
-        0,
-        STRICT_ARGS_COUNT,
-        NO_UNKNOWN_CONDS,
-        ENABLE_MESSAGE_CONDITIONS,
-    ] {
-        let mut coin_spend = Spend {
+    for flags in &[0, STRICT_ARGS_COUNT, NO_UNKNOWN_CONDS] {
+        let mut coin_spend = SpendConditions {
             parent_id,
             coin_amount: amount,
             puzzle_hash,

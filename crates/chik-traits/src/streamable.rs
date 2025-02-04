@@ -1,5 +1,5 @@
 use crate::chik_error::{Error, Result};
-use klvmr::sha2::Sha256;
+use chik_sha2::Sha256;
 use std::io::Cursor;
 use std::mem;
 

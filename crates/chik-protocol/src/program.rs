@@ -1,4 +1,5 @@
 use crate::bytes::Bytes;
+use chik_sha2::Sha256;
 use chik_traits::chik_error::{Error, Result};
 use chik_traits::Streamable;
 use klvm_traits::{FromKlvm, FromKlvmError, ToKlvm, ToKlvmError};
@@ -10,8 +11,11 @@ use klvmr::serde::{
     node_from_bytes, node_from_bytes_backrefs, node_to_bytes, serialized_length_from_bytes,
     serialized_length_from_bytes_trusted,
 };
-use klvmr::sha2::Sha256;
 use klvmr::{Allocator, ChikDialect};
+#[cfg(feature = "py-bindings")]
+use pyo3::prelude::*;
+#[cfg(feature = "py-bindings")]
+use pyo3::types::PyType;
 use std::io::Cursor;
 use std::ops::Deref;
 
@@ -151,9 +155,6 @@ use chik_traits::{FromJsonDict, ToJsonDict};
 
 #[cfg(feature = "py-bindings")]
 use chik_py_streamable_macro::PyStreamable;
-
-#[cfg(feature = "py-bindings")]
-use pyo3::prelude::*;
 
 #[cfg(feature = "py-bindings")]
 use pyo3::types::{PyList, PyTuple};
@@ -483,6 +484,18 @@ impl Streamable for Program {
 impl ToJsonDict for Program {
     fn to_json_dict(&self, py: Python<'_>) -> PyResult<PyObject> {
         self.0.to_json_dict(py)
+    }
+}
+
+#[cfg(feature = "py-bindings")]
+#[pymethods]
+impl Program {
+    #[classmethod]
+    #[pyo3(name = "from_parent")]
+    pub fn from_parent(_cls: &Bound<'_, PyType>, _instance: &Self) -> PyResult<PyObject> {
+        Err(PyNotImplementedError::new_err(
+            "This class does not support from_parent().",
+        ))
     }
 }
 

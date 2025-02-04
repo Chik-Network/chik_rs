@@ -1,5 +1,5 @@
+use chik_sha2::Sha256;
 use hex_literal::hex;
-use klvmr::sha2::Sha256;
 
 fn get_bit(val: &[u8; 32], bit: u8) -> u8 {
     ((val[(bit / 8) as usize] & (0x80 >> (bit & 7))) != 0).into()

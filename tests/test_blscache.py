@@ -14,11 +14,9 @@ from chik_rs import (
 )
 from chik_rs.sized_bytes import bytes32
 from chik_rs.sized_ints import uint8, uint16, uint32, uint64, uint128
-from typing import List
 from chik.util.hash import std_hash
 from chik.util.lru_cache import LRUCache
 from chik.types.blockchain_format.program import Program as ChikProgram
-from chik.util import cached_bls as cached_bls_old
 import pytest
 
 
@@ -84,11 +82,8 @@ DEFAULT_CONSTANTS = ConsensusConstants(
     MAX_GENERATOR_SIZE=uint32(1000000),
     MAX_GENERATOR_REF_LIST_SIZE=uint32(512),
     POOL_SUB_SLOT_ITERS=uint64(37600000000),
-    SOFT_FORK2_HEIGHT=uint32(0),
-    SOFT_FORK4_HEIGHT=uint32(5716000),
-    SOFT_FORK5_HEIGHT=uint32(0),
+    SOFT_FORK6_HEIGHT=uint32(0),
     HARD_FORK_HEIGHT=uint32(5496000),
-    HARD_FORK_FIX_HEIGHT=uint32(5496000),
     PLOT_FILTER_128_HEIGHT=uint32(10542000),
     PLOT_FILTER_64_HEIGHT=uint32(15592000),
     PLOT_FILTER_32_HEIGHT=uint32(20643000),
@@ -107,8 +102,8 @@ def test_instantiation() -> None:
     pk: G1Element = sk.get_g1()
     msg = b"hello"
     sig: G2Element = AugSchemeMPL.sign(sk, msg)
-    pks: List[G1Element] = [pk]
-    msgs: List[bytes] = [msg]
+    pks: list[G1Element] = [pk]
+    msgs: list[bytes] = [msg]
     result = bls_cache.aggregate_verify(pks, msgs, sig)
     assert result
     assert bls_cache.len() == 1
@@ -135,9 +130,9 @@ def test_cache_limit() -> None:
 
     sk: PrivateKey = AugSchemeMPL.key_gen(seed)
     pk: G1Element = sk.get_g1()
-    pks: List[G1Element] = []
-    msgs: List[bytes] = []
-    sigs: List[G2Element] = []
+    pks: list[G1Element] = []
+    msgs: list[bytes] = []
+    sigs: list[G2Element] = []
     for i in [0xCAFE, 0xF00D, 0xABCD, 0x1234]:
         msgs.append(i.to_bytes(8, byteorder="little"))
         pks.append(pk)
@@ -170,17 +165,12 @@ def test_cached_bls():
 
     # Verify with empty cache and populate it
     assert cached_bls.aggregate_verify(pks_half, msgs_half, agg_sig_half)
-    assert cached_bls_old.aggregate_verify(
-        pks_half_bytes, msgs_half, agg_sig_half, True
-    )
 
     # Verify with partial cache hit
     assert cached_bls.aggregate_verify(pks, msgs, agg_sig)
-    assert cached_bls_old.aggregate_verify(pks_bytes, msgs, agg_sig, True)
 
     # Verify with full cache hit
     assert cached_bls.aggregate_verify(pks, msgs, agg_sig)
-    assert cached_bls_old.aggregate_verify(pks_bytes, msgs, agg_sig)
 
     # Use a small cache which can not accommodate all pairings
     bls_cache = BLSCache(n_keys // 2)
@@ -188,19 +178,12 @@ def test_cached_bls():
     # Verify signatures and cache pairings one at a time
     for pk, msg, sig in zip(pks_half, msgs_half, sigs_half):
         assert bls_cache.aggregate_verify([pk], [msg], sig)
-        assert cached_bls_old.aggregate_verify(
-            [bytes(pk)], [msg], sig, True, local_cache
-        )
 
     # Verify the same messages with aggregated signature (full cache hit)
     assert bls_cache.aggregate_verify(pks_half, msgs_half, agg_sig_half)
-    assert cached_bls_old.aggregate_verify(
-        pks_half_bytes, msgs_half, agg_sig_half, False, local_cache
-    )
 
     # Verify more messages (partial cache hit)
     assert bls_cache.aggregate_verify(pks, msgs, agg_sig)
-    assert cached_bls_old.aggregate_verify(pks_bytes, msgs, agg_sig, False, local_cache)
 
 
 def test_cached_bls_flattening():
@@ -218,10 +201,9 @@ def test_cached_bls_flattening():
     gts = [pk.pair(AugSchemeMPL.g2_from_message(bytes(pk) + b"foobar")) for pk in pks]
     for key, value in cached_bls.items():
         assert isinstance(key, bytes)
-        assert isinstance(value, bytes)
-        reconstructed = GTElement.from_bytes(value)
-        assert reconstructed in gts
-        gts.remove(reconstructed)
+        assert isinstance(value, GTElement)
+        assert value in gts
+        gts.remove(value)
 
     cache_copy = BLSCache()
     cache_copy.update(cached_bls.items())
@@ -230,10 +212,9 @@ def test_cached_bls_flattening():
     gts = [pk.pair(AugSchemeMPL.g2_from_message(bytes(pk) + b"foobar")) for pk in pks]
     for key, value in cache_copy.items():
         assert isinstance(key, bytes)
-        assert isinstance(value, bytes)
-        reconstructed = GTElement.from_bytes(value)
-        assert reconstructed in gts
-        gts.remove(reconstructed)
+        assert isinstance(value, GTElement)
+        assert value in gts
+        gts.remove(value)
 
 
 def test_cached_bls_repeat_pk():
@@ -253,14 +234,12 @@ def test_cached_bls_repeat_pk():
     assert AugSchemeMPL.aggregate_verify([pk for pk in pks], msgs, agg_sig)
 
     assert cached_bls.aggregate_verify(pks, msgs, agg_sig)
-    assert cached_bls_old.aggregate_verify(pks_bytes, msgs, agg_sig, True)
 
 
 def test_empty_sig():
     sig = AugSchemeMPL.aggregate([])
     cached_bls = BLSCache()
     assert cached_bls.aggregate_verify([], [], sig)
-    assert cached_bls_old.aggregate_verify([], [], sig)
 
 
 def test_bad_cache_size():

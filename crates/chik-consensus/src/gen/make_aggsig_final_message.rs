@@ -3,65 +3,60 @@ use crate::gen::opcodes::{
     ConditionOpcode, AGG_SIG_AMOUNT, AGG_SIG_ME, AGG_SIG_PARENT, AGG_SIG_PARENT_AMOUNT,
     AGG_SIG_PARENT_PUZZLE, AGG_SIG_PUZZLE, AGG_SIG_PUZZLE_AMOUNT,
 };
-use crate::gen::owned_conditions::OwnedSpend;
-use chik_protocol::Bytes;
+use crate::gen::owned_conditions::OwnedSpendConditions;
 use chik_protocol::Coin;
 
 pub fn make_aggsig_final_message(
     opcode: ConditionOpcode,
-    msg: &[u8],
-    spend: &OwnedSpend,
+    msg: &mut Vec<u8>,
+    spend: &OwnedSpendConditions,
     constants: &ConsensusConstants,
-) -> Vec<u8> {
-    let mut result = Vec::<u8>::with_capacity(msg.len() + 96);
-    result.extend(msg);
+) {
     match opcode {
         AGG_SIG_PARENT => {
-            result.extend(spend.parent_id.as_slice());
-            result.extend(constants.agg_sig_parent_additional_data.as_slice());
+            msg.extend(spend.parent_id.as_slice());
+            msg.extend(constants.agg_sig_parent_additional_data.as_slice());
         }
         AGG_SIG_PUZZLE => {
-            result.extend(spend.puzzle_hash.as_slice());
-            result.extend(constants.agg_sig_puzzle_additional_data.as_slice());
+            msg.extend(spend.puzzle_hash.as_slice());
+            msg.extend(constants.agg_sig_puzzle_additional_data.as_slice());
         }
         AGG_SIG_AMOUNT => {
-            result.extend(u64_to_bytes(spend.coin_amount).as_slice());
-            result.extend(constants.agg_sig_amount_additional_data.as_slice());
+            msg.extend(u64_to_bytes(spend.coin_amount).as_slice());
+            msg.extend(constants.agg_sig_amount_additional_data.as_slice());
         }
         AGG_SIG_PUZZLE_AMOUNT => {
-            result.extend(spend.puzzle_hash.as_slice());
-            result.extend(u64_to_bytes(spend.coin_amount).as_slice());
-            result.extend(constants.agg_sig_puzzle_amount_additional_data.as_slice());
+            msg.extend(spend.puzzle_hash.as_slice());
+            msg.extend(u64_to_bytes(spend.coin_amount).as_slice());
+            msg.extend(constants.agg_sig_puzzle_amount_additional_data.as_slice());
         }
         AGG_SIG_PARENT_AMOUNT => {
-            result.extend(spend.parent_id.as_slice());
-            result.extend(u64_to_bytes(spend.coin_amount).as_slice());
-            result.extend(constants.agg_sig_parent_amount_additional_data.as_slice());
+            msg.extend(spend.parent_id.as_slice());
+            msg.extend(u64_to_bytes(spend.coin_amount).as_slice());
+            msg.extend(constants.agg_sig_parent_amount_additional_data.as_slice());
         }
         AGG_SIG_PARENT_PUZZLE => {
-            result.extend(spend.parent_id.as_slice());
-            result.extend(spend.puzzle_hash.as_slice());
-            result.extend(constants.agg_sig_parent_puzzle_additional_data.as_slice());
+            msg.extend(spend.parent_id.as_slice());
+            msg.extend(spend.puzzle_hash.as_slice());
+            msg.extend(constants.agg_sig_parent_puzzle_additional_data.as_slice());
         }
         AGG_SIG_ME => {
             let coin: Coin = Coin::new(spend.parent_id, spend.puzzle_hash, spend.coin_amount);
 
-            result.extend(coin.coin_id().as_slice());
-            result.extend(constants.agg_sig_me_additional_data.as_slice());
+            msg.extend(coin.coin_id().as_slice());
+            msg.extend(constants.agg_sig_me_additional_data.as_slice());
         }
-        _ => return result,
-    };
-
-    result
+        _ => {}
+    }
 }
 
-fn u64_to_bytes(val: u64) -> Bytes {
+pub fn u64_to_bytes(val: u64) -> Vec<u8> {
     let amount_bytes: [u8; 8] = val.to_be_bytes();
     if val >= 0x8000_0000_0000_0000_u64 {
         let mut ret = Vec::<u8>::new();
         ret.push(0_u8);
         ret.extend(amount_bytes);
-        Bytes::new(ret)
+        ret
     } else {
         let start = match val {
             n if n >= 0x0080_0000_0000_0000_u64 => 0,
@@ -74,7 +69,7 @@ fn u64_to_bytes(val: u64) -> Bytes {
             n if n > 0 => 7,
             _ => 8,
         };
-        Bytes::new(amount_bytes[start..].to_vec())
+        amount_bytes[start..].to_vec()
     }
 }
 
@@ -114,16 +109,16 @@ mod tests {
 
         use chik_protocol::Bytes32;
 
-        use crate::r#gen::conditions::Spend;
+        use crate::r#gen::conditions::SpendConditions;
 
         let parent_id: Vec<u8> =
             hex!("4444444444444444444444444444444444444444444444444444444444444444").into();
         let puzzle_hash: Vec<u8> =
             hex!("3333333333333333333333333333333333333333333333333333333333333333").into();
-        let msg = b"message";
+        let mut msg = b"message".to_vec();
 
         let mut expected_result = Vec::<u8>::new();
-        expected_result.extend(msg);
+        expected_result.extend_from_slice(msg.as_slice());
 
         let coin = Coin::new(
             Bytes32::try_from(parent_id.clone()).expect("test should pass"),
@@ -178,7 +173,7 @@ mod tests {
             _ => {}
         };
         let mut a: Allocator = make_allocator(LIMIT_HEAP);
-        let spend = Spend::new(
+        let spend = SpendConditions::new(
             a.new_atom(parent_id.as_slice()).expect("should pass"),
             coin_amount,
             a.new_atom(puzzle_hash.as_slice())
@@ -186,9 +181,9 @@ mod tests {
             Arc::new(Bytes32::try_from(coin.coin_id()).expect("test should pass")),
         );
 
-        let spend = OwnedSpend::from(&a, spend);
+        let spend = OwnedSpendConditions::from(&a, spend);
 
-        let result = make_aggsig_final_message(opcode, msg, &spend, &TEST_CONSTANTS);
-        assert_eq!(result, expected_result);
+        make_aggsig_final_message(opcode, &mut msg, &spend, &TEST_CONSTANTS);
+        assert_eq!(msg, expected_result);
     }
 }

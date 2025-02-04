@@ -1,8 +1,8 @@
 #![no_main]
 use arbitrary::{Arbitrary, Unstructured};
 use chik_protocol::*;
+use chik_sha2::Sha256;
 use chik_traits::Streamable;
-use klvmr::sha2::Sha256;
 use libfuzzer_sys::fuzz_target;
 
 pub fn test_streamable<T: Streamable + std::fmt::Debug + PartialEq>(obj: &T) {

@@ -1,13 +1,12 @@
-from typing import List, Optional, Any, Callable
+from typing import Optional, Any, Callable
 
 import sys
 import time
 from chik_rs import BlockRecord, ClassgroupElement
 from chik_rs.sized_bytes import bytes32, bytes100
 from chik_rs.sized_ints import uint32, uint64, uint8, uint128
-from chik.consensus.block_record import BlockRecord as PyBlockRecord
 from random import Random
-from chik.consensus.default_constants import DEFAULT_CONSTANTS
+from run_gen import DEFAULT_CONSTANTS
 
 
 def get_classgroup_element(rng: Random) -> ClassgroupElement:
@@ -47,9 +46,9 @@ def get_optional(rng: Random, gen: Callable[[Random], Any]) -> Optional[Any]:
         return gen(rng)
 
 
-def get_list(rng: Random, gen: Callable[[Random], Any]) -> List[Any]:
+def get_list(rng: Random, gen: Callable[[Random], Any]) -> list[Any]:
     length = rng.sample([0, 1, 5, 32, 500], 1)[0]
-    ret: List[Any] = []
+    ret: list[Any] = []
     for i in range(length):
         ret.append(gen(rng))
     return ret
@@ -130,34 +129,3 @@ def wrap_call(expr: str, br: Any) -> str:
         return f"V:{ret}"
     except Exception as e:
         return f"E:{e}"
-
-
-def test_block_record() -> None:
-    rng = Random()
-    seed = int(time.time())
-    print(f"seed: {seed}")
-    rng.seed(seed)
-
-    for i in range(500000):
-        br = get_block_record(rng)
-        serialized = bytes(br)
-        py_identity = PyBlockRecord.from_bytes(serialized)
-
-        assert bytes(py_identity) == serialized
-        assert f"{type(br)}" != f"{type(py_identity)}"
-
-        for test_call in [
-            "ip_iters",
-            "sp_total_iters",
-            "sp_iters",
-            "ip_sub_slot_total_iters",
-            "sp_sub_slot_total_iters",
-        ]:
-            rust_ret = wrap_call(f"br.{test_call}(DEFAULT_CONSTANTS)", br)
-            py_ret = wrap_call(f"br.{test_call}(DEFAULT_CONSTANTS)", py_identity)
-
-            assert rust_ret == py_ret
-
-        if (i & 0x3FF) == 0:
-            sys.stdout.write(f" {i}     \r")
-            sys.stdout.flush()

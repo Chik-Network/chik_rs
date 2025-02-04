@@ -1,17 +1,20 @@
+use chik_bls::{BlsCache, Signature};
 use chik_consensus::allocator::make_allocator;
 use chik_consensus::consensus_constants::ConsensusConstants;
-use chik_consensus::gen::conditions::{EmptyVisitor, MempoolVisitor};
-use chik_consensus::gen::flags::ANALYZE_SPENDS;
+use chik_consensus::gen::additions_and_removals::additions_and_removals as native_additions_and_removals;
 use chik_consensus::gen::owned_conditions::OwnedSpendBundleConditions;
 use chik_consensus::gen::run_block_generator::run_block_generator as native_run_block_generator;
 use chik_consensus::gen::run_block_generator::run_block_generator2 as native_run_block_generator2;
 use chik_consensus::gen::validation_error::ValidationErr;
+use chik_protocol::Bytes;
+use chik_protocol::Coin;
 
 use klvmr::cost::Cost;
 
 use pyo3::buffer::PyBuffer;
 use pyo3::prelude::*;
 use pyo3::types::PyList;
+use pyo3::PyResult;
 
 pub fn py_to_slice<'a>(buf: PyBuffer<u8>) -> &'a [u8] {
     assert!(buf.is_c_contiguous(), "buffer must be contiguous");
@@ -19,80 +22,138 @@ pub fn py_to_slice<'a>(buf: PyBuffer<u8>) -> &'a [u8] {
 }
 
 #[pyfunction]
+#[pyo3(signature = (program, block_refs, max_cost, flags, signature, bls_cache, constants))]
+#[allow(clippy::too_many_arguments)]
 pub fn run_block_generator<'a>(
-    _py: Python<'a>,
+    py: Python<'a>,
     program: PyBuffer<u8>,
     block_refs: &Bound<'_, PyList>,
     max_cost: Cost,
     flags: u32,
+    signature: &Signature,
+    bls_cache: Option<&BlsCache>,
     constants: &ConsensusConstants,
 ) -> (Option<u32>, Option<OwnedSpendBundleConditions>) {
     let mut allocator = make_allocator(flags);
 
-    let refs = block_refs.into_iter().map(|b| {
-        let buf = b
-            .extract::<PyBuffer<u8>>()
-            .expect("block_refs should be a list of buffers");
-        py_to_slice::<'a>(buf)
-    });
+    let refs = block_refs
+        .into_iter()
+        .map(|b| {
+            let buf = b
+                .extract::<PyBuffer<u8>>()
+                .expect("block_refs should be a list of buffers");
+            py_to_slice::<'a>(buf)
+        })
+        .collect::<Vec<&'a [u8]>>();
     let program = py_to_slice::<'a>(program);
-    let run_block = if (flags & ANALYZE_SPENDS) == 0 {
-        native_run_block_generator::<_, EmptyVisitor, _>
-    } else {
-        native_run_block_generator::<_, MempoolVisitor, _>
-    };
 
-    match run_block(&mut allocator, program, refs, max_cost, flags, constants) {
-        Ok(spend_bundle_conds) => (
-            None,
-            Some(OwnedSpendBundleConditions::from(
-                &allocator,
-                spend_bundle_conds,
-            )),
-        ),
-        Err(ValidationErr(_, error_code)) => {
-            // a validation error occurred
-            (Some(error_code.into()), None)
+    py.allow_threads(|| {
+        match native_run_block_generator(
+            &mut allocator,
+            program,
+            refs,
+            max_cost,
+            flags,
+            signature,
+            bls_cache,
+            constants,
+        ) {
+            Ok(spend_bundle_conds) => (
+                None,
+                Some(OwnedSpendBundleConditions::from(
+                    &allocator,
+                    spend_bundle_conds,
+                )),
+            ),
+            Err(ValidationErr(_, error_code)) => {
+                // a validation error occurred
+                (Some(error_code.into()), None)
+            }
         }
-    }
+    })
 }
 
 #[pyfunction]
+#[pyo3(signature = (program, block_refs, max_cost, flags, signature, bls_cache, constants))]
+#[allow(clippy::too_many_arguments)]
 pub fn run_block_generator2<'a>(
-    _py: Python<'a>,
+    py: Python<'a>,
     program: PyBuffer<u8>,
     block_refs: &Bound<'_, PyList>,
     max_cost: Cost,
     flags: u32,
+    signature: &Signature,
+    bls_cache: Option<&BlsCache>,
     constants: &ConsensusConstants,
 ) -> (Option<u32>, Option<OwnedSpendBundleConditions>) {
     let mut allocator = make_allocator(flags);
 
-    let refs = block_refs.into_iter().map(|b| {
-        let buf = b
-            .extract::<PyBuffer<u8>>()
-            .expect("block_refs must be list of buffers");
-        py_to_slice::<'a>(buf)
-    });
+    let refs = block_refs
+        .into_iter()
+        .map(|b| {
+            let buf = b
+                .extract::<PyBuffer<u8>>()
+                .expect("block_refs must be list of buffers");
+            py_to_slice::<'a>(buf)
+        })
+        .collect::<Vec<&'a [u8]>>();
 
     let program = py_to_slice::<'a>(program);
-    let run_block = if (flags & ANALYZE_SPENDS) == 0 {
-        native_run_block_generator2::<_, EmptyVisitor, _>
-    } else {
-        native_run_block_generator2::<_, MempoolVisitor, _>
-    };
 
-    match run_block(&mut allocator, program, refs, max_cost, flags, constants) {
-        Ok(spend_bundle_conds) => (
-            None,
-            Some(OwnedSpendBundleConditions::from(
-                &allocator,
-                spend_bundle_conds,
-            )),
-        ),
-        Err(ValidationErr(_, error_code)) => {
-            // a validation error occurred
-            (Some(error_code.into()), None)
+    py.allow_threads(|| {
+        match native_run_block_generator2(
+            &mut allocator,
+            program,
+            refs,
+            max_cost,
+            flags,
+            signature,
+            bls_cache,
+            constants,
+        ) {
+            Ok(spend_bundle_conds) => (
+                None,
+                Some(OwnedSpendBundleConditions::from(
+                    &allocator,
+                    spend_bundle_conds,
+                )),
+            ),
+            Err(ValidationErr(_, error_code)) => {
+                // a validation error occurred
+                (Some(error_code.into()), None)
+            }
         }
-    }
+    })
+}
+
+#[pyfunction]
+#[allow(clippy::type_complexity)]
+pub fn additions_and_removals<'a>(
+    py: Python<'a>,
+    program: PyBuffer<u8>,
+    block_refs: &Bound<'_, PyList>,
+    flags: u32,
+    constants: &ConsensusConstants,
+) -> PyResult<(Vec<(Coin, Option<Bytes>)>, Vec<Coin>)> {
+    let refs = block_refs
+        .into_iter()
+        .map(|b| {
+            let buf = b
+                .extract::<PyBuffer<u8>>()
+                .expect("block_refs must be list of buffers");
+            py_to_slice::<'a>(buf)
+        })
+        .collect::<Vec<&'a [u8]>>();
+
+    let program = py_to_slice::<'a>(program);
+
+    py.allow_threads(|| {
+        native_additions_and_removals(program, refs, flags, constants).map_err(|e| {
+            // a validation error occurred
+            pyo3::exceptions::PyValueError::new_err(format!(
+                "additions_and_removals() failed: {}",
+                e.1 as u16
+            ))
+        })
+    })
 }

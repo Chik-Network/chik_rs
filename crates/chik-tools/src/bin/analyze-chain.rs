@@ -4,10 +4,9 @@ use std::io::Write;
 use std::time::SystemTime;
 
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::gen::conditions::EmptyVisitor;
 use chik_consensus::gen::flags::{ALLOW_BACKREFS, MEMPOOL_MODE};
 use chik_consensus::gen::run_block_generator::{run_block_generator, run_block_generator2};
-use chik_tools::iterate_tx_blocks;
+use chik_tools::iterate_blocks;
 use klvmr::Allocator;
 
 /// Analyze the blocks in a chik blockchain database
@@ -43,17 +42,20 @@ fn main() {
     let mut a = Allocator::new_limited(500_000_000);
     let allocator_checkpoint = a.checkpoint();
     let mut prev_timestamp = 0;
-    iterate_tx_blocks(
+    iterate_blocks(
         &args.file,
         args.start,
         Some(args.end),
         |height, block, block_refs| {
+            if block.transactions_generator.is_none() {
+                return;
+            }
             // after the hard fork, we run blocks without paying for the
             // KLVM generator ROM
             let block_runner = if height >= 5_496_000 {
-                run_block_generator2::<_, EmptyVisitor, _>
+                run_block_generator2
             } else {
-                run_block_generator::<_, EmptyVisitor, _>
+                run_block_generator
             };
 
             let generator = block
@@ -82,6 +84,8 @@ fn main() {
                 &block_refs,
                 ti.cost,
                 flags,
+                &ti.aggregated_signature,
+                None,
                 &TEST_CONSTANTS,
             )
             .expect("failed to run block generator");

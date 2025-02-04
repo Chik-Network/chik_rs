@@ -1,7 +1,7 @@
+use chik_sha2::Sha256;
 use chik_traits::{chik_error, read_bytes, Streamable};
 use klvm_traits::{FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder, ToKlvm, ToKlvmError};
 use klvm_utils::TreeHash;
-use klvmr::sha2::Sha256;
 use klvmr::Atom;
 use std::array::TryFromSliceError;
 use std::fmt;
@@ -410,6 +410,10 @@ impl<const N: usize> ChikToPython for BytesImpl<N> {
             let bytes_module = PyModule::import_bound(py, "chik_rs.sized_bytes")?;
             let ty = bytes_module.getattr("bytes32")?;
             ty.call1((self.0.into_py(py),))
+        } else if N == 48 {
+            let bytes_module = PyModule::import_bound(py, "chik_rs.sized_bytes")?;
+            let ty = bytes_module.getattr("bytes48")?;
+            ty.call1((self.0.into_py(py),))
         } else {
             Ok(PyBytes::new_bound(py, &self.0).into_any())
         }
@@ -418,7 +422,7 @@ impl<const N: usize> ChikToPython for BytesImpl<N> {
 
 #[cfg(feature = "py-bindings")]
 impl<'py, const N: usize> FromPyObject<'py> for BytesImpl<N> {
-    fn extract(obj: &'py PyAny) -> PyResult<Self> {
+    fn extract_bound(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
         let b = obj.downcast::<PyBytes>()?;
         let slice: &[u8] = b.as_bytes();
         let buf: [u8; N] = slice.try_into()?;
@@ -449,7 +453,7 @@ impl ChikToPython for Bytes {
 
 #[cfg(feature = "py-bindings")]
 impl<'py> FromPyObject<'py> for Bytes {
-    fn extract(obj: &'py PyAny) -> PyResult<Self> {
+    fn extract_bound(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
         let b = obj.downcast::<PyBytes>()?;
         Ok(Bytes(b.as_bytes().to_vec()))
     }

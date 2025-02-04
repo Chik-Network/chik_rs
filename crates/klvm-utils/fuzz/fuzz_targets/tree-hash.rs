@@ -1,7 +1,7 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use fuzzing_utils::{make_tree, BitCursor};
+use chik_fuzz::{make_tree, BitCursor};
 use klvm_utils::{tree_hash, tree_hash_cached, TreeHash};
 use klvmr::{Allocator, NodePtr};
 use std::collections::{HashMap, HashSet};

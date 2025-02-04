@@ -1,6 +1,7 @@
+use chik_bls::Signature;
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::gen::conditions::MempoolVisitor;
-use chik_consensus::gen::flags::ALLOW_BACKREFS;
+use chik_consensus::gen::additions_and_removals::additions_and_removals;
+use chik_consensus::gen::flags::{ALLOW_BACKREFS, DONT_VALIDATE_SIGNATURE};
 use chik_consensus::gen::run_block_generator::{run_block_generator, run_block_generator2};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use klvmr::serde::{node_from_bytes, node_to_bytes_backrefs};
@@ -51,12 +52,14 @@ fn run(c: &mut Criterion) {
                     let mut a = Allocator::new();
                     let start = Instant::now();
 
-                    let conds = run_block_generator::<_, MempoolVisitor, _>(
+                    let conds = run_block_generator(
                         &mut a,
                         gen,
                         &block_refs,
                         11_000_000_000,
-                        ALLOW_BACKREFS,
+                        ALLOW_BACKREFS | DONT_VALIDATE_SIGNATURE,
+                        &Signature::default(),
+                        None,
                         &TEST_CONSTANTS,
                     );
                     let _ = black_box(conds);
@@ -69,15 +72,26 @@ fn run(c: &mut Criterion) {
                     let mut a = Allocator::new();
                     let start = Instant::now();
 
-                    let conds = run_block_generator2::<_, MempoolVisitor, _>(
+                    let conds = run_block_generator2(
                         &mut a,
                         gen,
                         &block_refs,
                         11_000_000_000,
                         ALLOW_BACKREFS,
+                        &Signature::default(),
+                        None,
                         &TEST_CONSTANTS,
                     );
                     let _ = black_box(conds);
+                    start.elapsed()
+                });
+            });
+
+            group.bench_function(format!("additions_and_removals {name}{name_suffix}"), |b| {
+                b.iter(|| {
+                    let start = Instant::now();
+                    let results = additions_and_removals(gen, &block_refs, 0, &TEST_CONSTANTS);
+                    let _ = black_box(results);
                     start.elapsed()
                 });
             });

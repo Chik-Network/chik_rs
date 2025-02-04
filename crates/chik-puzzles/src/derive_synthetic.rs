@@ -1,6 +1,6 @@
 use chik_bls::{PublicKey, SecretKey};
+use chik_sha2::Sha256;
 use hex_literal::hex;
-use klvmr::sha2::Sha256;
 use num_bigint::BigInt;
 
 use crate::standard::DEFAULT_HIDDEN_PUZZLE_HASH;

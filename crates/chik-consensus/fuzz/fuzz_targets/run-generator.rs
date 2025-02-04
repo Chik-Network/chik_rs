@@ -1,7 +1,7 @@
 #![no_main]
+use chik_bls::Signature;
 use chik_consensus::allocator::make_allocator;
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::gen::conditions::MempoolVisitor;
 use chik_consensus::gen::flags::ALLOW_BACKREFS;
 use chik_consensus::gen::run_block_generator::{run_block_generator, run_block_generator2};
 use chik_consensus::gen::validation_error::{ErrorCode, ValidationErr};
@@ -10,23 +10,27 @@ use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
     let mut a1 = make_allocator(LIMIT_HEAP);
-    let r1 = run_block_generator::<&[u8], MempoolVisitor, _>(
+    let r1 = run_block_generator::<&[u8], _>(
         &mut a1,
         data,
         [],
         110_000_000,
         ALLOW_BACKREFS,
+        &Signature::default(),
+        None,
         &TEST_CONSTANTS,
     );
     drop(a1);
 
     let mut a2 = make_allocator(LIMIT_HEAP);
-    let r2 = run_block_generator2::<&[u8], MempoolVisitor, _>(
+    let r2 = run_block_generator2::<&[u8], _>(
         &mut a2,
         data,
         [],
         110_000_000,
         ALLOW_BACKREFS,
+        &Signature::default(),
+        None,
         &TEST_CONSTANTS,
     );
     drop(a2);

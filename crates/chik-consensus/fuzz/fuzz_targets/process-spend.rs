@@ -4,7 +4,7 @@ use chik_consensus::gen::conditions::{
     process_single_spend, MempoolVisitor, ParseState, SpendBundleConditions,
 };
 use chik_consensus::gen::flags::{NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT};
-use fuzzing_utils::{make_tree, BitCursor};
+use chik_fuzz::{make_tree, BitCursor};
 use klvmr::allocator::Allocator;
 use libfuzzer_sys::fuzz_target;
 

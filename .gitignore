@@ -7,3 +7,8 @@ venv/
 node_modules/
 .mypy_cache/
 .pytest_cache/
+crates/chik-bls/fuzz/corpus
+crates/chik-consensus/fuzz/corpus
+crates/chik-protocol/fuzz/corpus
+crates/chik-traits/fuzz/corpus
+crates/chik-utils/fuzz/corpus

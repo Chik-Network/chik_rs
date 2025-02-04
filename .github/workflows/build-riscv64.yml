@@ -10,6 +10,10 @@ on:
     branches:
       - "**"
 
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow_ref, github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: true
+
 permissions:
   id-token: write
   contents: read
@@ -50,8 +54,6 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python:
-          - major-dot-minor: "3.8"
-            matrix: "3.8"
           - major-dot-minor: "3.9"
             matrix: "3.9"
           - major-dot-minor: "3.10"

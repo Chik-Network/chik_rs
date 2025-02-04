@@ -1,19 +1,15 @@
 use crate::allocator::make_allocator;
 use crate::consensus_constants::ConsensusConstants;
-use crate::gen::flags::{ALLOW_BACKREFS, DISALLOW_INFINITY_G1, ENABLE_MESSAGE_CONDITIONS};
-use crate::gen::make_aggsig_final_message::make_aggsig_final_message;
-use crate::gen::opcodes::{
-    AGG_SIG_AMOUNT, AGG_SIG_ME, AGG_SIG_PARENT, AGG_SIG_PARENT_AMOUNT, AGG_SIG_PARENT_PUZZLE,
-    AGG_SIG_PUZZLE, AGG_SIG_PUZZLE_AMOUNT,
-};
+use crate::gen::flags::ALLOW_BACKREFS;
 use crate::gen::owned_conditions::OwnedSpendBundleConditions;
 use crate::gen::validation_error::ErrorCode;
-use crate::spendbundle_conditions::get_conditions_from_spendbundle;
+use crate::spendbundle_conditions::run_spendbundle;
 use chik_bls::GTElement;
 use chik_bls::{aggregate_verify_gt, hash_to_g2};
 use chik_protocol::SpendBundle;
-use klvmr::sha2::Sha256;
-use klvmr::{ENABLE_BLS_OPS_OUTSIDE_GUARD, ENABLE_FIXED_DIV, LIMIT_HEAP};
+use chik_sha2::Sha256;
+use klvmr::chik_dialect::ENABLE_KECCAK;
+use klvmr::LIMIT_HEAP;
 use std::time::{Duration, Instant};
 
 // type definition makes clippy happy
@@ -30,45 +26,26 @@ pub fn validate_klvm_and_signature(
 ) -> Result<(OwnedSpendBundleConditions, Vec<ValidationPair>, Duration), ErrorCode> {
     let start_time = Instant::now();
     let mut a = make_allocator(LIMIT_HEAP);
-    let sbc = get_conditions_from_spendbundle(&mut a, spend_bundle, max_cost, height, constants)
-        .map_err(|e| e.1)?;
-    let npcresult = OwnedSpendBundleConditions::from(&a, sbc);
+    let (sbc, pkm_pairs) =
+        run_spendbundle(&mut a, spend_bundle, max_cost, height, 0, constants).map_err(|e| e.1)?;
+    let conditions = OwnedSpendBundleConditions::from(&a, sbc);
 
     // Collect all pairs in a single vector to avoid multiple iterations
     let mut pairs = Vec::new();
 
-    for spend in &npcresult.spends {
-        let condition_items_pairs = [
-            (AGG_SIG_PARENT, &spend.agg_sig_parent),
-            (AGG_SIG_PUZZLE, &spend.agg_sig_puzzle),
-            (AGG_SIG_AMOUNT, &spend.agg_sig_amount),
-            (AGG_SIG_PUZZLE_AMOUNT, &spend.agg_sig_puzzle_amount),
-            (AGG_SIG_PARENT_AMOUNT, &spend.agg_sig_parent_amount),
-            (AGG_SIG_PARENT_PUZZLE, &spend.agg_sig_parent_puzzle),
-            (AGG_SIG_ME, &spend.agg_sig_me),
-        ];
+    let mut aug_msg = Vec::<u8>::new();
 
-        for (condition, items) in condition_items_pairs {
-            for (pk, msg) in items {
-                let mut aug_msg = pk.to_bytes().to_vec();
-                let msg = make_aggsig_final_message(condition, msg.as_slice(), spend, constants);
-                aug_msg.extend_from_slice(msg.as_ref());
-                let aug_hash = hash_to_g2(&aug_msg);
-                let pairing = aug_hash.pair(pk);
-                pairs.push((hash_pk_and_msg(&pk.to_bytes(), &msg), pairing));
-            }
-        }
-    }
-
-    // Adding unsafe items
-    for (pk, msg) in &npcresult.agg_sig_unsafe {
-        let mut aug_msg = pk.to_bytes().to_vec();
-        aug_msg.extend_from_slice(msg.as_ref());
+    for (pk, msg) in pkm_pairs {
+        aug_msg.clear();
+        aug_msg.extend_from_slice(&pk.to_bytes());
+        aug_msg.extend(&*msg);
         let aug_hash = hash_to_g2(&aug_msg);
-        let pairing = aug_hash.pair(pk);
-        pairs.push((hash_pk_and_msg(&pk.to_bytes(), msg), pairing));
-    }
+        let pairing = aug_hash.pair(&pk);
 
+        let mut key = Sha256::new();
+        key.update(&aug_msg);
+        pairs.push((key.finalize(), pairing));
+    }
     // Verify aggregated signature
     let result = aggregate_verify_gt(
         &spend_bundle.aggregated_signature,
@@ -79,26 +56,11 @@ pub fn validate_klvm_and_signature(
     }
 
     // Collect results
-    Ok((npcresult, pairs, start_time.elapsed()))
-}
-
-fn hash_pk_and_msg(pk: &[u8], msg: &[u8]) -> [u8; 32] {
-    let mut hasher = Sha256::new();
-    hasher.update(pk);
-    hasher.update(msg);
-    hasher.finalize()
+    Ok((conditions, pairs, start_time.elapsed()))
 }
 
 pub fn get_flags_for_height_and_constants(height: u32, constants: &ConsensusConstants) -> u32 {
     let mut flags: u32 = 0;
-
-    if height >= constants.soft_fork4_height {
-        flags |= ENABLE_MESSAGE_CONDITIONS;
-    }
-
-    if height >= constants.soft_fork5_height {
-        flags |= DISALLOW_INFINITY_G1;
-    }
 
     if height >= constants.hard_fork_height {
         //  the hard-fork initiated with 2.0. To activate June 2024
@@ -115,8 +77,16 @@ pub fn get_flags_for_height_and_constants(height: u32, constants: &ConsensusCons
         //    arguments
         //  * Allow the block generator to be serialized with the improved klvm
         //   serialization format (with back-references)
-        flags = flags | ENABLE_BLS_OPS_OUTSIDE_GUARD | ENABLE_FIXED_DIV | ALLOW_BACKREFS;
+        flags |= ALLOW_BACKREFS;
     }
+
+    // The soft fork initiated with 2.5.0. The activation date is still TBD.
+    // Adds a new keccak256 operator under the softfork guard with extension 1.
+    // This operator can be hard forked in later, but is not included in a hard fork yet.
+    if height >= constants.soft_fork6_height {
+        flags |= ENABLE_KECCAK;
+    }
+
     flags
 }
 
@@ -124,7 +94,7 @@ pub fn get_flags_for_height_and_constants(height: u32, constants: &ConsensusCons
 mod tests {
     use super::*;
     use crate::consensus_constants::TEST_CONSTANTS;
-    use crate::gen::conditions::u64_to_bytes;
+    use crate::gen::make_aggsig_final_message::u64_to_bytes;
     use chik_bls::{sign, G2Element, SecretKey, Signature};
     use chik_protocol::{Bytes, Bytes32};
     use chik_protocol::{Coin, CoinSpend, Program};
@@ -135,9 +105,8 @@ mod tests {
 
     #[rstest]
     #[case(0, 0)]
-    #[case(TEST_CONSTANTS.hard_fork_height, ENABLE_BLS_OPS_OUTSIDE_GUARD | ENABLE_FIXED_DIV | ALLOW_BACKREFS)]
-    #[case(TEST_CONSTANTS.soft_fork4_height, ENABLE_BLS_OPS_OUTSIDE_GUARD | ENABLE_FIXED_DIV | ALLOW_BACKREFS | ENABLE_MESSAGE_CONDITIONS)]
-    #[case(TEST_CONSTANTS.soft_fork5_height, ENABLE_BLS_OPS_OUTSIDE_GUARD | ENABLE_FIXED_DIV | ALLOW_BACKREFS | ENABLE_MESSAGE_CONDITIONS | DISALLOW_INFINITY_G1)]
+    #[case(TEST_CONSTANTS.hard_fork_height, ALLOW_BACKREFS)]
+    #[case(5_716_000, ALLOW_BACKREFS)]
     fn test_get_flags(#[case] height: u32, #[case] expected_value: u32) {
         assert_eq!(
             get_flags_for_height_and_constants(height, &TEST_CONSTANTS),
@@ -232,19 +201,15 @@ ff01\
             coin_spends,
             aggregated_signature: G2Element::default(),
         };
-        let result = validate_klvm_and_signature(
-            &spend_bundle,
-            TEST_CONSTANTS.max_block_cost_klvm / 2, // same as mempool_manager default
-            &TEST_CONSTANTS,
-            236,
-        );
-        assert!(matches!(result, Ok(..)));
-        let result = validate_klvm_and_signature(
-            &spend_bundle,
-            TEST_CONSTANTS.max_block_cost_klvm / 3, // lower than mempool_manager default
-            &TEST_CONSTANTS,
-            236,
-        );
+        let expected_cost = 5_527_116_044;
+        let max_cost = expected_cost;
+        let test_height = 236;
+        let (conds, _, _) =
+            validate_klvm_and_signature(&spend_bundle, max_cost, &TEST_CONSTANTS, test_height)
+                .expect("validate_klvm_and_signature failed");
+        assert_eq!(conds.cost, expected_cost);
+        let result =
+            validate_klvm_and_signature(&spend_bundle, max_cost - 1, &TEST_CONSTANTS, test_height);
         assert!(matches!(result, Err(ErrorCode::CostExceeded)));
     }
 

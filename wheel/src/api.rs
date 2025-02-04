@@ -1,14 +1,13 @@
-use crate::run_generator::{py_to_slice, run_block_generator, run_block_generator2};
+use crate::run_generator::{
+    additions_and_removals, py_to_slice, run_block_generator, run_block_generator2,
+};
 use chik_consensus::allocator::make_allocator;
 use chik_consensus::consensus_constants::ConsensusConstants;
-use chik_consensus::gen::conditions::MempoolVisitor;
 use chik_consensus::gen::flags::{
-    ALLOW_BACKREFS, ANALYZE_SPENDS, DISALLOW_INFINITY_G1, ENABLE_MESSAGE_CONDITIONS, MEMPOOL_MODE,
-    NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
+    ALLOW_BACKREFS, DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE, NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
 };
-use chik_consensus::gen::owned_conditions::{OwnedSpend, OwnedSpendBundleConditions};
+use chik_consensus::gen::owned_conditions::{OwnedSpendBundleConditions, OwnedSpendConditions};
 use chik_consensus::gen::run_block_generator::setup_generator_args;
-use chik_consensus::gen::run_puzzle::run_puzzle as native_run_puzzle;
 use chik_consensus::gen::solution_generator::solution_generator as native_solution_generator;
 use chik_consensus::gen::solution_generator::solution_generator_backrefs as native_solution_generator_backrefs;
 use chik_consensus::merkle_set::compute_merkle_set_root as compute_merkle_root_impl;
@@ -19,32 +18,33 @@ use chik_consensus::spendbundle_validation::{
 };
 use chik_protocol::{
     BlockRecord, Bytes32, ChallengeBlockInfo, ChallengeChainSubSlot, ClassgroupElement, Coin,
-    CoinSpend, CoinState, CoinStateFilters, CoinStateUpdate, EndOfSubSlotBundle, Foliage,
-    FoliageBlockData, FoliageTransactionBlock, FullBlock, HeaderBlock,
-    InfusedChallengeChainSubSlot, NewCompactVDF, NewPeak, NewPeakWallet,
-    NewSignagePointOrEndOfSubSlot, NewTransaction, NewUnfinishedBlock, NewUnfinishedBlock2,
-    PoolTarget, Program, ProofBlockHeader, ProofOfSpace, PuzzleSolutionResponse, RecentChainData,
-    RegisterForCoinUpdates, RegisterForPhUpdates, RejectAdditionsRequest, RejectBlock,
-    RejectBlockHeaders, RejectBlocks, RejectCoinState, RejectHeaderBlocks, RejectHeaderRequest,
-    RejectPuzzleSolution, RejectPuzzleState, RejectRemovalsRequest, RequestAdditions, RequestBlock,
-    RequestBlockHeader, RequestBlockHeaders, RequestBlocks, RequestChildren, RequestCoinState,
-    RequestCompactVDF, RequestFeeEstimates, RequestHeaderBlocks, RequestMempoolTransactions,
-    RequestPeers, RequestProofOfWeight, RequestPuzzleSolution, RequestPuzzleState, RequestRemovals,
-    RequestRemoveCoinSubscriptions, RequestRemovePuzzleSubscriptions, RequestSesInfo,
-    RequestSignagePointOrEndOfSubSlot, RequestTransaction, RequestUnfinishedBlock,
-    RequestUnfinishedBlock2, RespondAdditions, RespondBlock, RespondBlockHeader,
-    RespondBlockHeaders, RespondBlocks, RespondChildren, RespondCoinState, RespondCompactVDF,
-    RespondEndOfSubSlot, RespondFeeEstimates, RespondHeaderBlocks, RespondPeers,
-    RespondProofOfWeight, RespondPuzzleSolution, RespondPuzzleState, RespondRemovals,
-    RespondRemoveCoinSubscriptions, RespondRemovePuzzleSubscriptions, RespondSesInfo,
-    RespondSignagePoint, RespondToCoinUpdates, RespondToPhUpdates, RespondTransaction,
-    RespondUnfinishedBlock, RewardChainBlock, RewardChainBlockUnfinished, RewardChainSubSlot,
-    SendTransaction, SpendBundle, SubEpochChallengeSegment, SubEpochData, SubEpochSegments,
-    SubEpochSummary, SubSlotData, SubSlotProofs, TimestampedPeerInfo, TransactionAck,
-    TransactionsInfo, UnfinishedBlock, UnfinishedHeaderBlock, VDFInfo, VDFProof, WeightProof,
+    CoinSpend, CoinState, CoinStateFilters, CoinStateUpdate, EndOfSubSlotBundle, FeeEstimate,
+    FeeEstimateGroup, FeeRate, Foliage, FoliageBlockData, FoliageTransactionBlock, FullBlock,
+    Handshake, HeaderBlock, InfusedChallengeChainSubSlot, LazyNode, Message, NewCompactVDF,
+    NewPeak, NewPeakWallet, NewSignagePointOrEndOfSubSlot, NewTransaction, NewUnfinishedBlock,
+    NewUnfinishedBlock2, PoolTarget, Program, ProofBlockHeader, ProofOfSpace,
+    PuzzleSolutionResponse, RecentChainData, RegisterForCoinUpdates, RegisterForPhUpdates,
+    RejectAdditionsRequest, RejectBlock, RejectBlockHeaders, RejectBlocks, RejectCoinState,
+    RejectHeaderBlocks, RejectHeaderRequest, RejectPuzzleSolution, RejectPuzzleState,
+    RejectRemovalsRequest, RequestAdditions, RequestBlock, RequestBlockHeader, RequestBlockHeaders,
+    RequestBlocks, RequestChildren, RequestCoinState, RequestCompactVDF, RequestFeeEstimates,
+    RequestHeaderBlocks, RequestMempoolTransactions, RequestPeers, RequestProofOfWeight,
+    RequestPuzzleSolution, RequestPuzzleState, RequestRemovals, RequestRemoveCoinSubscriptions,
+    RequestRemovePuzzleSubscriptions, RequestSesInfo, RequestSignagePointOrEndOfSubSlot,
+    RequestTransaction, RequestUnfinishedBlock, RequestUnfinishedBlock2, RespondAdditions,
+    RespondBlock, RespondBlockHeader, RespondBlockHeaders, RespondBlocks, RespondChildren,
+    RespondCoinState, RespondCompactVDF, RespondEndOfSubSlot, RespondFeeEstimates,
+    RespondHeaderBlocks, RespondPeers, RespondProofOfWeight, RespondPuzzleSolution,
+    RespondPuzzleState, RespondRemovals, RespondRemoveCoinSubscriptions,
+    RespondRemovePuzzleSubscriptions, RespondSesInfo, RespondSignagePoint, RespondToCoinUpdates,
+    RespondToPhUpdates, RespondTransaction, RespondUnfinishedBlock, RewardChainBlock,
+    RewardChainBlockUnfinished, RewardChainSubSlot, SendTransaction, SpendBundle,
+    SubEpochChallengeSegment, SubEpochData, SubEpochSegments, SubEpochSummary, SubSlotData,
+    SubSlotProofs, TimestampedPeerInfo, TransactionAck, TransactionsInfo, UnfinishedBlock,
+    UnfinishedHeaderBlock, VDFInfo, VDFProof, WeightProof,
 };
 use klvm_utils::tree_hash_from_bytes;
-use klvmr::{ENABLE_BLS_OPS_OUTSIDE_GUARD, ENABLE_FIXED_DIV, LIMIT_HEAP, NO_UNKNOWN_OPS};
+use klvmr::{LIMIT_HEAP, NO_UNKNOWN_OPS};
 use pyo3::buffer::PyBuffer;
 use pyo3::exceptions::{PyRuntimeError, PyTypeError, PyValueError};
 use pyo3::prelude::*;
@@ -78,10 +78,11 @@ use chik_bls::{
 #[pyfunction]
 pub fn compute_merkle_set_root<'p>(
     py: Python<'p>,
-    values: Vec<&'p PyBytes>,
+    values: Vec<Bound<'p, PyBytes>>,
 ) -> PyResult<Bound<'p, PyBytes>> {
     let mut buffer = Vec::<[u8; 32]>::with_capacity(values.len());
     for b in values {
+        use pyo3::types::PyBytesMethods;
         buffer.push(b.as_bytes().try_into()?);
     }
     Ok(PyBytes::new_bound(
@@ -228,23 +229,6 @@ pub fn get_puzzle_and_solution_for_coin2<'a>(
     ))
 }
 
-#[pyfunction]
-fn run_puzzle(
-    puzzle: &[u8],
-    solution: &[u8],
-    parent_id: &[u8],
-    amount: u64,
-    max_cost: Cost,
-    flags: u32,
-    constants: &ConsensusConstants,
-) -> PyResult<OwnedSpendBundleConditions> {
-    let mut a = make_allocator(LIMIT_HEAP);
-    let conds = native_run_puzzle::<MempoolVisitor>(
-        &mut a, puzzle, solution, parent_id, amount, max_cost, flags, constants,
-    )?;
-    Ok(OwnedSpendBundleConditions::from(&a, conds))
-}
-
 // this is like a CoinSpend but with references to the puzzle and solution,
 // rather than owning them
 type CoinSpendRef = (Coin, PyBackedBytes, PyBackedBytes);
@@ -311,12 +295,13 @@ impl AugSchemeMPL {
     }
 
     #[staticmethod]
-    pub fn verify(pk: &PublicKey, msg: &[u8], sig: &Signature) -> bool {
-        chik_bls::verify(sig, pk, msg)
+    pub fn verify(py: Python<'_>, pk: &PublicKey, msg: &[u8], sig: &Signature) -> bool {
+        py.allow_threads(|| chik_bls::verify(sig, pk, msg))
     }
 
     #[staticmethod]
     pub fn aggregate_verify(
+        py: Python<'_>,
         pks: &Bound<'_, PyList>,
         msgs: &Bound<'_, PyList>,
         sig: &Signature,
@@ -333,7 +318,7 @@ impl AugSchemeMPL {
             data.push((pk, msg));
         }
 
-        Ok(chik_bls::aggregate_verify(sig, data))
+        py.allow_threads(|| Ok(chik_bls::aggregate_verify(sig, data)))
     }
 
     #[staticmethod]
@@ -422,16 +407,19 @@ fn fast_forward_singleton<'p>(
 #[pyo3(name = "validate_klvm_and_signature")]
 #[allow(clippy::type_complexity)]
 pub fn py_validate_klvm_and_signature(
+    py: Python<'_>,
     new_spend: &SpendBundle,
     max_cost: u64,
     constants: &ConsensusConstants,
     peak_height: u32,
 ) -> PyResult<(OwnedSpendBundleConditions, Vec<([u8; 32], GTElement)>, f32)> {
-    let (owned_conditions, additions, duration) =
-        validate_klvm_and_signature(new_spend, max_cost, constants, peak_height).map_err(|e| {
+    let (owned_conditions, additions, duration) = py
+        .allow_threads(|| validate_klvm_and_signature(new_spend, max_cost, constants, peak_height))
+        .map_err(|e| {
+            // cast validation error to int
             let error_code: u32 = e.into();
             PyErr::new::<PyTypeError, _>(error_code)
-        })?; // cast validation error to int
+        })?;
     Ok((owned_conditions, additions, duration.as_secs_f32()))
 }
 
@@ -466,7 +454,7 @@ pub fn chik_rs(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // generator functions
     m.add_function(wrap_pyfunction!(run_block_generator, m)?)?;
     m.add_function(wrap_pyfunction!(run_block_generator2, m)?)?;
-    m.add_function(wrap_pyfunction!(run_puzzle, m)?)?;
+    m.add_function(wrap_pyfunction!(additions_and_removals, m)?)?;
     m.add_function(wrap_pyfunction!(solution_generator, m)?)?;
     m.add_function(wrap_pyfunction!(solution_generator_backrefs, m)?)?;
     m.add_function(wrap_pyfunction!(supports_fast_forward, m)?)?;
@@ -480,7 +468,7 @@ pub fn chik_rs(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         "ELIGIBLE_FOR_FF",
         chik_consensus::gen::conditions::ELIGIBLE_FOR_FF,
     )?;
-    m.add_class::<OwnedSpend>()?;
+    m.add_class::<OwnedSpendConditions>()?;
 
     // constants
     m.add_class::<ConsensusConstants>()?;
@@ -498,12 +486,9 @@ pub fn chik_rs(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // klvm functions
     m.add("NO_UNKNOWN_CONDS", NO_UNKNOWN_CONDS)?;
     m.add("STRICT_ARGS_COUNT", STRICT_ARGS_COUNT)?;
-    m.add("ENABLE_FIXED_DIV", ENABLE_FIXED_DIV)?;
-    m.add("ENABLE_MESSAGE_CONDITIONS", ENABLE_MESSAGE_CONDITIONS)?;
     m.add("MEMPOOL_MODE", MEMPOOL_MODE)?;
     m.add("ALLOW_BACKREFS", ALLOW_BACKREFS)?;
-    m.add("ANALYZE_SPENDS", ANALYZE_SPENDS)?;
-    m.add("DISALLOW_INFINITY_G1", DISALLOW_INFINITY_G1)?;
+    m.add("DONT_VALIDATE_SIGNATURE", DONT_VALIDATE_SIGNATURE)?;
 
     // Chik classes
     m.add_class::<Coin>()?;
@@ -617,13 +602,18 @@ pub fn chik_rs(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<RespondPeers>()?;
     m.add_class::<NewUnfinishedBlock2>()?;
     m.add_class::<RequestUnfinishedBlock2>()?;
+    m.add_class::<Handshake>()?;
+    m.add_class::<FeeEstimate>()?;
+    m.add_class::<FeeEstimateGroup>()?;
+    m.add_class::<FeeRate>()?;
+    m.add_class::<LazyNode>()?;
+    m.add_class::<Message>()?;
 
     // facilities from klvm_rs
 
     m.add_function(wrap_pyfunction!(run_chik_program, m)?)?;
     m.add("NO_UNKNOWN_OPS", NO_UNKNOWN_OPS)?;
     m.add("LIMIT_HEAP", LIMIT_HEAP)?;
-    m.add("ENABLE_BLS_OPS_OUTSIDE_GUARD", ENABLE_BLS_OPS_OUTSIDE_GUARD)?;
 
     m.add_function(wrap_pyfunction!(serialized_length, m)?)?;
     m.add_function(wrap_pyfunction!(compute_merkle_set_root, m)?)?;

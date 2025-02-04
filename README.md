@@ -2,8 +2,9 @@
 
 ![GitHub](https://img.shields.io/github/license/Chik-Network/chik_rs?logo=Github)
 [![Coverage Status](https://coveralls.io/repos/github/Chik-Network/chik_rs/badge.svg?branch=main)](https://coveralls.io/github/Chik-Network/chik_rs?branch=main)
-![Build](https://github.com/Chik-Network/chik_rs/actions/workflows/build-crate-and-npm.yml/badge.svg)
-![Test](https://github.com/Chik-Network/chik_rs/actions/workflows/build-test.yml/badge.svg)
+![Build Crate](https://github.com/Chik-Network/chik_rs/actions/workflows/build-crate.yml/badge.svg)
+![Build NPM](https://github.com/Chik-Network/chik_rs/actions/workflows/build-npm.yml/badge.svg)
+![Build Wheels](https://github.com/Chik-Network/chik_rs/actions/workflows/build-wheels.yml/badge.svg)
 
 ![PyPI](https://img.shields.io/pypi/v/chik_rs?logo=pypi)
 ![PyPI - Format](https://img.shields.io/pypi/format/chik_rs?logo=pypi)
@@ -15,7 +16,7 @@ A collection of Rust crates for working with the Chik blockchain. There are also
 
 ## Prerequisites
 
-- [Python](https://www.python.org/downloads/) 3.8 or higher installed.
+- [Python](https://www.python.org/downloads/) 3.9 or higher installed.
 - The [Rust toolchain](https://rustup.rs/) must be installed.
 
 ## Unit Tests
@@ -136,7 +137,7 @@ To list and run fuzzers:
 
 ```bash
 cargo fuzz list
-cargo fuzz run <name-of-fuzzer>
+cargo +nightly fuzz run <name-of-fuzzer> --jobs=10
 ```
 
 ## Bumping Version Number

@@ -5,9 +5,9 @@ use hex_literal::hex;
 
 #[cfg(feature = "py-bindings")]
 use chik_protocol::Bytes32;
+use chik_sha2::Sha256;
 #[cfg(feature = "py-bindings")]
 use chik_traits::ChikToPython;
-use klvmr::sha2::Sha256;
 #[cfg(feature = "py-bindings")]
 use pyo3::exceptions::PyValueError;
 #[cfg(feature = "py-bindings")]

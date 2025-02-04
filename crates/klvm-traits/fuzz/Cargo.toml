@@ -1,6 +1,6 @@
 [package]
 name = "klvm-traits-fuzz"
-version = "0.11.0"
+version = "0.16.0"
 publish = false
 edition = "2021"
 

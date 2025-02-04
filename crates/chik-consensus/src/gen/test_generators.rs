@@ -1,8 +1,9 @@
-use super::conditions::{MempoolVisitor, NewCoin, Spend, SpendBundleConditions};
+use super::conditions::{NewCoin, SpendBundleConditions, SpendConditions};
 use super::run_block_generator::{run_block_generator, run_block_generator2};
 use crate::allocator::make_allocator;
 use crate::consensus_constants::TEST_CONSTANTS;
-use crate::gen::flags::{ALLOW_BACKREFS, ENABLE_MESSAGE_CONDITIONS, MEMPOOL_MODE};
+use crate::gen::flags::{ALLOW_BACKREFS, DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE};
+use chik_bls::Signature;
 use chik_protocol::{Bytes, Bytes48};
 use klvmr::allocator::NodePtr;
 use klvmr::Allocator;
@@ -44,7 +45,7 @@ pub(crate) fn print_conditions(a: &Allocator, c: &SpendBundleConditions) -> Stri
     }
     ret += "SPENDS:\n";
 
-    let mut spends: Vec<Spend> = c.spends.clone();
+    let mut spends: Vec<SpendConditions> = c.spends.clone();
     spends.sort_by_key(|s| *s.coin_id);
     for s in spends {
         ret += &format!(
@@ -227,16 +228,18 @@ fn run_generator(#[case] name: &str) {
         block_refs.push(hex::decode(env_hex).expect("hex decode env-file"));
     }
 
-    const DEFAULT_FLAGS: u32 = ALLOW_BACKREFS | ENABLE_MESSAGE_CONDITIONS;
+    const DEFAULT_FLAGS: u32 = ALLOW_BACKREFS;
     for (flags, expected) in zip(&[DEFAULT_FLAGS, DEFAULT_FLAGS | MEMPOOL_MODE], expected) {
         println!("flags: {flags:x}");
         let mut a = make_allocator(*flags);
-        let conds = run_block_generator::<_, MempoolVisitor, _>(
+        let conds = run_block_generator(
             &mut a,
             &generator,
             &block_refs,
             11_000_000_000,
-            *flags,
+            *flags | DONT_VALIDATE_SIGNATURE,
+            &Signature::default(),
+            None,
             &TEST_CONSTANTS,
         );
 
@@ -246,12 +249,14 @@ fn run_generator(#[case] name: &str) {
         };
 
         let mut a = make_allocator(*flags);
-        let conds = run_block_generator2::<_, MempoolVisitor, _>(
+        let conds = run_block_generator2(
             &mut a,
             &generator,
             &block_refs,
             11_000_000_000,
-            *flags,
+            *flags | DONT_VALIDATE_SIGNATURE,
+            &Signature::default(),
+            None,
             &TEST_CONSTANTS,
         );
         let output_hard_fork = match conds {

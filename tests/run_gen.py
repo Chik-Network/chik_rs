@@ -5,13 +5,15 @@ from chik_rs import (
     SpendBundleConditions,
     run_block_generator2,
     ConsensusConstants,
+    DONT_VALIDATE_SIGNATURE,
+    G2Element,
 )
 from chik_rs.sized_bytes import bytes32
 from chik_rs.sized_ints import uint8, uint16, uint32, uint64, uint128
 from time import time
 import sys
 from time import perf_counter
-from typing import Optional, Tuple
+from typing import Optional
 
 DEFAULT_CONSTANTS = ConsensusConstants(
     SLOT_BLOCKS_TARGET=uint32(32),
@@ -75,11 +77,8 @@ DEFAULT_CONSTANTS = ConsensusConstants(
     MAX_GENERATOR_SIZE=uint32(1000000),
     MAX_GENERATOR_REF_LIST_SIZE=uint32(512),
     POOL_SUB_SLOT_ITERS=uint64(37600000000),
-    SOFT_FORK2_HEIGHT=uint32(0),
-    SOFT_FORK4_HEIGHT=uint32(5716000),
-    SOFT_FORK5_HEIGHT=uint32(0),
+    SOFT_FORK6_HEIGHT=uint32(0),
     HARD_FORK_HEIGHT=uint32(5496000),
-    HARD_FORK_FIX_HEIGHT=uint32(5496000),
     PLOT_FILTER_128_HEIGHT=uint32(10542000),
     PLOT_FILTER_64_HEIGHT=uint32(15592000),
     PLOT_FILTER_32_HEIGHT=uint32(20643000),
@@ -88,7 +87,7 @@ DEFAULT_CONSTANTS = ConsensusConstants(
 
 def run_gen(
     fn: str, flags: int = 0, args: Optional[str] = None, version: int = 1
-) -> Tuple[Optional[int], Optional[SpendBundleConditions], float]:
+) -> tuple[Optional[int], Optional[SpendBundleConditions], float]:
 
     # constants from the main chik blockchain:
     # https://github.com/Chik-Network/chik-blockchain/blob/main/chik/consensus/default_constants.py
@@ -110,7 +109,15 @@ def run_gen(
 
     start_time = perf_counter()
     try:
-        ret = block_runner(generator, block_refs, max_cost, flags, DEFAULT_CONSTANTS)
+        ret = block_runner(
+            generator,
+            block_refs,
+            max_cost,
+            flags | DONT_VALIDATE_SIGNATURE,
+            G2Element(),
+            None,
+            DEFAULT_CONSTANTS,
+        )
         run_time = perf_counter() - start_time
         return ret + (run_time,)
     except Exception as e:

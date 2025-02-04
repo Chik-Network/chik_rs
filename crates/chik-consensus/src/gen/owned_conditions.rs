@@ -3,18 +3,25 @@ use chik_protocol::{Bytes, Bytes32};
 use chik_streamable_macro::Streamable;
 use klvmr::{Allocator, NodePtr};
 
-use super::conditions::{Spend, SpendBundleConditions};
+use super::conditions::{SpendBundleConditions, SpendConditions};
 
 #[cfg(feature = "py-bindings")]
 use chik_py_streamable_macro::{PyJsonDict, PyStreamable};
 
+#[cfg(feature = "py-bindings")]
+use pyo3::exceptions::PyNotImplementedError;
+#[cfg(feature = "py-bindings")]
+use pyo3::prelude::*;
+#[cfg(feature = "py-bindings")]
+use pyo3::types::PyType;
+
 #[derive(Streamable, Hash, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(
     feature = "py-bindings",
-    pyo3::pyclass(name = "Spend", get_all, frozen),
+    pyo3::pyclass(name = "SpendConditions", get_all, frozen),
     derive(PyJsonDict, PyStreamable)
 )]
-pub struct OwnedSpend {
+pub struct OwnedSpendConditions {
     pub coin_id: Bytes32,
     pub parent_id: Bytes32,
     pub puzzle_hash: Bytes32,
@@ -43,7 +50,7 @@ pub struct OwnedSpend {
     derive(PyJsonDict, PyStreamable)
 )]
 pub struct OwnedSpendBundleConditions {
-    pub spends: Vec<OwnedSpend>,
+    pub spends: Vec<OwnedSpendConditions>,
     pub reserve_fee: u64,
     // the highest height/time conditions (i.e. most strict)
     pub height_absolute: u32,
@@ -60,10 +67,13 @@ pub struct OwnedSpendBundleConditions {
     pub removal_amount: u128,
     // the sum of all amounts of CREATE_COIN conditions
     pub addition_amount: u128,
+    // set if the aggregate signature of the block/spend bundle was
+    // successfully validated
+    pub validated_signature: bool,
 }
 
-impl OwnedSpend {
-    pub fn from(a: &Allocator, spend: Spend) -> Self {
+impl OwnedSpendConditions {
+    pub fn from(a: &Allocator, spend: SpendConditions) -> Self {
         let mut create_coin =
             Vec::<(Bytes32, u64, Option<Bytes>)>::with_capacity(spend.create_coin.len());
         for c in spend.create_coin {
@@ -112,9 +122,9 @@ impl OwnedSpend {
 
 impl OwnedSpendBundleConditions {
     pub fn from(a: &Allocator, sb: SpendBundleConditions) -> Self {
-        let mut spends = Vec::<OwnedSpend>::new();
+        let mut spends = Vec::<OwnedSpendConditions>::new();
         for s in sb.spends {
-            spends.push(OwnedSpend::from(a, s));
+            spends.push(OwnedSpendConditions::from(a, s));
         }
 
         let mut agg_sigs = Vec::<(PublicKey, Bytes)>::with_capacity(sb.agg_sig_unsafe.len());
@@ -133,6 +143,7 @@ impl OwnedSpendBundleConditions {
             cost: sb.cost,
             removal_amount: sb.removal_amount,
             addition_amount: sb.addition_amount,
+            validated_signature: sb.validated_signature,
         }
     }
 }
@@ -143,4 +154,28 @@ fn convert_agg_sigs(a: &Allocator, agg_sigs: &[(PublicKey, NodePtr)]) -> Vec<(Pu
         ret.push((*pk, a.atom(*msg).as_ref().into()));
     }
     ret
+}
+
+#[cfg(feature = "py-bindings")]
+#[pymethods]
+impl OwnedSpendConditions {
+    #[classmethod]
+    #[pyo3(name = "from_parent")]
+    pub fn from_parent(_cls: &Bound<'_, PyType>, _instance: &Self) -> PyResult<PyObject> {
+        Err(PyNotImplementedError::new_err(
+            "OwnedSpendConditions does not support from_parent().",
+        ))
+    }
+}
+
+#[cfg(feature = "py-bindings")]
+#[pymethods]
+impl OwnedSpendBundleConditions {
+    #[classmethod]
+    #[pyo3(name = "from_parent")]
+    pub fn from_parent(_cls: &Bound<'_, PyType>, _instance: &Self) -> PyResult<PyObject> {
+        Err(PyNotImplementedError::new_err(
+            "OwnedSpendBundleConditions does not support from_parent().",
+        ))
+    }
 }

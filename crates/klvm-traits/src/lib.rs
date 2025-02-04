@@ -94,6 +94,55 @@ mod derive_tests {
     }
 
     #[test]
+    fn test_solution_struct() {
+        #[derive(Debug, ToKlvm, FromKlvm, PartialEq)]
+        #[klvm(solution)]
+        struct Struct {
+            a: u64,
+            b: i32,
+        }
+
+        // Includes the nil terminator.
+        check(&Struct { a: 52, b: -32 }, "ff34ff81e080");
+
+        // Allows additional parameters.
+        let mut allocator = Allocator::new();
+        let ptr = klvm_list!(100, 200, 300, 400)
+            .to_klvm(&mut allocator)
+            .unwrap();
+        let value = Struct::from_klvm(&allocator, ptr).unwrap();
+        assert_eq!(value, Struct { a: 100, b: 200 });
+
+        // Doesn't allow differing types for the actual solution parameters.
+        let mut allocator = Allocator::new();
+        let ptr = klvm_list!([1, 2, 3], 200, 300)
+            .to_klvm(&mut allocator)
+            .unwrap();
+        Struct::from_klvm(&allocator, ptr).unwrap_err();
+    }
+
+    #[test]
+    fn test_solution_struct_with_rest() {
+        #[derive(Debug, ToKlvm, FromKlvm, PartialEq)]
+        #[klvm(solution)]
+        struct Struct {
+            a: u64,
+            #[klvm(rest)]
+            b: i32,
+        }
+
+        // Does not include the nil terminator.
+        check(&Struct { a: 52, b: -32 }, "ff3481e0");
+
+        // Does not allow additional parameters, since it consumes the rest.
+        let mut allocator = Allocator::new();
+        let ptr = klvm_list!(100, 200, 300, 400)
+            .to_klvm(&mut allocator)
+            .unwrap();
+        Struct::from_klvm(&allocator, ptr).unwrap_err();
+    }
+
+    #[test]
     fn test_curry_struct() {
         #[derive(Debug, ToKlvm, FromKlvm, PartialEq)]
         #[klvm(curry)]

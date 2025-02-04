@@ -1,11 +1,12 @@
 use crate::consensus_constants::ConsensusConstants;
 use crate::gen::conditions::{
-    parse_spends, process_single_spend, validate_conditions, ParseState, SpendBundleConditions,
+    parse_spends, process_single_spend, validate_conditions, validate_signature, EmptyVisitor,
+    ParseState, SpendBundleConditions,
 };
-use crate::gen::flags::ALLOW_BACKREFS;
-use crate::gen::spend_visitor::SpendVisitor;
+use crate::gen::flags::{ALLOW_BACKREFS, DONT_VALIDATE_SIGNATURE};
 use crate::gen::validation_error::{first, ErrorCode, ValidationErr};
 use crate::generator_rom::{GENERATOR_ROM, KLVM_DESERIALIZER};
+use chik_bls::{BlsCache, Signature};
 use klvm_utils::{tree_hash_cached, TreeHash};
 use klvmr::allocator::{Allocator, NodePtr};
 use klvmr::chik_dialect::ChikDialect;
@@ -67,12 +68,15 @@ where
 // the only reason we need to pass in the allocator is because the returned
 // SpendBundleConditions contains NodePtr fields. If that's changed, we could
 // create the allocator inside this functions as well.
-pub fn run_block_generator<GenBuf: AsRef<[u8]>, V: SpendVisitor, I: IntoIterator<Item = GenBuf>>(
+#[allow(clippy::too_many_arguments)]
+pub fn run_block_generator<GenBuf: AsRef<[u8]>, I: IntoIterator<Item = GenBuf>>(
     a: &mut Allocator,
     program: &[u8],
     block_refs: I,
     max_cost: u64,
     flags: u32,
+    signature: &Signature,
+    bls_cache: Option<&BlsCache>,
     constants: &ConsensusConstants,
 ) -> Result<SpendBundleConditions, ValidationErr>
 where
@@ -112,7 +116,15 @@ where
 
     // we pass in what's left of max_cost here, to fail early in case the
     // cost of a condition brings us over the cost limit
-    let mut result = parse_spends::<V>(a, generator_output, cost_left, flags, constants)?;
+    let mut result = parse_spends::<EmptyVisitor>(
+        a,
+        generator_output,
+        cost_left,
+        flags,
+        signature,
+        bls_cache,
+        constants,
+    )?;
     result.cost += max_cost - cost_left;
     Ok(result)
 }
@@ -146,12 +158,15 @@ pub fn extract_n<const N: usize>(
 // you only pay cost for the generator, the puzzles and the conditions).
 // it also does not apply the stack depth or object allocation limits the same,
 // as each puzzle run in its own environment.
-pub fn run_block_generator2<GenBuf: AsRef<[u8]>, V: SpendVisitor, I: IntoIterator<Item = GenBuf>>(
+#[allow(clippy::too_many_arguments)]
+pub fn run_block_generator2<GenBuf: AsRef<[u8]>, I: IntoIterator<Item = GenBuf>>(
     a: &mut Allocator,
     program: &[u8],
     block_refs: I,
     max_cost: u64,
     flags: u32,
+    signature: &Signature,
+    bls_cache: Option<&BlsCache>,
     constants: &ConsensusConstants,
 ) -> Result<SpendBundleConditions, ValidationErr>
 where
@@ -198,7 +213,7 @@ where
         let buf = tree_hash_cached(a, puzzle, &backrefs, &mut cache);
         let puzzle_hash = a.new_atom(&buf)?;
 
-        process_single_spend::<V>(
+        process_single_spend::<EmptyVisitor>(
             a,
             &mut ret,
             &mut state,
@@ -215,7 +230,9 @@ where
         return Err(ValidationErr(all_spends, ErrorCode::GeneratorRuntimeError));
     }
 
-    validate_conditions(a, &ret, state, a.nil(), flags)?;
+    validate_conditions(a, &ret, &state, a.nil(), flags)?;
+    validate_signature(&state, signature, flags, bls_cache)?;
+    ret.validated_signature = (flags & DONT_VALIDATE_SIGNATURE) == 0;
 
     ret.cost = max_cost - cost_left;
     Ok(ret)

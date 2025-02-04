@@ -61,15 +61,16 @@ pub fn get_puzzle_and_solution_for_coin(
 mod test {
     use super::*;
     use crate::consensus_constants::TEST_CONSTANTS;
-    use crate::gen::conditions::{u64_to_bytes, MempoolVisitor};
-    use crate::gen::flags::{ALLOW_BACKREFS, MEMPOOL_MODE};
+    use crate::gen::flags::{ALLOW_BACKREFS, DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE};
+    use crate::gen::make_aggsig_final_message::u64_to_bytes;
     use crate::gen::run_block_generator::{run_block_generator2, setup_generator_args};
+    use chik_bls::Signature;
     use chik_protocol::Bytes32;
+    use chik_sha2::Sha256;
     use klvm_traits::FromKlvm;
     use klvm_utils::tree_hash;
     use klvmr::reduction::Reduction;
     use klvmr::serde::node_from_bytes_backrefs;
-    use klvmr::sha2::Sha256;
     use klvmr::{run_program, ChikDialect};
     use rstest::rstest;
     use std::collections::HashSet;
@@ -234,12 +235,14 @@ mod test {
 
         let mut a = Allocator::new();
         let blocks: &[&[u8]] = &[];
-        let conds = run_block_generator2::<_, MempoolVisitor, _>(
+        let conds = run_block_generator2(
             &mut a,
             &generator,
             blocks,
             MAX_COST,
-            ALLOW_BACKREFS | MEMPOOL_MODE,
+            ALLOW_BACKREFS | MEMPOOL_MODE | DONT_VALIDATE_SIGNATURE,
+            &Signature::default(),
+            None,
             &TEST_CONSTANTS,
         )
         .expect("run_block_generator2");
