@@ -1,0 +1,27 @@
+[package]
+name = "chik-secp"
+version = "0.17.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Secp256k1 and secp256r1 types for Chik"
+authors = ["Brandon Haggstrom <b.haggstrom@chiknetwork.com>"]
+homepage = "https://github.com/Chik-Network/chik_rs"
+repository = "https://github.com/Chik-Network/chik_rs"
+
+[lints]
+workspace = true
+
+[features]
+arbitrary = ["dep:arbitrary"]
+
+[dependencies]
+arbitrary = { workspace = true, optional = true }
+k256 = { workspace = true }
+p256 = { workspace = true }
+hex = { workspace = true }
+chik-sha2= { workspace = true }
+
+[dev-dependencies]
+rand = { workspace = true }
+rand_chacha = { workspace = true }
+anyhow = { workspace = true }

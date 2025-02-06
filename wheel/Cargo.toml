@@ -1,6 +1,6 @@
 [package]
 name = "chik_rs"
-version = "0.16.0"
+version = "0.17.0"
 authors = ["Richard Kiss <him@richardkiss.com>"]
 edition = "2021"
 license = "Apache-2.0"
@@ -35,3 +35,4 @@ chik-protocol = { workspace = true, features = ["py-bindings"]  }
 klvm-utils = { workspace = true }
 chik-ssl = { workspace = true }
 chik-client = { workspace = true }
+chik-traits = { workspace = true }

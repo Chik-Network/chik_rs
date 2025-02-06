@@ -1,6 +1,6 @@
 [package]
 name = "klvm-traits"
-version = "0.16.0"
+version = "0.17.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Traits for encoding and decoding KLVM objects."
@@ -17,6 +17,7 @@ workspace = true
 [features]
 derive = ["dep:klvm-derive"]
 chik-bls = ["dep:chik-bls"]
+chik-secp = ["dep:chik-secp"]
 py-bindings = ["dep:pyo3"]
 
 [dependencies]
@@ -24,6 +25,7 @@ pyo3 = { workspace = true, optional = true }
 klvmr = { workspace = true }
 klvm-derive = { workspace = true, optional = true }
 chik-bls = { workspace = true, optional = true }
+chik-secp = { workspace = true, optional = true }
 num-bigint = { workspace = true }
 thiserror = { workspace = true }
 
