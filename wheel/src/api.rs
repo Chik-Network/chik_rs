@@ -4,7 +4,7 @@ use crate::run_generator::{
 use chik_consensus::allocator::make_allocator;
 use chik_consensus::consensus_constants::ConsensusConstants;
 use chik_consensus::gen::flags::{
-    ALLOW_BACKREFS, DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE, NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
+    DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE, NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
 };
 use chik_consensus::gen::owned_conditions::{OwnedSpendBundleConditions, OwnedSpendConditions};
 use chik_consensus::gen::run_block_generator::setup_generator_args;
@@ -88,10 +88,7 @@ pub fn compute_merkle_set_root<'p>(
         use pyo3::types::PyBytesMethods;
         buffer.push(b.as_bytes().try_into()?);
     }
-    Ok(PyBytes::new_bound(
-        py,
-        &compute_merkle_root_impl(&mut buffer),
-    ))
+    Ok(PyBytes::new(py, &compute_merkle_root_impl(&mut buffer)))
 }
 
 #[pyfunction]
@@ -134,19 +131,14 @@ pub fn get_puzzle_and_solution_for_coin<'a>(
     find_amount: u64,
     find_ph: Bytes32,
     flags: u32,
-) -> PyResult<(Bound<'_, PyBytes>, Bound<'_, PyBytes>)> {
+) -> PyResult<(Bound<'a, PyBytes>, Bound<'a, PyBytes>)> {
     let mut allocator = make_allocator(LIMIT_HEAP);
 
     let program = py_to_slice::<'a>(program);
     let args = py_to_slice::<'a>(args);
 
-    let deserialize = if (flags & ALLOW_BACKREFS) != 0 {
-        node_from_bytes_backrefs
-    } else {
-        node_from_bytes
-    };
-    let program = deserialize(&mut allocator, program)?;
-    let args = deserialize(&mut allocator, args)?;
+    let program = node_from_bytes_backrefs(&mut allocator, program)?;
+    let args = node_from_bytes_backrefs(&mut allocator, args)?;
     let dialect = &ChikDialect::new(flags);
 
     let (puzzle, solution) = py
@@ -170,16 +162,9 @@ pub fn get_puzzle_and_solution_for_coin<'a>(
 
     // keep serializing normally, until wallets support backrefs
     let serialize = node_to_bytes;
-    /*
-        let serialize = if (flags & ALLOW_BACKREFS) != 0 {
-            node_to_bytes_backrefs
-        } else {
-            node_to_bytes
-        };
-    */
     Ok((
-        PyBytes::new_bound(py, &serialize(&allocator, puzzle)?),
-        PyBytes::new_bound(py, &serialize(&allocator, solution)?),
+        PyBytes::new(py, &serialize(&allocator, puzzle)?),
+        PyBytes::new(py, &serialize(&allocator, solution)?),
     ))
 }
 
@@ -238,7 +223,7 @@ type CoinSpendRef = (Coin, PyBackedBytes, PyBackedBytes);
 
 fn convert_list_of_tuples(spends: &Bound<'_, PyAny>) -> PyResult<Vec<CoinSpendRef>> {
     let mut native_spends = Vec::<CoinSpendRef>::new();
-    for s in spends.iter()? {
+    for s in spends.try_iter()? {
         let s = s?;
         let tuple = s.downcast::<PyTuple>()?;
         let coin = tuple.get_item(0)?.extract::<Coin>()?;
@@ -255,7 +240,7 @@ fn solution_generator<'p>(
     spends: &Bound<'_, PyAny>,
 ) -> PyResult<Bound<'p, PyBytes>> {
     let spends = convert_list_of_tuples(spends)?;
-    Ok(PyBytes::new_bound(py, &native_solution_generator(spends)?))
+    Ok(PyBytes::new(py, &native_solution_generator(spends)?))
 }
 
 #[pyfunction]
@@ -264,7 +249,7 @@ fn solution_generator_backrefs<'p>(
     spends: &Bound<'_, PyAny>,
 ) -> PyResult<Bound<'p, PyBytes>> {
     let spends = convert_list_of_tuples(spends)?;
-    Ok(PyBytes::new_bound(
+    Ok(PyBytes::new(
         py,
         &native_solution_generator_backrefs(spends)?,
     ))
@@ -400,7 +385,7 @@ fn fast_forward_singleton<'p>(
     let solution = node_from_bytes(&mut a, spend.solution.as_slice())?;
 
     let new_solution = native_ff(&mut a, puzzle, solution, &spend.coin, new_coin, new_parent)?;
-    Ok(PyBytes::new_bound(
+    Ok(PyBytes::new(
         py,
         node_to_bytes(&a, new_solution)?.as_slice(),
     ))
@@ -490,8 +475,10 @@ pub fn chik_rs(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("NO_UNKNOWN_CONDS", NO_UNKNOWN_CONDS)?;
     m.add("STRICT_ARGS_COUNT", STRICT_ARGS_COUNT)?;
     m.add("MEMPOOL_MODE", MEMPOOL_MODE)?;
-    m.add("ALLOW_BACKREFS", ALLOW_BACKREFS)?;
     m.add("DONT_VALIDATE_SIGNATURE", DONT_VALIDATE_SIGNATURE)?;
+
+    // for backwards compatibility
+    m.add("ALLOW_BACKREFS", 0)?;
 
     // Chik classes
     m.add_class::<Coin>()?;

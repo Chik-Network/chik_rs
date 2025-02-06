@@ -10,9 +10,9 @@ macro_rules! primitive_int {
     ($t:ty, $name:expr) => {
         impl ChikToPython for $t {
             fn to_python<'a>(&self, py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
-                let int_module = PyModule::import_bound(py, "chik_rs.sized_ints")?;
+                let int_module = PyModule::import(py, "chik_rs.sized_ints")?;
                 let ty = int_module.getattr($name)?;
-                ty.call1((self.into_py(py),))
+                ty.call1((self.into_pyobject(py)?.into_any(),))
             }
         }
     };
@@ -40,7 +40,7 @@ impl<T: ChikToPython> ChikToPython for Option<T> {
 
 impl<T: ChikToPython> ChikToPython for Vec<T> {
     fn to_python<'a>(&self, py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
-        let ret = PyList::empty_bound(py);
+        let ret = PyList::empty(py);
         for v in self {
             ret.append(v.to_python(py)?)?;
         }
@@ -50,32 +50,32 @@ impl<T: ChikToPython> ChikToPython for Vec<T> {
 
 impl ChikToPython for bool {
     fn to_python<'a>(&self, py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
-        Ok(PyBool::new_bound(py, *self).as_any().clone())
+        Ok(PyBool::new(py, *self).as_any().clone())
     }
 }
 
 impl ChikToPython for String {
     fn to_python<'a>(&self, py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
-        Ok(PyString::new_bound(py, self.as_str()).into_any())
+        Ok(PyString::new(py, self.as_str()).into_any())
     }
 }
 
 impl<T: ChikToPython, U: ChikToPython> ChikToPython for (T, U) {
     fn to_python<'a>(&self, py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
-        Ok(PyTuple::new_bound(py, [self.0.to_python(py)?, self.1.to_python(py)?]).into_any())
+        Ok(PyTuple::new(py, [self.0.to_python(py)?, self.1.to_python(py)?])?.into_any())
     }
 }
 
 impl<T: ChikToPython, U: ChikToPython, V: ChikToPython> ChikToPython for (T, U, V) {
     fn to_python<'a>(&self, py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
-        Ok(PyTuple::new_bound(
+        Ok(PyTuple::new(
             py,
             [
                 self.0.to_python(py)?,
                 self.1.to_python(py)?,
                 self.2.to_python(py)?,
             ],
-        )
+        )?
         .into_any())
     }
 }

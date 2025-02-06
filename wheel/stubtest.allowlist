@@ -53,3 +53,7 @@ chik_rs\.spend\.SpendConditions\.from_parent
 chik_rs\.Coin\.from_parent
 chik_rs\.CoinSpend\.from_parent
 chik_rs\.SpendBundle\.from_parent
+
+# these are here for backwards compatibility with the cyclical dependency on
+# chik-blockchain (for tests)
+chik_rs\.ALLOW_BACKREFS

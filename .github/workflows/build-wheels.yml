@@ -140,7 +140,7 @@ jobs:
         run: |
           python${{ matrix.python.major-dot-minor }} -m venv venv
           . venv/bin/activate
-          maturin build -i python --release -m wheel/Cargo.toml
+          maturin build -i python --release -m wheel/Cargo.toml --features=openssl,pyo3/extension-module
 
       - name: Build Linux with maturin on Python ${{ matrix.python }}
         if: matrix.os.matrix == 'ubuntu'
@@ -150,13 +150,14 @@ jobs:
             ${{ matrix.python.by-arch[matrix.arch.matrix].docker-url }} \
             bash -exc '\
               yum -y install openssl-devel && \
+              yum -y install perl-IPC-Cmd && \
               source $HOME/.cargo/env && \
               rustup target add ${{ matrix.python.by-arch[matrix.arch.matrix].rustup-target }} && \
               python${{ matrix.python.major-dot-minor }} -m venv /venv && \
               . /venv/bin/activate && \
               pip install --upgrade pip && \
               pip install maturin && \
-              CC=gcc maturin build --release --manylinux ${{ matrix.python.by-arch[matrix.arch.matrix].manylinux-version }} -m wheel/Cargo.toml \
+              CC=gcc maturin build --release --manylinux ${{ matrix.python.by-arch[matrix.arch.matrix].manylinux-version }} -m wheel/Cargo.toml --features=openssl,pyo3/extension-module \
             '
 
       - name: Build Windows with maturin on Python ${{ matrix.python }}
@@ -318,24 +319,30 @@ jobs:
           echo "RUSTFLAGS=-Cinstrument-coverage" >> "$GITHUB_ENV"
           echo "LLVM_PROFILE_FILE=$(pwd)/target/chik_rs-%p-%m.profraw" >> "$GITHUB_ENV"
           echo "CARGO_TARGET_DIR=$(pwd)/target" >> "$GITHUB_ENV"
-      - name: cargo test
+      - name: cargo test (not windows)
+        if: matrix.os != 'windows-latest'
         run: cargo test --workspace --all-features
-      - name: cargo test (release)
+      - name: cargo test (release) (not windows)
+        if: matrix.os != 'windows-latest'
         run: cargo test --workspace --all-features --release
-      - name: Continue with coverage
+      - name: cargo test (windows)
+        if: matrix.os == 'windows-latest'
+        run: cargo test --workspace
+      - name: cargo test (release) (windows)
+        if: matrix.os == 'windows-latest'
+        run: cargo test --workspace --release
+      - name: test coverage
         if: matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt-get update
-          sudo apt-get install lcov -y
-          rustup component add llvm-tools-preview
           python -m venv venv
-          source venv/bin/activate
-          git clone https://github.com/Chik-Network/klvm_tools.git --branch=main --single-branch
-          pip install ./klvm_tools
+          . venv/bin/activate
           pip install colorama maturin pytest pytest-xdist chik-blockchain==2.1.4 klvm==0.9.8
           maturin develop --release -m wheel/Cargo.toml
           # run pytest in a single process to avoid a race writing the coverage report
           pytest -n 0 tests
+          sudo apt-get update
+          sudo apt-get install lcov -y
+          rustup component add llvm-tools-preview
           grcov . --binary-path target -s . --branch --ignore-not-existing --ignore='*/.cargo/*' --ignore='tests/*' --ignore='venv/*' -o rust_cov.info
           python -c 'with open("rust_cov.info") as f: lines = [l for l in f if not (l.startswith("DA:") and int(l.split(",")[1].strip()) >= 2**63)]; open("lcov.info", "w").writelines(lines)'
       - name: Upload to Coveralls

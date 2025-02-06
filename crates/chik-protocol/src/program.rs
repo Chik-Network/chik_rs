@@ -297,9 +297,9 @@ fn klvm_serialize(a: &mut Allocator, o: &Bound<'_, PyAny>) -> PyResult<NodePtr> 
 
 #[cfg(feature = "py-bindings")]
 fn to_program(py: Python<'_>, node: LazyNode) -> PyResult<Bound<'_, PyAny>> {
-    let int_module = PyModule::import_bound(py, "chik.types.blockchain_format.program")?;
+    let int_module = PyModule::import(py, "chik.types.blockchain_format.program")?;
     let ty = int_module.getattr("Program")?;
-    ty.call1((node.into_py(py),))
+    ty.call1((node.into_pyobject(py)?,))
 }
 
 #[cfg(feature = "py-bindings")]
@@ -351,6 +351,7 @@ impl Program {
         args: &Bound<'_, PyAny>,
     ) -> PyResult<(u64, Bound<'a, PyAny>)> {
         use klvmr::MEMPOOL_MODE;
+        #[allow(clippy::used_underscore_items)]
         self._run(py, max_cost, MEMPOOL_MODE, args)
     }
 
@@ -360,9 +361,11 @@ impl Program {
         max_cost: u64,
         args: &Bound<'_, PyAny>,
     ) -> PyResult<(u64, Bound<'a, PyAny>)> {
+        #[allow(clippy::used_underscore_items)]
         self._run(py, max_cost, 0, args)
     }
 
+    // exposed to python so allowing use of the python private indicator leading underscore
     fn _run<'a>(
         &self,
         py: Python<'a>,

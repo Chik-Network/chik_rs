@@ -1,6 +1,6 @@
 [package]
 name = "chik_rs"
-version = "0.17.0"
+version = "0.18.0"
 authors = ["Richard Kiss <him@richardkiss.com>"]
 edition = "2021"
 license = "Apache-2.0"
@@ -24,6 +24,9 @@ python-source = "python"
 # ignore any errors from machete about unused dependencies
 [package.metadata.cargo-machete]
 ignored = ["chik-client", "chik-ssl"]
+
+[features]
+openssl = ["klvmr/openssl"]
 
 [dependencies]
 klvmr = { workspace = true }

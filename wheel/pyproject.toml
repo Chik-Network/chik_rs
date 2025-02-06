@@ -10,3 +10,4 @@ python-source = "python"
 [project]
 name = "chik_rs"
 dependencies = ["typing_extensions"]
+dynamic = ["version"]
