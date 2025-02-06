@@ -22,14 +22,15 @@ our_crates = [
     "crates/chik-tools",
     "crates/klvm-utils",
     "crates/klvm-derive",
-    "crates/chik-puzzles",
+    "crates/chik-puzzle-types",
     "crates/chik-client",
     "crates/chik-ssl",
     "crates/chik-consensus",
     "crates/chik-consensus/fuzz",
-    "crates/chik-puzzles/fuzz",
+    "crates/chik-puzzle-types/fuzz",
     "crates/klvm-utils/fuzz",
 ]
+
 
 def crates_with_changes() -> set[str]:
     ret = set()
@@ -41,6 +42,7 @@ def crates_with_changes() -> set[str]:
     # version
     ret.add("wheel")
     return ret
+
 
 def update_cargo(name: str, crates: set[str]) -> None:
     subst = ""
@@ -54,7 +56,9 @@ def update_cargo(name: str, crates: set[str]) -> None:
             if split[0] == "version" and name in crates:
                 line = f'version = "{v}"\n'
             elif split[0] in crates and line.startswith(split[0] + " = "):
-                line = re.sub('version = "([>=^]?)\d+\.\d+\.\d+"', f'version = "\\g<1>{v}"', line)
+                line = re.sub(
+                    'version = "([>=^]?)\d+\.\d+\.\d+"', f'version = "\\g<1>{v}"', line
+                )
             subst += line
 
     with open(f"{name}/Cargo.toml", "w") as f:

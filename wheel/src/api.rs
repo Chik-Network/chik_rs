@@ -3,6 +3,7 @@ use crate::run_generator::{
 };
 use chik_consensus::allocator::make_allocator;
 use chik_consensus::consensus_constants::ConsensusConstants;
+use chik_consensus::gen::build_compressed_block::BlockBuilder;
 use chik_consensus::gen::flags::{
     DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE, NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
 };
@@ -448,6 +449,7 @@ pub fn chik_rs(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(supports_fast_forward, m)?)?;
     m.add_function(wrap_pyfunction!(fast_forward_singleton, m)?)?;
     m.add_class::<OwnedSpendBundleConditions>()?;
+    m.add_class::<BlockBuilder>()?;
     m.add(
         "ELIGIBLE_FOR_DEDUP",
         chik_consensus::gen::conditions::ELIGIBLE_FOR_DEDUP,

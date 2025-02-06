@@ -1,6 +1,6 @@
 [package]
 name = "chik-tools"
-version = "0.18.0"
+version = "0.19.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Utility functions and types used by the Chik blockchain full node"
@@ -14,9 +14,10 @@ workspace = true
 [dependencies]
 chik-protocol = { workspace = true }
 chik-traits = { workspace = true }
+chik-puzzles = { workspace = true }
 klvm-utils = { workspace = true }
 klvm-traits = { workspace = true }
-chik-puzzles = { workspace = true }
+chik-puzzle-types = { workspace = true }
 chik-bls = { workspace = true }
 chik-consensus = { workspace = true }
 klvmr = { workspace = true, features = ["counters"] }

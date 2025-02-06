@@ -1,6 +1,6 @@
 [package]
 name = "chik-consensus"
-version = "0.18.0"
+version = "0.19.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Utility functions and types used by the Chik blockchain full node"
@@ -30,6 +30,7 @@ chik-sha2 = { workspace = true }
 chik-traits = { workspace = true }
 klvm-traits = { workspace = true }
 chik-protocol = { workspace = true }
+chik-puzzle-types = { workspace = true }
 chik-puzzles = { workspace = true }
 chik-bls = { workspace = true }
 hex-literal = { workspace = true }
@@ -41,6 +42,7 @@ rstest = { workspace = true }
 text-diff = { workspace = true }
 criterion = { workspace = true }
 rand = { workspace = true, features = [ "small_rng" ] }
+blocking-threadpool = { workspace = true }
 
 [lib]
 bench = false

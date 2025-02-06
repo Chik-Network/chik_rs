@@ -130,7 +130,7 @@ The following crates have fuzzers:
 - chik-bls
 - chik-consensus
 - chik-protocol
-- chik-puzzles
+- chik-puzzle-types
 - klvm-utils
 
 To list and run fuzzers:
@@ -151,7 +151,7 @@ cargo install cargo-workspaces
 To bump the versions of all relevant crates:
 
 ```bash
-cargo ws version --all --no-git-commit
+cargo ws version --force "**" --all --no-git-commit
 ```
 
 Select "minor update" if there has not been any incompatible API changes, otherwise "major update".

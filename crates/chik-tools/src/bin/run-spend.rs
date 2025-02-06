@@ -1,5 +1,9 @@
 use chik_consensus::gen::conditions::Condition;
-use chik_puzzles::Proof;
+use chik_puzzle_types::Proof;
+use chik_puzzles::CAT_PUZZLE_HASH;
+use chik_puzzles::DID_INNERPUZ_HASH;
+use chik_puzzles::P2_DELEGATED_PUZZLE_OR_HIDDEN_PUZZLE_HASH;
+use chik_puzzles::SINGLETON_TOP_LAYER_V1_1_HASH;
 use chik_traits::Streamable;
 use clap::Parser;
 use klvm_traits::{FromKlvm, ToKlvm};
@@ -7,10 +11,10 @@ use klvm_utils::tree_hash;
 use klvm_utils::CurriedProgram;
 use klvmr::{allocator::NodePtr, Allocator};
 
-use chik_puzzles::cat::{CatArgs, CatSolution, CAT_PUZZLE_HASH};
-use chik_puzzles::did::{DidArgs, DidSolution, DID_INNER_PUZZLE_HASH};
-use chik_puzzles::singleton::{SingletonArgs, SingletonSolution, SINGLETON_TOP_LAYER_PUZZLE_HASH};
-use chik_puzzles::standard::{StandardArgs, StandardSolution, STANDARD_PUZZLE_HASH};
+use chik_puzzle_types::cat::{CatArgs, CatSolution};
+use chik_puzzle_types::did::{DidArgs, DidSolution};
+use chik_puzzle_types::singleton::{SingletonArgs, SingletonSolution};
+use chik_puzzle_types::standard::{StandardArgs, StandardSolution};
 
 /// Run a puzzle given a solution and print the resulting conditions
 #[derive(Parser, Debug)]
@@ -135,8 +139,8 @@ fn print_puzzle_info(a: &Allocator, puzzle: NodePtr, solution: NodePtr) {
         return;
     };
 
-    match tree_hash(a, uncurried.program) {
-        STANDARD_PUZZLE_HASH => {
+    match tree_hash(a, uncurried.program).to_bytes() {
+        P2_DELEGATED_PUZZLE_OR_HIDDEN_PUZZLE_HASH => {
             println!("p2_delegated_puzzle_or_hidden_puzzle.clsp");
             let Ok(uncurried) = CurriedProgram::<NodePtr, StandardArgs>::from_klvm(a, puzzle)
             else {
@@ -178,7 +182,7 @@ fn print_puzzle_info(a: &Allocator, puzzle: NodePtr, solution: NodePtr) {
             println!("\nInner Puzzle\n");
             print_puzzle_info(a, uncurried.args.inner_puzzle, sol.inner_puzzle_solution);
         }
-        DID_INNER_PUZZLE_HASH => {
+        DID_INNERPUZ_HASH => {
             println!("did_innerpuz.clsp");
             let Ok(uncurried) =
                 CurriedProgram::<NodePtr, DidArgs<NodePtr, NodePtr>>::from_klvm(a, puzzle)
@@ -210,7 +214,7 @@ fn print_puzzle_info(a: &Allocator, puzzle: NodePtr, solution: NodePtr) {
             };
             print_puzzle_info(a, uncurried.args.inner_puzzle, inner_sol);
         }
-        SINGLETON_TOP_LAYER_PUZZLE_HASH => {
+        SINGLETON_TOP_LAYER_V1_1_HASH => {
             println!("singleton_top_layer_1_1.clsp");
             let Ok(uncurried) =
                 CurriedProgram::<NodePtr, SingletonArgs<NodePtr>>::from_klvm(a, puzzle)

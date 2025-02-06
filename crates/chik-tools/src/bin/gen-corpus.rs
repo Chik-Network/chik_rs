@@ -3,6 +3,7 @@
 // coin). It was used to pull out real-life examples of spends that would
 // satisfy the requirements on the fast-foward feature.
 
+use chik_puzzles::SINGLETON_TOP_LAYER_V1_1_HASH;
 use clap::Parser;
 
 use chik_tools::{iterate_blocks, visit_spends};
@@ -10,7 +11,6 @@ use chik_traits::streamable::Streamable;
 
 use chik_bls::G2Element;
 use chik_protocol::{Bytes32, Coin, CoinSpend, Program, SpendBundle};
-use chik_puzzles::singleton::SINGLETON_TOP_LAYER_PUZZLE_HASH;
 use core::sync::atomic::Ordering;
 use klvm_traits::FromKlvm;
 use klvm_utils::{tree_hash, CurriedProgram};
@@ -126,7 +126,7 @@ fn main() {
 
                             let seen_puzzle = seen_puzzles.lock().unwrap().insert(mod_hash);
                             let run_puzzle = args.puzzles && seen_puzzle;
-                            let fast_forward = (mod_hash == SINGLETON_TOP_LAYER_PUZZLE_HASH.into())
+                            let fast_forward = mod_hash == SINGLETON_TOP_LAYER_V1_1_HASH.into()
                                 && seen_singletons.lock().unwrap().insert(puzzle_hash);
 
                             if !run_puzzle
