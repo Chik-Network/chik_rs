@@ -1,6 +1,6 @@
 [package]
 name = "chik-protocol"
-version = "0.19.0"
+version = "0.19.1"
 edition = "2021"
 license = "Apache-2.0"
 description = "Chik network protocol message types"
@@ -14,6 +14,7 @@ workspace = true
 [features]
 py-bindings = ["dep:pyo3", "dep:chik_py_streamable_macro", "chik-traits/py-bindings", "chik-bls/py-bindings"]
 arbitrary = ["dep:arbitrary", "chik-bls/arbitrary"]
+serde = ["dep:serde", "dep:chik-serde", "chik-bls/serde"]
 
 [dependencies]
 pyo3 = { workspace = true, features = ["multiple-pymethods", "num-bigint"], optional = true }
@@ -27,9 +28,14 @@ klvm-traits = { workspace = true, features = ["derive"] }
 klvm-utils = { workspace = true }
 chik-bls = { workspace = true }
 arbitrary = { workspace = true, features = ["derive"], optional = true }
+serde = { workspace = true, optional = true, features = ["derive"] }
+chik-serde = { workspace = true, optional = true }
 
 [dev-dependencies]
 rstest = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+indoc = { workspace = true }
 
 [lib]
 crate-type = ["rlib"]

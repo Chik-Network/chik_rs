@@ -179,7 +179,7 @@ impl chik_traits::ChikToPython for NodeType {
     }
 }
 
-#[streamable]
+#[streamable(no_serde)]
 pub struct Message {
     msg_type: ProtocolMessageTypes,
     id: Option<u16>,

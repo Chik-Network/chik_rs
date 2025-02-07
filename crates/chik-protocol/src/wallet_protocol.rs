@@ -326,7 +326,7 @@ impl chik_traits::ChikToPython for MempoolRemoveReason {
     }
 }
 
-#[streamable]
+#[streamable(no_serde)]
 pub struct RemovedMempoolItem {
     transaction_id: Bytes32,
     reason: MempoolRemoveReason,
