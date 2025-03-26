@@ -1,6 +1,6 @@
 [package]
 name = "chik-ssl"
-version = "0.21.1"
+version = "0.21.2"
 edition = "2021"
 license = "Apache-2.0"
 description = "Chik SSL X.509 certificate generator"

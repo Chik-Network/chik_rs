@@ -18,6 +18,8 @@ pub enum Error {
     InvalidEnum,
     #[error("invalid KLVM serialization")]
     InvalidKlvm,
+    #[error("invalid pot iteration")]
+    InvalidPotIteration,
     #[error("{0}")]
     Custom(String),
 }

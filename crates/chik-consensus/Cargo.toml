@@ -1,6 +1,6 @@
 [package]
 name = "chik-consensus"
-version = "0.21.1"
+version = "0.21.2"
 edition = "2021"
 license = "Apache-2.0"
 description = "Utility functions and types used by the Chik blockchain full node"
