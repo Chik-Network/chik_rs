@@ -293,18 +293,18 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chik"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
- "chik-bls 0.21.2",
+ "chik-bls 0.22.0",
  "chik-client",
  "chik-consensus",
  "chik-protocol",
  "chik-puzzle-types",
  "chik-secp",
  "chik-serde",
- "chik-sha2 0.21.2",
+ "chik-sha2 0.22.0",
  "chik-ssl",
- "chik-traits 0.21.2",
+ "chik-traits 0.22.0",
  "klvm-traits",
  "klvm-utils",
  "klvmr",
@@ -328,13 +328,13 @@ dependencies = [
 
 [[package]]
 name = "chik-bls"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "arbitrary",
  "blst",
  "chik-serde",
- "chik-sha2 0.21.2",
- "chik-traits 0.21.2",
+ "chik-sha2 0.22.0",
+ "chik-traits 0.22.0",
  "chik_py_streamable_macro",
  "criterion",
  "hex",
@@ -350,19 +350,19 @@ dependencies = [
 
 [[package]]
 name = "chik-bls-fuzz"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
- "chik-bls 0.21.2",
+ "chik-bls 0.22.0",
  "libfuzzer-sys",
  "pyo3",
 ]
 
 [[package]]
 name = "chik-client"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "chik-protocol",
- "chik-traits 0.21.2",
+ "chik-traits 0.22.0",
  "futures-util",
  "thiserror",
  "tokio",
@@ -372,17 +372,17 @@ dependencies = [
 
 [[package]]
 name = "chik-consensus"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "blocking-threadpool",
- "chik-bls 0.21.2",
+ "chik-bls 0.22.0",
  "chik-protocol",
  "chik-puzzle-types",
  "chik-puzzles",
- "chik-sha2 0.21.2",
- "chik-traits 0.21.2",
+ "chik-sha2 0.22.0",
+ "chik-traits 0.22.0",
  "chik_py_streamable_macro",
- "chik_streamable_macro 0.21.2",
+ "chik_streamable_macro 0.22.0",
  "criterion",
  "hex",
  "hex-literal",
@@ -399,13 +399,13 @@ dependencies = [
 
 [[package]]
 name = "chik-fuzz"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
- "chik-bls 0.21.2",
+ "chik-bls 0.22.0",
  "chik-consensus",
  "chik-protocol",
- "chik-sha2 0.21.2",
- "chik-traits 0.21.2",
+ "chik-sha2 0.22.0",
+ "chik-traits 0.22.0",
  "hex-literal",
  "klvm-traits",
  "klvm-utils",
@@ -415,16 +415,16 @@ dependencies = [
 
 [[package]]
 name = "chik-protocol"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "anyhow",
  "arbitrary",
- "chik-bls 0.21.2",
+ "chik-bls 0.22.0",
  "chik-serde",
- "chik-sha2 0.21.2",
- "chik-traits 0.21.2",
+ "chik-sha2 0.22.0",
+ "chik-traits 0.22.0",
  "chik_py_streamable_macro",
- "chik_streamable_macro 0.21.2",
+ "chik_streamable_macro 0.22.0",
  "hex",
  "indoc",
  "klvm-traits",
@@ -438,12 +438,12 @@ dependencies = [
 
 [[package]]
 name = "chik-protocol-fuzz"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "arbitrary",
  "chik-protocol",
- "chik-sha2 0.21.2",
- "chik-traits 0.21.2",
+ "chik-sha2 0.22.0",
+ "chik-traits 0.22.0",
  "hex",
  "klvm-traits",
  "klvmr",
@@ -452,14 +452,14 @@ dependencies = [
 
 [[package]]
 name = "chik-puzzle-types"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "anyhow",
  "arbitrary",
- "chik-bls 0.21.2",
+ "chik-bls 0.22.0",
  "chik-protocol",
  "chik-puzzles",
- "chik-sha2 0.21.2",
+ "chik-sha2 0.22.0",
  "hex",
  "hex-literal",
  "klvm-traits",
@@ -470,7 +470,7 @@ dependencies = [
 
 [[package]]
 name = "chik-puzzle-types-fuzz"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "chik-puzzle-types",
  "klvm-traits",
@@ -490,11 +490,11 @@ dependencies = [
 
 [[package]]
 name = "chik-secp"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "anyhow",
  "arbitrary",
- "chik-sha2 0.21.2",
+ "chik-sha2 0.22.0",
  "hex",
  "k256",
  "p256",
@@ -504,7 +504,7 @@ dependencies = [
 
 [[package]]
 name = "chik-serde"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "anyhow",
  "bincode",
@@ -525,7 +525,7 @@ dependencies = [
 
 [[package]]
 name = "chik-sha2"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "openssl",
  "sha2",
@@ -533,7 +533,7 @@ dependencies = [
 
 [[package]]
 name = "chik-ssl"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "rand",
  "rcgen",
@@ -544,15 +544,15 @@ dependencies = [
 
 [[package]]
 name = "chik-tools"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "blocking-threadpool",
- "chik-bls 0.21.2",
+ "chik-bls 0.22.0",
  "chik-consensus",
  "chik-protocol",
  "chik-puzzle-types",
  "chik-puzzles",
- "chik-traits 0.21.2",
+ "chik-traits 0.22.0",
  "clap",
  "hex",
  "hex-literal",
@@ -576,17 +576,17 @@ dependencies = [
 
 [[package]]
 name = "chik-traits"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
- "chik-sha2 0.21.2",
- "chik_streamable_macro 0.21.2",
+ "chik-sha2 0.22.0",
+ "chik_streamable_macro 0.22.0",
  "pyo3",
  "thiserror",
 ]
 
 [[package]]
 name = "chik_py_streamable_macro"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "proc-macro-crate 1.3.1",
  "proc-macro2",
@@ -596,14 +596,14 @@ dependencies = [
 
 [[package]]
 name = "chik_rs"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
- "chik-bls 0.21.2",
+ "chik-bls 0.22.0",
  "chik-client",
  "chik-consensus",
  "chik-protocol",
  "chik-ssl",
- "chik-traits 0.21.2",
+ "chik-traits 0.22.0",
  "hex",
  "klvm-utils",
  "klvmr",
@@ -624,7 +624,7 @@ dependencies = [
 
 [[package]]
 name = "chik_streamable_macro"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "proc-macro-crate 1.3.1",
  "proc-macro2",
@@ -634,7 +634,7 @@ dependencies = [
 
 [[package]]
 name = "chik_wasm"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "wasm-bindgen",
 ]
@@ -765,9 +765,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-channel"
-version = "0.5.13"
+version = "0.5.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33480d6946193aa8033910124896ca395333cae7e2d1113d1fef6c3272217df2"
+checksum = "82b8f8f868b36967f9606790d1903570de9ceaf870a7bf9fbbd3016d636a2cb2"
 dependencies = [
  "crossbeam-utils",
 ]
@@ -1354,7 +1354,7 @@ dependencies = [
 
 [[package]]
 name = "klvm-derive"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1363,9 +1363,9 @@ dependencies = [
 
 [[package]]
 name = "klvm-traits"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
- "chik-bls 0.21.2",
+ "chik-bls 0.22.0",
  "chik-secp",
  "hex",
  "hex-literal",
@@ -1378,7 +1378,7 @@ dependencies = [
 
 [[package]]
 name = "klvm-traits-fuzz"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "klvm-traits",
  "klvmr",
@@ -1387,9 +1387,9 @@ dependencies = [
 
 [[package]]
 name = "klvm-utils"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
- "chik-sha2 0.21.2",
+ "chik-sha2 0.22.0",
  "hex",
  "klvm-traits",
  "klvmr",
@@ -1398,7 +1398,7 @@ dependencies = [
 
 [[package]]
 name = "klvm-utils-fuzz"
-version = "0.21.2"
+version = "0.22.0"
 dependencies = [
  "chik-fuzz",
  "klvm-traits",
@@ -1409,9 +1409,9 @@ dependencies = [
 
 [[package]]
 name = "klvmr"
-version = "0.12.1"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f0fc3cd14dd033985ae796de88fe37961e2b2752c46824511845b6895bd4706"
+checksum = "eb48c806aad940f2aacb75a4a05e8666f8b124e5cf7f867b4ef83c177984813f"
 dependencies = [
  "bitvec",
  "bumpalo",
@@ -1650,9 +1650,9 @@ checksum = "b410bbe7e14ab526a0e86877eb47c6996a2bd7746f027ba551028c925390e4e9"
 
 [[package]]
 name = "openssl"
-version = "0.10.71"
+version = "0.10.72"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e14130c6a98cd258fdcb0fb6d744152343ff729cbfcb28c656a9d12b999fbcd"
+checksum = "fedfea7d58a1f73118430a55da6a286e7b044961736ce96a16a17068ea25e5da"
 dependencies = [
  "bitflags",
  "cfg-if",
@@ -1676,9 +1676,9 @@ dependencies = [
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.106"
+version = "0.9.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bb61ea9811cc39e3c2069f40b8b8e2e70d8569b361f879786cc7ed48b777cdd"
+checksum = "8288979acd84749c744a9014b4382d42b8f7b2592847b5afb2ed29e5d16ede07"
 dependencies = [
  "cc",
  "libc",
@@ -1845,9 +1845,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3"
-version = "0.23.5"
+version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7778bffd85cf38175ac1f545509665d0b9b92a198ca7941f131f85f7a4f9a872"
+checksum = "17da310086b068fbdcefbba30aeb3721d5bb9af8db4987d6735b2183ca567229"
 dependencies = [
  "cfg-if",
  "indoc",
@@ -1865,9 +1865,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-build-config"
-version = "0.23.5"
+version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94f6cbe86ef3bf18998d9df6e0f3fc1050a8c5efa409bf712e661a4366e010fb"
+checksum = "e27165889bd793000a098bb966adc4300c312497ea25cf7a690a9f0ac5aa5fc1"
 dependencies = [
  "once_cell",
  "target-lexicon",
@@ -1875,9 +1875,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-ffi"
-version = "0.23.5"
+version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9f1b4c431c0bb1c8fb0a338709859eed0d030ff6daa34368d3b152a63dfdd8d"
+checksum = "05280526e1dbf6b420062f3ef228b78c0c54ba94e157f5cb724a609d0f2faabc"
 dependencies = [
  "libc",
  "pyo3-build-config",
@@ -1885,9 +1885,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-macros"
-version = "0.23.5"
+version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbc2201328f63c4710f68abdf653c89d8dbc2858b88c5d88b0ff38a75288a9da"
+checksum = "5c3ce5686aa4d3f63359a5100c62a127c9f15e8398e5fdeb5deef1fed5cd5f44"
 dependencies = [
  "proc-macro2",
  "pyo3-macros-backend",
@@ -1897,9 +1897,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-macros-backend"
-version = "0.23.5"
+version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fca6726ad0f3da9c9de093d6f116a93c1a38e417ed73bf138472cf4064f72028"
+checksum = "f4cf6faa0cbfb0ed08e89beb8103ae9724eb4750e3a78084ba4017cbe94f3855"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -2344,9 +2344,9 @@ checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
 name = "target-lexicon"
-version = "0.12.15"
+version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4873307b7c257eddcb50c9bedf158eb669578359fb28428bef438fec8e6ba7c2"
+checksum = "e502f78cdbb8ba4718f566c418c52bc729126ffd16baee5baa718cf25dd5a69a"
 
 [[package]]
 name = "term"

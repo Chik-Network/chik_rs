@@ -51,7 +51,7 @@ use chik_protocol::{
 };
 use chik_traits::ChikToPython;
 use klvm_utils::tree_hash_from_bytes;
-use klvmr::chik_dialect::{ENABLE_KECCAK, ENABLE_KECCAK_OPS_OUTSIDE_GUARD};
+use klvmr::chik_dialect::ENABLE_KECCAK_OPS_OUTSIDE_GUARD;
 use klvmr::{LIMIT_HEAP, NO_UNKNOWN_OPS};
 use pyo3::buffer::PyBuffer;
 use pyo3::exceptions::{PyRuntimeError, PyTypeError, PyValueError};
@@ -622,7 +622,6 @@ pub fn chik_rs(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(run_chik_program, m)?)?;
     m.add("NO_UNKNOWN_OPS", NO_UNKNOWN_OPS)?;
     m.add("LIMIT_HEAP", LIMIT_HEAP)?;
-    m.add("ENABLE_KECCAK", ENABLE_KECCAK)?;
     m.add(
         "ENABLE_KECCAK_OPS_OUTSIDE_GUARD",
         ENABLE_KECCAK_OPS_OUTSIDE_GUARD,
