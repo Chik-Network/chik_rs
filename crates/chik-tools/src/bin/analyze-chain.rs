@@ -4,8 +4,8 @@ use std::io::Write;
 use std::time::SystemTime;
 
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::gen::flags::MEMPOOL_MODE;
-use chik_consensus::gen::run_block_generator::{run_block_generator, run_block_generator2};
+use chik_consensus::flags::MEMPOOL_MODE;
+use chik_consensus::run_block_generator::{run_block_generator, run_block_generator2};
 use chik_tools::iterate_blocks;
 use klvmr::Allocator;
 

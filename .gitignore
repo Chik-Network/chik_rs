@@ -12,3 +12,4 @@ crates/chik-consensus/fuzz/corpus
 crates/chik-protocol/fuzz/corpus
 crates/chik-traits/fuzz/corpus
 crates/chik-utils/fuzz/corpus
+*.png

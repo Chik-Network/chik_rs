@@ -1,4 +1,4 @@
-use chik_consensus::gen::conditions::Condition;
+use chik_consensus::conditions::Condition;
 use chik_puzzle_types::Proof;
 use chik_puzzles::CAT_PUZZLE_HASH;
 use chik_puzzles::DID_INNERPUZ_HASH;
@@ -263,9 +263,9 @@ fn print_puzzle_info(a: &Allocator, puzzle: NodePtr, solution: NodePtr) {
     }
 }
 fn main() {
-    use chik_consensus::gen::conditions::parse_args;
-    use chik_consensus::gen::opcodes::parse_opcode;
-    use chik_consensus::gen::validation_error::{first, rest};
+    use chik_consensus::conditions::parse_args;
+    use chik_consensus::opcodes::parse_opcode;
+    use chik_consensus::validation_error::{first, rest};
     use chik_protocol::CoinSpend;
     use klvmr::reduction::{EvalErr, Reduction};
     use klvmr::{run_program, ChikDialect};

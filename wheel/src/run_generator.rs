@@ -1,11 +1,11 @@
 use chik_bls::{BlsCache, Signature};
+use chik_consensus::additions_and_removals::additions_and_removals as native_additions_and_removals;
 use chik_consensus::allocator::make_allocator;
 use chik_consensus::consensus_constants::ConsensusConstants;
-use chik_consensus::gen::additions_and_removals::additions_and_removals as native_additions_and_removals;
-use chik_consensus::gen::owned_conditions::OwnedSpendBundleConditions;
-use chik_consensus::gen::run_block_generator::run_block_generator as native_run_block_generator;
-use chik_consensus::gen::run_block_generator::run_block_generator2 as native_run_block_generator2;
-use chik_consensus::gen::validation_error::ValidationErr;
+use chik_consensus::owned_conditions::OwnedSpendBundleConditions;
+use chik_consensus::run_block_generator::run_block_generator as native_run_block_generator;
+use chik_consensus::run_block_generator::run_block_generator2 as native_run_block_generator2;
+use chik_consensus::validation_error::ValidationErr;
 use chik_protocol::Bytes;
 use chik_protocol::Coin;
 

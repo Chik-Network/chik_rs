@@ -2,12 +2,12 @@
 use libfuzzer_sys::fuzz_target;
 
 use chik_bls::Signature;
-use chik_consensus::gen::conditions::{parse_spends, MempoolVisitor};
+use chik_consensus::conditions::{parse_spends, MempoolVisitor};
 use chik_fuzz::{make_list, BitCursor};
 use klvmr::{Allocator, NodePtr};
 
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::gen::flags::{NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT};
+use chik_consensus::flags::{NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT};
 
 fuzz_target!(|data: &[u8]| {
     let mut a = Allocator::new();

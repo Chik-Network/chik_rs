@@ -2,8 +2,8 @@
 use chik_bls::Signature;
 use chik_consensus::allocator::make_allocator;
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::gen::run_block_generator::{run_block_generator, run_block_generator2};
-use chik_consensus::gen::validation_error::{ErrorCode, ValidationErr};
+use chik_consensus::run_block_generator::{run_block_generator, run_block_generator2};
+use chik_consensus::validation_error::{ErrorCode, ValidationErr};
 use klvmr::chik_dialect::LIMIT_HEAP;
 use libfuzzer_sys::fuzz_target;
 

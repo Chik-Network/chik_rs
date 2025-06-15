@@ -1,7 +1,7 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use chik_consensus::gen::messages::SpendId;
+use chik_consensus::messages::SpendId;
 use chik_fuzz::{make_list, BitCursor};
 use klvmr::allocator::Allocator;
 

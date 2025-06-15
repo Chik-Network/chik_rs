@@ -1,9 +1,9 @@
 #![no_main]
-use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::gen::conditions::{
+use chik_consensus::conditions::{
     process_single_spend, MempoolVisitor, ParseState, SpendBundleConditions,
 };
-use chik_consensus::gen::flags::{NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT};
+use chik_consensus::consensus_constants::TEST_CONSTANTS;
+use chik_consensus::flags::{NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT};
 use chik_fuzz::{make_tree, BitCursor};
 use klvmr::allocator::Allocator;
 use libfuzzer_sys::fuzz_target;

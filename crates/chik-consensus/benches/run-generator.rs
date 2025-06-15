@@ -1,8 +1,8 @@
 use chik_bls::Signature;
+use chik_consensus::additions_and_removals::additions_and_removals;
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::gen::additions_and_removals::additions_and_removals;
-use chik_consensus::gen::flags::DONT_VALIDATE_SIGNATURE;
-use chik_consensus::gen::run_block_generator::{run_block_generator, run_block_generator2};
+use chik_consensus::flags::DONT_VALIDATE_SIGNATURE;
+use chik_consensus::run_block_generator::{run_block_generator, run_block_generator2};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use klvmr::serde::{node_from_bytes, node_to_bytes_backrefs};
 use klvmr::Allocator;

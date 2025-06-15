@@ -2,17 +2,17 @@ use crate::run_generator::{
     additions_and_removals, py_to_slice, run_block_generator, run_block_generator2,
 };
 use chik_consensus::allocator::make_allocator;
+use chik_consensus::build_compressed_block::BlockBuilder;
 use chik_consensus::consensus_constants::ConsensusConstants;
-use chik_consensus::gen::build_compressed_block::BlockBuilder;
-use chik_consensus::gen::flags::{
-    DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE, NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
+use chik_consensus::flags::{
+    COST_CONDITIONS, DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE, NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT,
 };
-use chik_consensus::gen::owned_conditions::{OwnedSpendBundleConditions, OwnedSpendConditions};
-use chik_consensus::gen::run_block_generator::setup_generator_args;
-use chik_consensus::gen::solution_generator::solution_generator as native_solution_generator;
-use chik_consensus::gen::solution_generator::solution_generator_backrefs as native_solution_generator_backrefs;
 use chik_consensus::merkle_set::compute_merkle_set_root as compute_merkle_root_impl;
 use chik_consensus::merkle_tree::{validate_merkle_proof, MerkleSet};
+use chik_consensus::owned_conditions::{OwnedSpendBundleConditions, OwnedSpendConditions};
+use chik_consensus::run_block_generator::setup_generator_args;
+use chik_consensus::solution_generator::solution_generator as native_solution_generator;
+use chik_consensus::solution_generator::solution_generator_backrefs as native_solution_generator_backrefs;
 use chik_consensus::spendbundle_conditions::get_conditions_from_spendbundle;
 use chik_consensus::spendbundle_validation::{
     get_flags_for_height_and_constants, validate_klvm_and_signature,
@@ -67,8 +67,8 @@ use std::iter::zip;
 use crate::run_program::{run_chik_program, serialized_length};
 
 use chik_consensus::fast_forward::fast_forward_singleton as native_ff;
-use chik_consensus::gen::get_puzzle_and_solution::get_puzzle_and_solution_for_coin as parse_puzzle_solution;
-use chik_consensus::gen::validation_error::ValidationErr;
+use chik_consensus::get_puzzle_and_solution::get_puzzle_and_solution_for_coin as parse_puzzle_solution;
+use chik_consensus::validation_error::ValidationErr;
 use klvmr::allocator::NodePtr;
 use klvmr::cost::Cost;
 use klvmr::reduction::EvalErr;
@@ -425,7 +425,7 @@ pub fn py_get_conditions_from_spendbundle(
     height: u32,
 ) -> PyResult<OwnedSpendBundleConditions> {
     use chik_consensus::allocator::make_allocator;
-    use chik_consensus::gen::owned_conditions::OwnedSpendBundleConditions;
+    use chik_consensus::owned_conditions::OwnedSpendBundleConditions;
     let mut a = make_allocator(LIMIT_HEAP);
     let conditions =
         get_conditions_from_spendbundle(&mut a, spend_bundle, max_cost, height, constants)
@@ -456,11 +456,11 @@ pub fn chik_rs(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<BlockBuilder>()?;
     m.add(
         "ELIGIBLE_FOR_DEDUP",
-        chik_consensus::gen::conditions::ELIGIBLE_FOR_DEDUP,
+        chik_consensus::conditions::ELIGIBLE_FOR_DEDUP,
     )?;
     m.add(
         "ELIGIBLE_FOR_FF",
-        chik_consensus::gen::conditions::ELIGIBLE_FOR_FF,
+        chik_consensus::conditions::ELIGIBLE_FOR_FF,
     )?;
     m.add_class::<OwnedSpendConditions>()?;
 
@@ -489,6 +489,7 @@ pub fn chik_rs(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("STRICT_ARGS_COUNT", STRICT_ARGS_COUNT)?;
     m.add("MEMPOOL_MODE", MEMPOOL_MODE)?;
     m.add("DONT_VALIDATE_SIGNATURE", DONT_VALIDATE_SIGNATURE)?;
+    m.add("COST_CONDITIONS", COST_CONDITIONS)?;
 
     // for backwards compatibility
     m.add("ALLOW_BACKREFS", 0)?;

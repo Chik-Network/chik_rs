@@ -1,10 +1,10 @@
 #![no_main]
 use chik_bls::Signature;
+use chik_consensus::additions_and_removals::additions_and_removals;
 use chik_consensus::allocator::make_allocator;
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::gen::additions_and_removals::additions_and_removals;
-use chik_consensus::gen::flags::DONT_VALIDATE_SIGNATURE;
-use chik_consensus::gen::run_block_generator::run_block_generator2;
+use chik_consensus::flags::DONT_VALIDATE_SIGNATURE;
+use chik_consensus::run_block_generator::run_block_generator2;
 use chik_protocol::{Bytes, Coin};
 use libfuzzer_sys::fuzz_target;
 use std::collections::HashSet;

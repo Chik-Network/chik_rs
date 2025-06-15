@@ -1,7 +1,7 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use chik_consensus::gen::get_puzzle_and_solution::get_puzzle_and_solution_for_coin;
+use chik_consensus::get_puzzle_and_solution::get_puzzle_and_solution_for_coin;
 use chik_fuzz::{make_tree, BitCursor};
 use chik_protocol::Coin;
 use klvmr::allocator::Allocator;

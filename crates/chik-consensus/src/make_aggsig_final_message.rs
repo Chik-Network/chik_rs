@@ -1,9 +1,9 @@
 use crate::consensus_constants::ConsensusConstants;
-use crate::gen::opcodes::{
+use crate::opcodes::{
     ConditionOpcode, AGG_SIG_AMOUNT, AGG_SIG_ME, AGG_SIG_PARENT, AGG_SIG_PARENT_AMOUNT,
     AGG_SIG_PARENT_PUZZLE, AGG_SIG_PUZZLE, AGG_SIG_PUZZLE_AMOUNT,
 };
-use crate::gen::owned_conditions::OwnedSpendConditions;
+use crate::owned_conditions::OwnedSpendConditions;
 use chik_protocol::Coin;
 
 pub fn make_aggsig_final_message(
@@ -109,7 +109,7 @@ mod tests {
 
         use chik_protocol::Bytes32;
 
-        use crate::r#gen::conditions::SpendConditions;
+        use crate::conditions::SpendConditions;
 
         let parent_id: Vec<u8> =
             hex!("4444444444444444444444444444444444444444444444444444444444444444").into();

@@ -1,5 +1,5 @@
 #![no_main]
-use chik_consensus::gen::solution_generator::{calculate_generator_length, solution_generator};
+use chik_consensus::solution_generator::{calculate_generator_length, solution_generator};
 use chik_protocol::{Coin, CoinSpend};
 use chik_traits::Streamable;
 use klvmr::{

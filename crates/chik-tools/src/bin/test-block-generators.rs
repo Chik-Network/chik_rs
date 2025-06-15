@@ -1,10 +1,10 @@
 use clap::Parser;
 
 use chik_bls::PublicKey;
+use chik_consensus::conditions::{NewCoin, SpendBundleConditions, SpendConditions};
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::gen::conditions::{NewCoin, SpendBundleConditions, SpendConditions};
-use chik_consensus::gen::flags::{DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE};
-use chik_consensus::gen::run_block_generator::{run_block_generator, run_block_generator2};
+use chik_consensus::flags::{DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE};
+use chik_consensus::run_block_generator::{run_block_generator, run_block_generator2};
 use chik_protocol::Program;
 use chik_tools::iterate_blocks;
 use klvmr::allocator::NodePtr;

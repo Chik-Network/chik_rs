@@ -1,13 +1,13 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use chik_consensus::gen::conditions::parse_args;
+use chik_consensus::conditions::parse_args;
 use chik_fuzz::{make_list, BitCursor};
 use klvmr::allocator::Allocator;
 
-use chik_consensus::gen::flags::STRICT_ARGS_COUNT;
+use chik_consensus::flags::STRICT_ARGS_COUNT;
 
-use chik_consensus::gen::opcodes::{
+use chik_consensus::opcodes::{
     AGG_SIG_AMOUNT, AGG_SIG_ME, AGG_SIG_PARENT, AGG_SIG_PARENT_AMOUNT, AGG_SIG_PARENT_PUZZLE,
     AGG_SIG_PUZZLE, AGG_SIG_PUZZLE_AMOUNT, AGG_SIG_UNSAFE, ASSERT_COIN_ANNOUNCEMENT,
     ASSERT_EPHEMERAL, ASSERT_HEIGHT_ABSOLUTE, ASSERT_HEIGHT_RELATIVE, ASSERT_MY_AMOUNT,

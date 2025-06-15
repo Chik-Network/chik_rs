@@ -1,12 +1,12 @@
 #![no_main]
-use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::fast_forward::fast_forward_singleton;
-use chik_consensus::gen::conditions::{
+use chik_consensus::conditions::{
     parse_conditions, MempoolVisitor, ParseState, SpendBundleConditions, SpendConditions,
     ELIGIBLE_FOR_FF,
 };
-use chik_consensus::gen::spend_visitor::SpendVisitor;
-use chik_consensus::gen::validation_error::{ErrorCode, ValidationErr};
+use chik_consensus::consensus_constants::TEST_CONSTANTS;
+use chik_consensus::fast_forward::fast_forward_singleton;
+use chik_consensus::spend_visitor::SpendVisitor;
+use chik_consensus::validation_error::{ErrorCode, ValidationErr};
 use chik_protocol::Bytes32;
 use chik_protocol::Coin;
 use chik_protocol::CoinSpend;

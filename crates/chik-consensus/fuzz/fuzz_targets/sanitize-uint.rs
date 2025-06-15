@@ -1,8 +1,8 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use chik_consensus::gen::sanitize_int::{sanitize_uint, SanitizedUint};
-use chik_consensus::gen::validation_error::{ErrorCode, ValidationErr};
+use chik_consensus::sanitize_int::{sanitize_uint, SanitizedUint};
+use chik_consensus::validation_error::{ErrorCode, ValidationErr};
 use klvmr::allocator::Allocator;
 
 fuzz_target!(|data: &[u8]| {

@@ -1,6 +1,6 @@
-use chik_consensus::gen::run_block_generator::extract_n;
-use chik_consensus::gen::validation_error::{first, ErrorCode, ValidationErr};
 use chik_consensus::generator_rom::KLVM_DESERIALIZER;
+use chik_consensus::run_block_generator::extract_n;
+use chik_consensus::validation_error::{first, ErrorCode, ValidationErr};
 use chik_protocol::Bytes32;
 use chik_protocol::FullBlock;
 use chik_traits::streamable::Streamable;

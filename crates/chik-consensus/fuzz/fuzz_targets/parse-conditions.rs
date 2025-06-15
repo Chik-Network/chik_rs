@@ -1,11 +1,11 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::gen::conditions::{
+use chik_consensus::conditions::{
     parse_conditions, MempoolVisitor, ParseState, SpendBundleConditions, SpendConditions,
 };
-use chik_consensus::gen::spend_visitor::SpendVisitor;
+use chik_consensus::consensus_constants::TEST_CONSTANTS;
+use chik_consensus::spend_visitor::SpendVisitor;
 use chik_fuzz::{make_list, BitCursor};
 use chik_protocol::Bytes32;
 use chik_protocol::Coin;
@@ -14,7 +14,7 @@ use klvmr::{Allocator, NodePtr};
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use chik_consensus::gen::flags::{NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT};
+use chik_consensus::flags::{NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT};
 
 fuzz_target!(|data: &[u8]| {
     let mut a = Allocator::new();

@@ -1,4 +1,4 @@
-use crate::gen::validation_error::ValidationErr;
+use crate::validation_error::ValidationErr;
 use klvm_traits::{FromKlvmError, ToKlvmError};
 use klvmr::reduction::EvalErr;
 use thiserror::Error;
