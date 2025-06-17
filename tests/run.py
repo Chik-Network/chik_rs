@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-from chik_rs import run_chik_program
+from typing import Optional
+from chik_rs import run_chik_program, LazyNode
 
 
-def run_klvm(fn, env=None):
+def run_klvm(fn: str, env: Optional[str] = None) -> tuple[int, LazyNode]:
 
     program_data = bytes.fromhex(open(fn, "r").read())
     if env is not None:
@@ -24,7 +25,7 @@ def run_klvm(fn, env=None):
     )
 
 
-def count_tree_size(tree) -> int:
+def count_tree_size(tree: LazyNode) -> int:
     stack = [tree]
     ret = 0
     while len(stack):

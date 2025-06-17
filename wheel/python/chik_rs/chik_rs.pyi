@@ -4331,7 +4331,7 @@ class ConsensusConstants:
     SLOT_BLOCKS_TARGET: uint32
     MIN_BLOCKS_PER_CHALLENGE_BLOCK: uint8
     MAX_SUB_SLOT_BLOCKS: uint32
-    NUM_SPS_SUB_SLOT: uint32
+    NUM_SPS_SUB_SLOT: uint8
     SUB_SLOT_ITERS_STARTING: uint64
     DIFFICULTY_CONSTANT_FACTOR: uint128
     DIFFICULTY_STARTING: uint64
@@ -4342,8 +4342,10 @@ class ConsensusConstants:
     DISCRIMINANT_SIZE_BITS: uint16
     NUMBER_ZERO_BITS_PLOT_FILTER_V1: uint8
     NUMBER_ZERO_BITS_PLOT_FILTER_V2: uint8
-    MIN_PLOT_SIZE: uint8
-    MAX_PLOT_SIZE: uint8
+    MIN_PLOT_SIZE_V1: uint8
+    MAX_PLOT_SIZE_V1: uint8
+    MIN_PLOT_SIZE_V2: uint8
+    MAX_PLOT_SIZE_V2: uint8
     SUB_SLOT_TIME_TARGET: uint16
     NUM_SP_INTERVALS_EXTRA: uint8
     MAX_FUTURE_TIME2: uint32
@@ -4375,6 +4377,7 @@ class ConsensusConstants:
     PLOT_FILTER_128_HEIGHT: uint32
     PLOT_FILTER_64_HEIGHT: uint32
     PLOT_FILTER_32_HEIGHT: uint32
+    PLOT_DIFFICULTY_INITIAL: uint8
     PLOT_DIFFICULTY_4_HEIGHT: uint32
     PLOT_DIFFICULTY_5_HEIGHT: uint32
     PLOT_DIFFICULTY_6_HEIGHT: uint32
@@ -4385,7 +4388,7 @@ class ConsensusConstants:
         SLOT_BLOCKS_TARGET: uint32,
         MIN_BLOCKS_PER_CHALLENGE_BLOCK: uint8,
         MAX_SUB_SLOT_BLOCKS: uint32,
-        NUM_SPS_SUB_SLOT: uint32,
+        NUM_SPS_SUB_SLOT: uint8,
         SUB_SLOT_ITERS_STARTING: uint64,
         DIFFICULTY_CONSTANT_FACTOR: uint128,
         DIFFICULTY_STARTING: uint64,
@@ -4396,8 +4399,10 @@ class ConsensusConstants:
         DISCRIMINANT_SIZE_BITS: uint16,
         NUMBER_ZERO_BITS_PLOT_FILTER_V1: uint8,
         NUMBER_ZERO_BITS_PLOT_FILTER_V2: uint8,
-        MIN_PLOT_SIZE: uint8,
-        MAX_PLOT_SIZE: uint8,
+        MIN_PLOT_SIZE_V1: uint8,
+        MAX_PLOT_SIZE_V1: uint8,
+        MIN_PLOT_SIZE_V2: uint8,
+        MAX_PLOT_SIZE_V2: uint8,
         SUB_SLOT_TIME_TARGET: uint16,
         NUM_SP_INTERVALS_EXTRA: uint8,
         MAX_FUTURE_TIME2: uint32,
@@ -4429,6 +4434,7 @@ class ConsensusConstants:
         PLOT_FILTER_128_HEIGHT: uint32,
         PLOT_FILTER_64_HEIGHT: uint32,
         PLOT_FILTER_32_HEIGHT: uint32,
+        PLOT_DIFFICULTY_INITIAL: uint8,
         PLOT_DIFFICULTY_4_HEIGHT: uint32,
         PLOT_DIFFICULTY_5_HEIGHT: uint32,
         PLOT_DIFFICULTY_6_HEIGHT: uint32,
@@ -4455,7 +4461,7 @@ class ConsensusConstants:
     def replace(self, *, SLOT_BLOCKS_TARGET: Union[ uint32, _Unspec] = _Unspec(),
         MIN_BLOCKS_PER_CHALLENGE_BLOCK: Union[ uint8, _Unspec] = _Unspec(),
         MAX_SUB_SLOT_BLOCKS: Union[ uint32, _Unspec] = _Unspec(),
-        NUM_SPS_SUB_SLOT: Union[ uint32, _Unspec] = _Unspec(),
+        NUM_SPS_SUB_SLOT: Union[ uint8, _Unspec] = _Unspec(),
         SUB_SLOT_ITERS_STARTING: Union[ uint64, _Unspec] = _Unspec(),
         DIFFICULTY_CONSTANT_FACTOR: Union[ uint128, _Unspec] = _Unspec(),
         DIFFICULTY_STARTING: Union[ uint64, _Unspec] = _Unspec(),
@@ -4466,8 +4472,10 @@ class ConsensusConstants:
         DISCRIMINANT_SIZE_BITS: Union[ uint16, _Unspec] = _Unspec(),
         NUMBER_ZERO_BITS_PLOT_FILTER_V1: Union[ uint8, _Unspec] = _Unspec(),
         NUMBER_ZERO_BITS_PLOT_FILTER_V2: Union[ uint8, _Unspec] = _Unspec(),
-        MIN_PLOT_SIZE: Union[ uint8, _Unspec] = _Unspec(),
-        MAX_PLOT_SIZE: Union[ uint8, _Unspec] = _Unspec(),
+        MIN_PLOT_SIZE_V1: Union[ uint8, _Unspec] = _Unspec(),
+        MAX_PLOT_SIZE_V1: Union[ uint8, _Unspec] = _Unspec(),
+        MIN_PLOT_SIZE_V2: Union[ uint8, _Unspec] = _Unspec(),
+        MAX_PLOT_SIZE_V2: Union[ uint8, _Unspec] = _Unspec(),
         SUB_SLOT_TIME_TARGET: Union[ uint16, _Unspec] = _Unspec(),
         NUM_SP_INTERVALS_EXTRA: Union[ uint8, _Unspec] = _Unspec(),
         MAX_FUTURE_TIME2: Union[ uint32, _Unspec] = _Unspec(),
@@ -4499,6 +4507,7 @@ class ConsensusConstants:
         PLOT_FILTER_128_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
         PLOT_FILTER_64_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
         PLOT_FILTER_32_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
+        PLOT_DIFFICULTY_INITIAL: Union[ uint8, _Unspec] = _Unspec(),
         PLOT_DIFFICULTY_4_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
         PLOT_DIFFICULTY_5_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
         PLOT_DIFFICULTY_6_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
