@@ -18,8 +18,8 @@ use chik_consensus::spendbundle_validation::{
     get_flags_for_height_and_constants, validate_klvm_and_signature,
 };
 use chik_protocol::{
-    py_calculate_ip_iters, py_calculate_sp_interval_iters, py_calculate_sp_iters,
-    py_expected_plot_size, py_is_overflow_block,
+    calculate_ip_iters, calculate_sp_interval_iters, calculate_sp_iters, is_overflow_block,
+    py_expected_plot_size,
 };
 use chik_protocol::{
     BlockRecord, Bytes32, ChallengeBlockInfo, ChallengeChainSubSlot, ClassgroupElement, Coin,
@@ -28,26 +28,26 @@ use chik_protocol::{
     Handshake, HeaderBlock, InfusedChallengeChainSubSlot, LazyNode, MempoolItemsAdded,
     MempoolItemsRemoved, Message, NewCompactVDF, NewPeak, NewPeakWallet,
     NewSignagePointOrEndOfSubSlot, NewTransaction, NewUnfinishedBlock, NewUnfinishedBlock2,
-    PoolTarget, Program, ProofBlockHeader, ProofOfSpace, PuzzleSolutionResponse, RecentChainData,
-    RegisterForCoinUpdates, RegisterForPhUpdates, RejectAdditionsRequest, RejectBlock,
-    RejectBlockHeaders, RejectBlocks, RejectCoinState, RejectHeaderBlocks, RejectHeaderRequest,
-    RejectPuzzleSolution, RejectPuzzleState, RejectRemovalsRequest, RemovedMempoolItem,
-    RequestAdditions, RequestBlock, RequestBlockHeader, RequestBlockHeaders, RequestBlocks,
-    RequestChildren, RequestCoinState, RequestCompactVDF, RequestCostInfo, RequestFeeEstimates,
-    RequestHeaderBlocks, RequestMempoolTransactions, RequestPeers, RequestProofOfWeight,
-    RequestPuzzleSolution, RequestPuzzleState, RequestRemovals, RequestRemoveCoinSubscriptions,
-    RequestRemovePuzzleSubscriptions, RequestSesInfo, RequestSignagePointOrEndOfSubSlot,
-    RequestTransaction, RequestUnfinishedBlock, RequestUnfinishedBlock2, RespondAdditions,
-    RespondBlock, RespondBlockHeader, RespondBlockHeaders, RespondBlocks, RespondChildren,
-    RespondCoinState, RespondCompactVDF, RespondCostInfo, RespondEndOfSubSlot, RespondFeeEstimates,
-    RespondHeaderBlocks, RespondPeers, RespondProofOfWeight, RespondPuzzleSolution,
-    RespondPuzzleState, RespondRemovals, RespondRemoveCoinSubscriptions,
-    RespondRemovePuzzleSubscriptions, RespondSesInfo, RespondSignagePoint, RespondToCoinUpdates,
-    RespondToPhUpdates, RespondTransaction, RespondUnfinishedBlock, RewardChainBlock,
-    RewardChainBlockUnfinished, RewardChainSubSlot, SendTransaction, SpendBundle,
-    SubEpochChallengeSegment, SubEpochData, SubEpochSegments, SubEpochSummary, SubSlotData,
-    SubSlotProofs, TimestampedPeerInfo, TransactionAck, TransactionsInfo, UnfinishedBlock,
-    UnfinishedHeaderBlock, VDFInfo, VDFProof, WeightProof,
+    PoolTarget, Program, ProofBlockHeader, ProofOfSpace, PuzzleSolutionResponse, PyPlotSize,
+    RecentChainData, RegisterForCoinUpdates, RegisterForPhUpdates, RejectAdditionsRequest,
+    RejectBlock, RejectBlockHeaders, RejectBlocks, RejectCoinState, RejectHeaderBlocks,
+    RejectHeaderRequest, RejectPuzzleSolution, RejectPuzzleState, RejectRemovalsRequest,
+    RemovedMempoolItem, RequestAdditions, RequestBlock, RequestBlockHeader, RequestBlockHeaders,
+    RequestBlocks, RequestChildren, RequestCoinState, RequestCompactVDF, RequestCostInfo,
+    RequestFeeEstimates, RequestHeaderBlocks, RequestMempoolTransactions, RequestPeers,
+    RequestProofOfWeight, RequestPuzzleSolution, RequestPuzzleState, RequestRemovals,
+    RequestRemoveCoinSubscriptions, RequestRemovePuzzleSubscriptions, RequestSesInfo,
+    RequestSignagePointOrEndOfSubSlot, RequestTransaction, RequestUnfinishedBlock,
+    RequestUnfinishedBlock2, RespondAdditions, RespondBlock, RespondBlockHeader,
+    RespondBlockHeaders, RespondBlocks, RespondChildren, RespondCoinState, RespondCompactVDF,
+    RespondCostInfo, RespondEndOfSubSlot, RespondFeeEstimates, RespondHeaderBlocks, RespondPeers,
+    RespondProofOfWeight, RespondPuzzleSolution, RespondPuzzleState, RespondRemovals,
+    RespondRemoveCoinSubscriptions, RespondRemovePuzzleSubscriptions, RespondSesInfo,
+    RespondSignagePoint, RespondToCoinUpdates, RespondToPhUpdates, RespondTransaction,
+    RespondUnfinishedBlock, RewardChainBlock, RewardChainBlockUnfinished, RewardChainSubSlot,
+    SendTransaction, SpendBundle, SubEpochChallengeSegment, SubEpochData, SubEpochSegments,
+    SubEpochSummary, SubSlotData, SubSlotProofs, TimestampedPeerInfo, TransactionAck,
+    TransactionsInfo, UnfinishedBlock, UnfinishedHeaderBlock, VDFInfo, VDFProof, WeightProof,
 };
 use chik_traits::ChikToPython;
 use klvm_utils::tree_hash_from_bytes;
@@ -74,8 +74,10 @@ use klvmr::cost::Cost;
 use klvmr::reduction::EvalErr;
 use klvmr::reduction::Reduction;
 use klvmr::run_program;
-use klvmr::serde::node_to_bytes;
-use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs, node_from_bytes_backrefs_record};
+use klvmr::serde::is_canonical_serialization;
+use klvmr::serde::{
+    node_from_bytes, node_from_bytes_backrefs, node_from_bytes_backrefs_record, node_to_bytes,
+};
 use klvmr::ChikDialect;
 
 use chik_bls::{
@@ -442,6 +444,68 @@ pub fn py_get_flags_for_height_and_constants(height: u32, constants: &ConsensusC
     get_flags_for_height_and_constants(height, constants)
 }
 
+#[pyo3::pyfunction]
+#[pyo3(name = "is_overflow_block")]
+pub fn py_is_overflow_block(
+    constants: &ConsensusConstants,
+    signage_point_index: u8,
+) -> pyo3::PyResult<bool> {
+    Ok(is_overflow_block(
+        constants.num_sps_sub_slot,
+        constants.num_sp_intervals_extra,
+        signage_point_index,
+    )?)
+}
+
+#[pyo3::pyfunction]
+#[pyo3(name = "calculate_sp_interval_iters")]
+pub fn py_calculate_sp_interval_iters(
+    constants: &ConsensusConstants,
+    sub_slot_iters: u64,
+) -> pyo3::PyResult<u64> {
+    Ok(calculate_sp_interval_iters(
+        constants.num_sps_sub_slot,
+        sub_slot_iters,
+    )?)
+}
+
+#[pyo3::pyfunction]
+#[pyo3(name = "calculate_sp_iters")]
+pub fn py_calculate_sp_iters(
+    constants: &ConsensusConstants,
+    sub_slot_iters: u64,
+    signage_point_index: u8,
+) -> pyo3::PyResult<u64> {
+    Ok(calculate_sp_iters(
+        constants.num_sps_sub_slot,
+        sub_slot_iters,
+        signage_point_index,
+    )?)
+}
+
+#[pyo3::pyfunction]
+#[pyo3(name = "calculate_ip_iters")]
+pub fn py_calculate_ip_iters(
+    constants: &ConsensusConstants,
+    sub_slot_iters: u64,
+    signage_point_index: u8,
+    required_iters: u64,
+) -> pyo3::PyResult<u64> {
+    Ok(calculate_ip_iters(
+        constants.num_sps_sub_slot,
+        constants.num_sp_intervals_extra,
+        sub_slot_iters,
+        signage_point_index,
+        required_iters,
+    )?)
+}
+
+#[pyo3::pyfunction]
+#[pyo3(name = "is_canonical_serialization")]
+pub fn py_is_canonical_serialization(buf: &[u8]) -> bool {
+    is_canonical_serialization(buf)
+}
+
 #[pymodule]
 pub fn chik_rs(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // generator functions
@@ -471,6 +535,9 @@ pub fn chik_rs(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_is_overflow_block, m)?)?;
     m.add_function(wrap_pyfunction!(py_expected_plot_size, m)?)?;
 
+    // KLVM validation
+    m.add_function(wrap_pyfunction!(py_is_canonical_serialization, m)?)?;
+
     // constants
     m.add_class::<ConsensusConstants>()?;
 
@@ -493,6 +560,8 @@ pub fn chik_rs(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // for backwards compatibility
     m.add("ALLOW_BACKREFS", 0)?;
+
+    m.add_class::<PyPlotSize>()?;
 
     // Chik classes
     m.add_class::<Coin>()?;

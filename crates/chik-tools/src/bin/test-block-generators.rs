@@ -8,8 +8,8 @@ use chik_consensus::run_block_generator::{run_block_generator, run_block_generat
 use chik_protocol::Program;
 use chik_tools::iterate_blocks;
 use klvmr::allocator::NodePtr;
-use klvmr::serde::node_from_bytes_backrefs;
 use klvmr::serde::Serializer;
+use klvmr::serde::{is_canonical_serialization, node_from_bytes_backrefs};
 use klvmr::Allocator;
 use std::collections::HashSet;
 use std::io::Write;
@@ -40,6 +40,10 @@ struct Args {
     /// This cannot be combined with --original-generator
     #[arg(long, default_value_t = false)]
     test_serializer: bool,
+
+    /// check all block generators to see if any is using overlong encoding
+    #[arg(long, default_value_t = false)]
+    test_canonical_encoding: bool,
 
     /// Compare the output from the default ROM running in consensus mode
     /// against the hard-fork rules for executing block generators. After the
@@ -188,6 +192,13 @@ fn main() {
                     .transactions_generator
                     .as_ref()
                     .expect("transactions_generator");
+
+                if args.test_canonical_encoding {
+                    if !is_canonical_serialization(generator) {
+                        println!("generator at height {height} uses overlong KLVM encoding");
+                    }
+                    return;
+                }
 
                 // after the hard fork, we run blocks without paying for the
                 // KLVM generator ROM

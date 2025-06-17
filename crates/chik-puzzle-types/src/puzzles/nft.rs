@@ -78,7 +78,7 @@ impl NftStateLayerArgs<TreeHash, TreeHash> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(solution)]
+#[klvm(list)]
 pub struct NftStateLayerSolution<I> {
     pub inner_solution: I,
 }
@@ -125,7 +125,7 @@ impl NftOwnershipLayerArgs<TreeHash, TreeHash> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(solution)]
+#[klvm(list)]
 pub struct NftOwnershipLayerSolution<I> {
     pub inner_solution: I,
 }

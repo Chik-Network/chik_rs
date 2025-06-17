@@ -59,7 +59,7 @@ impl DidArgs<TreeHash, TreeHash> {
 
 #[derive(Debug, Clone, PartialEq, Eq, ToKlvm, FromKlvm)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(solution)]
+#[klvm(list)]
 #[repr(u8)]
 pub enum DidSolution<I> {
     Recover(#[klvm(rest)] Box<DidRecoverySolution>) = 0,
@@ -68,7 +68,7 @@ pub enum DidSolution<I> {
 
 #[derive(Debug, Clone, PartialEq, Eq, ToKlvm, FromKlvm)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(solution)]
+#[klvm(list)]
 pub struct DidRecoverySolution {
     pub amount: u64,
     pub new_inner_puzzle_hash: Bytes32,
