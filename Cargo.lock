@@ -460,6 +460,7 @@ dependencies = [
  "klvm-utils",
  "klvmr",
  "num-bigint",
+ "rstest",
 ]
 
 [[package]]
