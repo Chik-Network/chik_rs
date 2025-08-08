@@ -287,18 +287,18 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chik"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
- "chik-bls 0.28.0",
+ "chik-bls 0.28.1",
  "chik-client",
  "chik-consensus",
  "chik-protocol",
  "chik-puzzle-types",
  "chik-secp",
  "chik-serde",
- "chik-sha2 0.28.0",
+ "chik-sha2 0.28.1",
  "chik-ssl",
- "chik-traits 0.28.0",
+ "chik-traits 0.28.1",
  "klvm-traits",
  "klvm-utils",
  "klvmr",
@@ -322,13 +322,13 @@ dependencies = [
 
 [[package]]
 name = "chik-bls"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "arbitrary",
  "blst",
  "chik-serde",
- "chik-sha2 0.28.0",
- "chik-traits 0.28.0",
+ "chik-sha2 0.28.1",
+ "chik-traits 0.28.1",
  "chik_py_streamable_macro",
  "criterion",
  "hex",
@@ -344,19 +344,19 @@ dependencies = [
 
 [[package]]
 name = "chik-bls-fuzz"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
- "chik-bls 0.28.0",
+ "chik-bls 0.28.1",
  "libfuzzer-sys",
  "pyo3",
 ]
 
 [[package]]
 name = "chik-client"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "chik-protocol",
- "chik-traits 0.28.0",
+ "chik-traits 0.28.1",
  "futures-util",
  "thiserror",
  "tokio",
@@ -366,17 +366,17 @@ dependencies = [
 
 [[package]]
 name = "chik-consensus"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "blocking-threadpool",
- "chik-bls 0.28.0",
+ "chik-bls 0.28.1",
  "chik-protocol",
  "chik-puzzle-types",
  "chik-puzzles",
- "chik-sha2 0.28.0",
- "chik-traits 0.28.0",
+ "chik-sha2 0.28.1",
+ "chik-traits 0.28.1",
  "chik_py_streamable_macro",
- "chik_streamable_macro 0.28.0",
+ "chik_streamable_macro 0.28.1",
  "criterion",
  "hex",
  "hex-literal",
@@ -393,14 +393,14 @@ dependencies = [
 
 [[package]]
 name = "chik-consensus-fuzz"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
- "chik-bls 0.28.0",
+ "chik-bls 0.28.1",
  "chik-consensus",
  "chik-fuzzing",
  "chik-protocol",
- "chik-sha2 0.28.0",
- "chik-traits 0.28.0",
+ "chik-sha2 0.28.1",
+ "chik-traits 0.28.1",
  "hex-literal",
  "klvm-traits",
  "klvm-utils",
@@ -410,26 +410,26 @@ dependencies = [
 
 [[package]]
 name = "chik-fuzzing"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "anyhow",
  "arbitrary",
- "chik-sha2 0.28.0",
+ "chik-sha2 0.28.1",
  "klvmr",
 ]
 
 [[package]]
 name = "chik-protocol"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "anyhow",
  "arbitrary",
- "chik-bls 0.28.0",
+ "chik-bls 0.28.1",
  "chik-serde",
- "chik-sha2 0.28.0",
- "chik-traits 0.28.0",
+ "chik-sha2 0.28.1",
+ "chik-traits 0.28.1",
  "chik_py_streamable_macro",
- "chik_streamable_macro 0.28.0",
+ "chik_streamable_macro 0.28.1",
  "hex",
  "indoc",
  "klvm-traits",
@@ -443,12 +443,12 @@ dependencies = [
 
 [[package]]
 name = "chik-protocol-fuzz"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "arbitrary",
  "chik-protocol",
- "chik-sha2 0.28.0",
- "chik-traits 0.28.0",
+ "chik-sha2 0.28.1",
+ "chik-traits 0.28.1",
  "hex",
  "klvm-traits",
  "klvmr",
@@ -457,14 +457,14 @@ dependencies = [
 
 [[package]]
 name = "chik-puzzle-types"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "anyhow",
  "arbitrary",
- "chik-bls 0.28.0",
+ "chik-bls 0.28.1",
  "chik-protocol",
  "chik-puzzles",
- "chik-sha2 0.28.0",
+ "chik-sha2 0.28.1",
  "hex",
  "hex-literal",
  "klvm-traits",
@@ -476,7 +476,7 @@ dependencies = [
 
 [[package]]
 name = "chik-puzzle-types-fuzz"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "chik-puzzle-types",
  "klvm-traits",
@@ -496,11 +496,11 @@ dependencies = [
 
 [[package]]
 name = "chik-secp"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "anyhow",
  "arbitrary",
- "chik-sha2 0.28.0",
+ "chik-sha2 0.28.1",
  "hex",
  "k256",
  "p256",
@@ -510,7 +510,7 @@ dependencies = [
 
 [[package]]
 name = "chik-serde"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "anyhow",
  "bincode",
@@ -531,7 +531,7 @@ dependencies = [
 
 [[package]]
 name = "chik-sha2"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "openssl",
  "sha2",
@@ -539,7 +539,7 @@ dependencies = [
 
 [[package]]
 name = "chik-ssl"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "rand",
  "rcgen",
@@ -550,16 +550,16 @@ dependencies = [
 
 [[package]]
 name = "chik-tools"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "blocking-threadpool",
- "chik-bls 0.28.0",
+ "chik-bls 0.28.1",
  "chik-consensus",
  "chik-protocol",
  "chik-puzzle-types",
  "chik-puzzles",
- "chik-sha2 0.28.0",
- "chik-traits 0.28.0",
+ "chik-sha2 0.28.1",
+ "chik-traits 0.28.1",
  "clap",
  "gnuplot",
  "hex",
@@ -585,17 +585,17 @@ dependencies = [
 
 [[package]]
 name = "chik-traits"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
- "chik-sha2 0.28.0",
- "chik_streamable_macro 0.28.0",
+ "chik-sha2 0.28.1",
+ "chik_streamable_macro 0.28.1",
  "pyo3",
  "thiserror",
 ]
 
 [[package]]
 name = "chik_py_streamable_macro"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "proc-macro-crate 1.3.1",
  "proc-macro2",
@@ -605,14 +605,14 @@ dependencies = [
 
 [[package]]
 name = "chik_rs"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
- "chik-bls 0.28.0",
+ "chik-bls 0.28.1",
  "chik-client",
  "chik-consensus",
  "chik-protocol",
  "chik-ssl",
- "chik-traits 0.28.0",
+ "chik-traits 0.28.1",
  "hex",
  "klvm-utils",
  "klvmr",
@@ -633,7 +633,7 @@ dependencies = [
 
 [[package]]
 name = "chik_streamable_macro"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "proc-macro-crate 1.3.1",
  "proc-macro2",
@@ -643,7 +643,7 @@ dependencies = [
 
 [[package]]
 name = "chik_wasm"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "wasm-bindgen",
 ]
@@ -1395,7 +1395,7 @@ dependencies = [
 
 [[package]]
 name = "klvm-derive"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1404,9 +1404,9 @@ dependencies = [
 
 [[package]]
 name = "klvm-traits"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
- "chik-bls 0.28.0",
+ "chik-bls 0.28.1",
  "chik-secp",
  "hex",
  "hex-literal",
@@ -1419,7 +1419,7 @@ dependencies = [
 
 [[package]]
 name = "klvm-traits-fuzz"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "klvm-traits",
  "klvmr",
@@ -1428,9 +1428,9 @@ dependencies = [
 
 [[package]]
 name = "klvm-utils"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
- "chik-sha2 0.28.0",
+ "chik-sha2 0.28.1",
  "hex",
  "hex-literal",
  "klvm-traits",
@@ -1440,7 +1440,7 @@ dependencies = [
 
 [[package]]
 name = "klvm-utils-fuzz"
-version = "0.28.0"
+version = "0.28.1"
 dependencies = [
  "chik-fuzzing",
  "klvm-traits",

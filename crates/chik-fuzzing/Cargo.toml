@@ -1,7 +1,12 @@
 [package]
 name = "chik-fuzzing"
-version = "0.28.0"
+version = "0.28.1"
 edition = "2021"
+license = "Apache-2.0"
+description = "Fuzzing tools for Chik Projects on Rust"
+authors = ["Jack Nelson <j.nelson@chiknetwork.com>"]
+homepage = "https://github.com/Chik-Network/chik_rs"
+repository = "https://github.com/Chik-Network/chik_rs"
 
 
 [package.metadata]
