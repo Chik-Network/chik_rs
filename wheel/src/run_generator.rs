@@ -6,8 +6,7 @@ use chik_consensus::owned_conditions::OwnedSpendBundleConditions;
 use chik_consensus::run_block_generator::run_block_generator as native_run_block_generator;
 use chik_consensus::run_block_generator::run_block_generator2 as native_run_block_generator2;
 use chik_consensus::validation_error::ValidationErr;
-use chik_protocol::Bytes;
-use chik_protocol::Coin;
+use chik_protocol::{Bytes, Bytes32, Coin};
 
 use klvmr::cost::Cost;
 
@@ -134,7 +133,7 @@ pub fn additions_and_removals<'a>(
     block_refs: &Bound<'_, PyList>,
     flags: u32,
     constants: &ConsensusConstants,
-) -> PyResult<(Vec<(Coin, Option<Bytes>)>, Vec<Coin>)> {
+) -> PyResult<(Vec<(Coin, Option<Bytes>)>, Vec<(Bytes32, Coin)>)> {
     let refs = block_refs
         .into_iter()
         .map(|b| {

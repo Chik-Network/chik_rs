@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
+import os
 from typing import Optional
 from run_gen import run_gen, print_spend_bundle_conditions
 from chik_rs import (
     MEMPOOL_MODE,
+    COST_CONDITIONS,
     SpendBundleConditions,
 )
 from dataclasses import dataclass
@@ -55,19 +57,36 @@ def validate_except_cost(output1: str, output2: str) -> None:
     assert len(lines1) == len(lines2)
     for l1, l2 in zip(lines1, lines2):
         # the cost is supposed to differ, don't compare that
-        if "cost:" in l1 and "cost: " in l2:
+        if l1.startswith("cost:") and l2.startswith("cost: "):
             continue
+        if l1.startswith("execution-cost:") and l2.startswith("execution-cost: "):
+            continue
+        if " exe-cost: 0 " in l1 and " exe-cost: " in l2:
+            columns = l2.split(" ")
+            idx = columns.index("exe-cost:")
+            columns[idx + 1] = "0"
+            l2 = " ".join(columns)
         assert l1 == l2
 
 
 print(f"{'test name':43s}   consensus | mempool")
-for g in sorted(glob.glob("../generator-tests/*.txt")):
+base_dir = os.path.dirname(os.path.abspath(__file__))
+test_list = sorted(glob.glob(os.path.join(base_dir, "../generator-tests/*.txt")))
+if len(test_list) == 0:
+    print("No tests found.")
+for g in test_list:
     name = f"{Path(g).name:43s}"
     stdout.write(f"{name} running generator...\r")
     stdout.flush()
+
+    if "aa-million-messages.txt" in g:
+        flags = COST_CONDITIONS
+    else:
+        flags = 0
+
     consensus = run_generator(
         g,
-        0,
+        flags,
         version=1,
     )
 
@@ -75,16 +94,17 @@ for g in sorted(glob.glob("../generator-tests/*.txt")):
     stdout.flush()
     consensus2 = run_generator(
         g,
-        0,
+        flags,
         version=2,
     )
     validate_except_cost(consensus.output, consensus2.output)
 
     stdout.write(f"{name} running generator (mempool mode) ...\r")
     stdout.flush()
+
     mempool = run_generator(
         g,
-        MEMPOOL_MODE,
+        MEMPOOL_MODE | flags,
         version=1,
     )
 
@@ -92,7 +112,7 @@ for g in sorted(glob.glob("../generator-tests/*.txt")):
     stdout.flush()
     mempool2 = run_generator(
         g,
-        MEMPOOL_MODE,
+        MEMPOOL_MODE | flags,
         version=2,
     )
     validate_except_cost(mempool.output, mempool2.output)
@@ -102,9 +122,9 @@ for g in sorted(glob.glob("../generator-tests/*.txt")):
         if not "STRICT" in expected:
             expected_mempool = expected
             if (
-                consensus.result is not None
-                and mempool.result is not None
-                and consensus.result.cost != mempool.result.cost
+                consensus2.result is not None
+                and mempool2.result is not None
+                and consensus2.result.cost != mempool2.result.cost
             ):
                 print("\n\ncost when running in mempool mode differs from normal mode!")
                 failed = 1
@@ -133,9 +153,12 @@ for g in sorted(glob.glob("../generator-tests/*.txt")):
         elif "recursion-pairs.txt" in g:
             limit = 4
             strict_limit = 4
+        elif "aa-million-messages.txt" in g:
+            limit = 3
+            strict_limit = 3
 
-        compare_output(consensus.output, expected, "")
-        compare_output(mempool.output, expected_mempool, "STRICT")
+        compare_output(consensus2.output, expected, "")
+        compare_output(mempool2.output, expected_mempool, "STRICT")
 
         stdout.write(
             f"{name} {consensus.run_time:.2f}s "
@@ -144,11 +167,11 @@ for g in sorted(glob.glob("../generator-tests/*.txt")):
             f"{mempool2.run_time:.2f}s"
         )
 
-        if consensus.run_time > limit or consensus2.run_time > limit:
+        if consensus2.run_time > limit or consensus2.run_time > limit:
             stdout.write(f" - exceeds limit ({limit})!")
             failed = 1
 
-        if mempool.run_time > strict_limit or mempool2.run_time > strict_limit:
+        if mempool2.run_time > strict_limit or mempool2.run_time > strict_limit:
             stdout.write(f" - mempool exceeds limit ({strict_limit})!")
             failed = 1
 

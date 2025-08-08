@@ -4,7 +4,9 @@ use chik_bls::PublicKey;
 use chik_consensus::conditions::{NewCoin, SpendBundleConditions, SpendConditions};
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::flags::{DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE};
-use chik_consensus::run_block_generator::{run_block_generator, run_block_generator2};
+use chik_consensus::run_block_generator::{
+    get_coinspends_for_trusted_block, run_block_generator, run_block_generator2,
+};
 use chik_protocol::Program;
 use chik_tools::iterate_blocks;
 use klvmr::allocator::NodePtr;
@@ -253,9 +255,10 @@ fn main() {
                     let new_cost = (ti.cost as i64 + cost_offset) as u64;
                     // since we just compressed the block, we have to run it
                     // with the new run_block_generator
+                    let prog = &Program::new(new_gen.into());
                     let mut recompressed_conditions = run_block_generator2(
                         &mut a,
-                        &Program::new(new_gen.into()),
+                        prog,
                         &block_refs,
                         new_cost,
                         flags,
@@ -275,6 +278,24 @@ fn main() {
 
                     // now ensure the outputs are the same
                     compare(&a, &recompressed_conditions, &conditions);
+
+                    // now lets check get_coinspends_for_trusted_block
+                    let vec_of_slices: Vec<&[u8]> =
+                        block_refs.iter().map(std::vec::Vec::as_slice).collect();
+
+                    let coinspends =
+                        get_coinspends_for_trusted_block(constants, prog, &vec_of_slices, flags)
+                            .expect("get_coinspends");
+                    for (i, spend) in recompressed_conditions.spends.into_iter().enumerate() {
+                        let parent_id = a.atom(spend.parent_id);
+                        assert_eq!(
+                            parent_id.as_ref(),
+                            coinspends[i].coin.parent_coin_info.as_slice()
+                        );
+                        let puzhash = a.atom(spend.puzzle_hash);
+                        assert_eq!(puzhash.as_ref(), coinspends[i].coin.puzzle_hash.as_slice());
+                        assert_eq!(spend.coin_amount, coinspends[i].coin.amount);
+                    }
                     return;
                 }
 
