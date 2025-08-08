@@ -1,0 +1,17 @@
+[package]
+name = "chik-fuzzing"
+version = "0.28.0"
+edition = "2021"
+
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+arbitrary = { workspace = true, features = ["derive"] }
+klvmr = { workspace = true, features = ["counters"] }
+chik-sha2 = { workspace = true }
+anyhow = { workspace = true }
+
+[lints]
+workspace = true

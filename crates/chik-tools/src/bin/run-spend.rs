@@ -1,4 +1,8 @@
 use chik_consensus::conditions::Condition;
+use chik_puzzle_types::cat::{CatArgs, CatSolution};
+use chik_puzzle_types::did::{DidArgs, DidSolution};
+use chik_puzzle_types::singleton::{SingletonArgs, SingletonSolution};
+use chik_puzzle_types::standard::{StandardArgs, StandardSolution};
 use chik_puzzle_types::Proof;
 use chik_puzzles::CAT_PUZZLE_HASH;
 use chik_puzzles::DID_INNERPUZ_HASH;
@@ -10,11 +14,6 @@ use klvm_traits::{FromKlvm, ToKlvm};
 use klvm_utils::tree_hash;
 use klvm_utils::CurriedProgram;
 use klvmr::{allocator::NodePtr, Allocator};
-
-use chik_puzzle_types::cat::{CatArgs, CatSolution};
-use chik_puzzle_types::did::{DidArgs, DidSolution};
-use chik_puzzle_types::singleton::{SingletonArgs, SingletonSolution};
-use chik_puzzle_types::standard::{StandardArgs, StandardSolution};
 
 /// Run a puzzle given a solution and print the resulting conditions
 #[derive(Parser, Debug)]
@@ -267,7 +266,7 @@ fn main() {
     use chik_consensus::opcodes::parse_opcode;
     use chik_consensus::validation_error::{first, rest};
     use chik_protocol::CoinSpend;
-    use klvmr::reduction::{EvalErr, Reduction};
+    use klvmr::reduction::Reduction;
     use klvmr::{run_program, ChikDialect};
     use std::fs::read;
 
@@ -292,8 +291,8 @@ fn main() {
     let Reduction(_klvm_cost, conditions) =
         match run_program(&mut a, &dialect, puzzle, solution, 11_000_000_000) {
             Ok(r) => r,
-            Err(EvalErr(_, e)) => {
-                println!("Eval Error: {e:?}");
+            Err(eval_err) => {
+                eprintln!("Error running program: {eval_err}");
                 return;
             }
         };

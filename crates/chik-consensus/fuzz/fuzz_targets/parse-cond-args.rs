@@ -1,8 +1,7 @@
 #![no_main]
-use libfuzzer_sys::fuzz_target;
+use libfuzzer_sys::{arbitrary, fuzz_target};
 
 use chik_consensus::conditions::parse_args;
-use chik_fuzz::{make_list, BitCursor};
 use klvmr::allocator::Allocator;
 
 use chik_consensus::flags::STRICT_ARGS_COUNT;
@@ -15,10 +14,12 @@ use chik_consensus::opcodes::{
     ASSERT_SECONDS_ABSOLUTE, ASSERT_SECONDS_RELATIVE, CREATE_COIN, CREATE_COIN_ANNOUNCEMENT,
     CREATE_PUZZLE_ANNOUNCEMENT, RECEIVE_MESSAGE, REMARK, RESERVE_FEE, SEND_MESSAGE,
 };
+use chik_fuzzing::make_list;
 
 fuzz_target!(|data: &[u8]| {
     let mut a = Allocator::new();
-    let input = make_list(&mut a, &mut BitCursor::new(data));
+    let mut unstructured = arbitrary::Unstructured::new(data);
+    let input = make_list(&mut a, &mut unstructured);
 
     for flags in &[0, STRICT_ARGS_COUNT] {
         for op in &[

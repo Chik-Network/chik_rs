@@ -7,7 +7,7 @@ use chik_traits::Streamable;
 use klvm_traits::{FromKlvm, FromKlvmError, ToKlvm, ToKlvmError};
 use klvmr::allocator::NodePtr;
 use klvmr::cost::Cost;
-use klvmr::reduction::EvalErr;
+use klvmr::error::EvalErr;
 use klvmr::run_program;
 use klvmr::serde::{
     node_from_bytes, node_from_bytes_backrefs, node_to_bytes, serialized_length_from_bytes,
@@ -76,7 +76,7 @@ impl Program {
         arg: &A,
     ) -> std::result::Result<(Cost, NodePtr), EvalErr> {
         let arg = arg.to_klvm(a).map_err(|_| {
-            EvalErr(
+            EvalErr::InvalidAllocArg(
                 a.nil(),
                 "failed to convert argument to KLVM objects".to_string(),
             )
@@ -168,6 +168,14 @@ use pyo3::types::{PyList, PyTuple};
 
 #[cfg(feature = "py-bindings")]
 use pyo3::exceptions::*;
+
+#[cfg(feature = "py-bindings")]
+#[allow(clippy::needless_pass_by_value)]
+// We use this for the map function, so using a reference here is not ideal.
+fn map_pyerr(err: EvalErr) -> PyErr {
+    // Convert EvalErr to PyErr, so that it can be used in python bindings
+    PyValueError::new_err(err.to_string())
+}
 
 // TODO: this conversion function should probably be converted to a type holding
 // the PyAny object implementing the ToKlvm trait. That way, the Program::to()
@@ -293,7 +301,7 @@ fn klvm_serialize(a: &mut Allocator, o: &Bound<'_, PyAny>) -> PyResult<NodePtr> 
         Ok(ret)
     // Program itself
     } else if let Ok(prg) = o.extract::<Program>() {
-        Ok(node_from_bytes_backrefs(a, prg.0.as_slice())?)
+        node_from_bytes_backrefs(a, prg.0.as_slice()).map_err(map_pyerr)
     } else {
         klvm_convert(a, o)
     }
@@ -356,7 +364,7 @@ impl Program {
         let klvm_args = klvm_serialize(&mut a, args)?;
 
         let r: Response = (|| -> PyResult<Response> {
-            let program = node_from_bytes_backrefs(&mut a, self.0.as_ref())?;
+            let program = node_from_bytes_backrefs(&mut a, self.0.as_ref()).map_err(map_pyerr)?;
             let dialect = ChikDialect::new(flags);
 
             Ok(py.allow_threads(|| run_program(&mut a, &dialect, program, klvm_args, max_cost)))
@@ -367,15 +375,15 @@ impl Program {
                 Ok((reduction.0, val))
             }
             Err(eval_err) => {
-                let blob = node_to_bytes(&a, eval_err.0).ok().map(hex::encode);
-                Err(PyValueError::new_err((eval_err.1, blob)))
+                let blob = node_to_bytes(&a, eval_err.node_ptr()).ok().map(hex::encode);
+                Err(PyValueError::new_err((eval_err.to_string(), blob)))
             }
         }
     }
 
     fn uncurry_rust(&self) -> PyResult<(LazyNode, LazyNode)> {
         let mut a = Allocator::new_limited(500_000_000);
-        let prg = node_from_bytes_backrefs(&mut a, self.0.as_ref())?;
+        let prg = node_from_bytes_backrefs(&mut a, self.0.as_ref()).map_err(map_pyerr)?;
         let Ok(uncurried) = CurriedProgram::<NodePtr, NodePtr>::from_klvm(&a, prg) else {
             let a = Rc::new(a);
             let prg = LazyNode::new(a.clone(), prg);

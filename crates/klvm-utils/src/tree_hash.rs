@@ -1,9 +1,10 @@
 use chik_sha2::Sha256;
 use hex_literal::hex;
 use klvmr::allocator::{Allocator, NodePtr, NodeVisitor, ObjectType, SExp};
+use klvmr::error::EvalErr;
 use klvmr::serde::node_from_bytes_backrefs;
+use std::fmt;
 use std::ops::Deref;
-use std::{fmt, io};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TreeHash([u8; 32]);
@@ -306,7 +307,7 @@ pub fn tree_hash_cached(a: &Allocator, node: NodePtr, cache: &mut TreeCache) -> 
     hashes[0]
 }
 
-pub fn tree_hash_from_bytes(buf: &[u8]) -> io::Result<TreeHash> {
+pub fn tree_hash_from_bytes(buf: &[u8]) -> Result<TreeHash, EvalErr> {
     let mut a = Allocator::new();
     let node = node_from_bytes_backrefs(&mut a, buf)?;
     let mut cache = TreeCache::default();

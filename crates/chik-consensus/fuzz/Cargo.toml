@@ -1,6 +1,6 @@
 [package]
-name = "chik-fuzz"
-version = "0.27.0"
+name = "chik-consensus-fuzz"
+version = "0.28.0"
 authors = ["Automatically generated"]
 publish = false
 edition = "2021"
@@ -22,6 +22,7 @@ chik-traits = { workspace = true }
 chik-consensus = { workspace = true }
 chik-bls = { workspace = true }
 hex-literal = { workspace = true }
+chik-fuzzing = { workspace = true }
 
 [[bin]]
 name = "puzzle-coin-solution"
