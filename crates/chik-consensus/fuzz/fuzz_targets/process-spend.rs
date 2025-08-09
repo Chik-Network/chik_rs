@@ -4,7 +4,7 @@ use chik_consensus::conditions::{
 };
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::flags::{NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT};
-use chik_fuzzing::make_tree;
+use klvm_fuzzing::make_tree;
 use klvmr::allocator::Allocator;
 use libfuzzer_sys::{arbitrary, fuzz_target};
 

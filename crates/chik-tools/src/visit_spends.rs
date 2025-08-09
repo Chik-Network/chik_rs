@@ -1,9 +1,9 @@
 use chik_consensus::generator_rom::KLVM_DESERIALIZER;
-use chik_consensus::run_block_generator::extract_n;
 use chik_consensus::validation_error::{first, ErrorCode, ValidationErr};
 use chik_protocol::Bytes32;
 use chik_protocol::FullBlock;
 use chik_traits::streamable::Streamable;
+use klvm_traits::{destructure_list, match_list, FromKlvm};
 use klvmr::allocator::NodePtr;
 use klvmr::chik_dialect::ChikDialect;
 use klvmr::reduction::Reduction;
@@ -126,10 +126,9 @@ pub fn visit_spends<
     while let Some((spend, rest)) = a.next(all_spends) {
         all_spends = rest;
         // process the spend
-        let [parent_id, puzzle, amount, solution, _spend_level_extra] =
-            extract_n::<5>(a, spend, ErrorCode::InvalidCondition)?;
-        let amount: u64 = a.number(amount).try_into().expect("invalid amount");
-        let parent_id = Bytes32::try_from(a.atom(parent_id).as_ref()).unwrap();
+        let destructure_list!(parent_id, puzzle, amount, solution, _spend_level_extra) =
+            <match_list!(Bytes32, NodePtr, u64, NodePtr, NodePtr)>::from_klvm(a, spend)
+                .map_err(|_| ValidationErr(spend, ErrorCode::InvalidCondition))?;
         callback(a, parent_id, amount, puzzle, solution);
     }
     Ok(())

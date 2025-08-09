@@ -7,7 +7,7 @@ use klvmr::{Allocator, NodePtr};
 
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::flags::{NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT};
-use chik_fuzzing::make_list;
+use klvm_fuzzing::make_list;
 
 fuzz_target!(|data: &[u8]| {
     let mut a = Allocator::new();

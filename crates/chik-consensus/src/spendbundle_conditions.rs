@@ -10,6 +10,7 @@ use crate::validation_error::ErrorCode;
 use crate::validation_error::ValidationErr;
 use chik_bls::PublicKey;
 use chik_protocol::{Bytes, SpendBundle};
+
 use klvm_utils::tree_hash;
 use klvmr::allocator::Allocator;
 use klvmr::chik_dialect::ChikDialect;
@@ -214,13 +215,15 @@ mod tests {
     // the puzzles.
     #[cfg(not(debug_assertions))]
     fn convert_block_to_bundle(generator: &[u8], block_refs: &[Vec<u8>]) -> SpendBundle {
-        use crate::run_block_generator::extract_n;
         use crate::run_block_generator::setup_generator_args;
-        use crate::validation_error::ErrorCode;
+        use chik_protocol::Bytes32;
         use chik_protocol::Coin;
+        use chik_protocol::Program;
+        use klvm_traits::{destructure_tuple, match_tuple, FromKlvm};
+        use klvm_utils::tree_hash_from_bytes;
         use klvmr::op_utils::first;
         use klvmr::serde::node_from_bytes_backrefs;
-        use klvmr::serde::node_to_bytes;
+        use klvmr::NodePtr;
 
         let mut a = make_allocator(MEMPOOL_MODE);
 
@@ -240,17 +243,17 @@ mod tests {
         while let Some((spend, rest)) = a.next(all_spends) {
             all_spends = rest;
             // process the spend
-            let [parent_id, puzzle, amount, solution, _spend_level_extra] =
-                extract_n::<5>(&a, spend, ErrorCode::InvalidCondition).expect("extract_n");
-
+            let destructure_tuple!(parent_id, puzzle, amount, solution, _) =
+                <match_tuple!(Bytes32, Program, u64, Program, NodePtr)>::from_klvm(&a, spend)
+                    .expect("parsing KLVM");
             spends.push(CoinSpend::new(
                 Coin::new(
-                    a.atom(parent_id).as_ref().try_into().expect("parent_id"),
-                    tree_hash(&a, puzzle).into(),
-                    a.number(amount).try_into().expect("amount"),
+                    parent_id.try_into().expect("parent_id"),
+                    tree_hash_from_bytes(puzzle.as_ref()).expect("hash").into(),
+                    amount,
                 ),
-                node_to_bytes(&a, puzzle).expect("node_to_bytes").into(),
-                node_to_bytes(&a, solution).expect("node_to_bytes").into(),
+                puzzle,
+                solution,
             ));
         }
         SpendBundle::new(spends, Signature::default())

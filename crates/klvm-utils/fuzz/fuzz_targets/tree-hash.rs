@@ -4,7 +4,7 @@ use libfuzzer_sys::{arbitrary, fuzz_target};
 use klvm_utils::{tree_hash, tree_hash_cached, TreeCache};
 use klvmr::{Allocator, NodePtr};
 
-use chik_fuzzing::make_tree;
+use klvm_fuzzing::make_tree;
 use klvmr::serde::{node_from_bytes_backrefs, node_to_bytes_backrefs};
 
 fn test_hash(a: &Allocator, node: NodePtr) {

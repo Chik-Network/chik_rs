@@ -2,7 +2,7 @@
 use libfuzzer_sys::{arbitrary, fuzz_target};
 
 use chik_consensus::get_puzzle_and_solution::parse_coin_spend;
-use chik_fuzzing::make_list;
+use klvm_fuzzing::make_list;
 use klvmr::allocator::Allocator;
 
 fuzz_target!(|data: &[u8]| {

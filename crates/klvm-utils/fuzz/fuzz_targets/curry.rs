@@ -2,7 +2,7 @@
 use klvm_traits::{FromKlvm, ToKlvm};
 use libfuzzer_sys::{arbitrary, fuzz_target};
 
-use chik_fuzzing::make_tree;
+use klvm_fuzzing::make_tree;
 use klvm_utils::CurriedProgram;
 use klvmr::allocator::{Allocator, NodePtr};
 

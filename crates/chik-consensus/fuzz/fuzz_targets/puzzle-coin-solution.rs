@@ -2,8 +2,8 @@
 use libfuzzer_sys::{arbitrary, fuzz_target};
 
 use chik_consensus::get_puzzle_and_solution::get_puzzle_and_solution_for_coin;
-use chik_fuzzing::make_tree;
 use chik_protocol::Coin;
+use klvm_fuzzing::make_tree;
 use klvmr::allocator::Allocator;
 
 const HASH: [u8; 32] = [

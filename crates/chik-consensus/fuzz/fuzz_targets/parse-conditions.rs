@@ -6,9 +6,9 @@ use chik_consensus::conditions::{
 };
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::spend_visitor::SpendVisitor;
-use chik_fuzzing::make_list;
 use chik_protocol::Bytes32;
 use chik_protocol::Coin;
+use klvm_fuzzing::make_list;
 use klvm_utils::tree_hash;
 use klvmr::{Allocator, NodePtr};
 use std::collections::HashSet;
