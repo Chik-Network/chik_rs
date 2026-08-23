@@ -134,15 +134,23 @@ jobs:
         with:
           python-version: ${{ matrix.python.major-dot-minor }}
 
-      - name: Update pip
-        run: |
-          python -m pip install --upgrade pip
-
       - name: Set up rust
         uses: dtolnay/rust-toolchain@stable
 
+      - uses: chik-network/actions/create-venv@main
+        # these conditionals excluding ubuntu are related to the use of `docker run` to handle ubuntu at this point
+        if: matrix.os.matrix != 'ubuntu'
+        id: create-venv
+
+      - uses: chik-network/actions/activate-venv@main
+        if: matrix.os.matrix != 'ubuntu'
+        with:
+          directories: ${{ steps.create-venv.outputs.activate-venv-directories }}
+
       - name: Install dependencies
+        if: matrix.os.matrix != 'ubuntu'
         run: |
+          python -m pip install --upgrade pip
           python -m pip install maturin
 
       - name: Build MacOs with maturin on Python ${{ matrix.python }}
@@ -150,8 +158,6 @@ jobs:
         env:
           MACOSX_DEPLOYMENT_TARGET: "13.0"
         run: |
-          python${{ matrix.python.major-dot-minor }} -m venv venv
-          . venv/bin/activate
           maturin build -i python --release -m wheel/Cargo.toml --features=openssl,pyo3/extension-module
 
       - name: Build Linux with maturin on Python ${{ matrix.python }}
@@ -178,16 +184,14 @@ jobs:
           CC: "clang"
           CFLAGS: "-D__BLST_PORTABLE__"
         run: |
-          py -${{ matrix.python.major-dot-minor }} -m venv venv
-          . .\venv\Scripts\Activate.ps1
           maturin build -i python --release -m wheel/Cargo.toml
 
       - uses: Chik-Network/actions/create-venv@main
-        id: create-venv
+        id: create-test-venv
 
       - uses: Chik-Network/actions/activate-venv@main
         with:
-          directories: ${{ steps.create-venv.outputs.activate-venv-directories }}
+          directories: ${{ steps.create-test-venv.outputs.activate-venv-directories }}
 
       - name: Install chik_rs wheel
         shell: bash
@@ -353,7 +357,7 @@ jobs:
           python -m venv venv
           . venv/bin/activate
           pip install colorama maturin pytest pytest-xdist blspy klvm==0.9.8
-          maturin develop --release -m wheel/Cargo.toml
+          maturin develop --release -m wheel/Cargo.toml --features=klvmr/allocator-debug
           # run pytest in a single process to avoid a race writing the coverage report
           pytest -n 0 tests
           sudo apt-get update

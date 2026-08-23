@@ -1,5 +1,13 @@
 from chik_rs import validate_klvm_and_signature
-from chik_rs import SpendBundle, CoinSpend, Coin, Program, PrivateKey, AugSchemeMPL
+from chik_rs import (
+    SpendBundle,
+    CoinSpend,
+    Coin,
+    Program,
+    PrivateKey,
+    AugSchemeMPL,
+    MEMPOOL_MODE,
+)
 from chik_rs.sized_ints import uint64
 from run_gen import DEFAULT_CONSTANTS
 import pytest
@@ -37,7 +45,10 @@ def test_validate_klvm_and_signature() -> None:
 
     # Validate KLVM and signature
     validate_klvm_and_signature(
-        spend_bundle, DEFAULT_CONSTANTS.MAX_BLOCK_COST_KLVM, DEFAULT_CONSTANTS, 1
+        spend_bundle,
+        DEFAULT_CONSTANTS.MAX_BLOCK_COST_KLVM,
+        DEFAULT_CONSTANTS,
+        MEMPOOL_MODE,
     )
 
     # Invalid message
@@ -48,7 +59,10 @@ def test_validate_klvm_and_signature() -> None:
 
     with pytest.raises(TypeError) as excinfo:
         validate_klvm_and_signature(
-            spend_bundle, DEFAULT_CONSTANTS.MAX_BLOCK_COST_KLVM, DEFAULT_CONSTANTS, 246
+            spend_bundle,
+            DEFAULT_CONSTANTS.MAX_BLOCK_COST_KLVM,
+            DEFAULT_CONSTANTS,
+            MEMPOOL_MODE,
         )
     error_code = excinfo.value.args[0]
     assert error_code == 7  # 7 = BadAggregateSignature
@@ -65,7 +79,10 @@ def test_validate_klvm_and_signature() -> None:
 
     with pytest.raises(TypeError) as excinfo:
         validate_klvm_and_signature(
-            spend_bundle, DEFAULT_CONSTANTS.MAX_BLOCK_COST_KLVM, DEFAULT_CONSTANTS, 246
+            spend_bundle,
+            DEFAULT_CONSTANTS.MAX_BLOCK_COST_KLVM,
+            DEFAULT_CONSTANTS,
+            MEMPOOL_MODE,
         )
     error_code = excinfo.value.args[0]
     assert error_code == 7  # 7 = BadAggregateSignature
