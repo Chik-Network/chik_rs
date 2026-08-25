@@ -1,0 +1,3 @@
+# TODO: ask stubtest/mypy about these as they seem unlikely to be our doing
+chik_rs\..*\.TypeVar\.__mro_entries__
+chik_rs\..*\.Protocol

@@ -50,3 +50,6 @@ chik_rs\.SpendBundle\.from_parent
 # these are here for backwards compatibility with the cyclical dependency on
 # chik-blockchain (for tests)
 chik_rs\.ALLOW_BACKREFS
+
+# banning * imports
+chik_rs\.datalayer\.__all__
