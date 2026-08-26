@@ -6,10 +6,10 @@ use crate::conditions::{
 };
 use crate::consensus_constants::ConsensusConstants;
 use crate::flags::DONT_VALIDATE_SIGNATURE;
-use crate::generator_rom::{GENERATOR_ROM, KLVM_DESERIALIZER};
 use crate::validation_error::{first, ErrorCode, ValidationErr};
 use chik_bls::{BlsCache, Signature};
 use chik_protocol::{BytesImpl, Coin, CoinSpend, Program};
+use chik_puzzles::{CHIKLISP_DESERIALISATION, ROM_BOOTSTRAP_GENERATOR};
 use klvm_traits::FromKlvm;
 use klvm_utils::{tree_hash_cached, TreeCache};
 use klvmr::allocator::{Allocator, NodePtr};
@@ -18,7 +18,7 @@ use klvmr::cost::Cost;
 use klvmr::reduction::Reduction;
 use klvmr::run_program::run_program;
 use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
-use klvmr::{SExp, LIMIT_HEAP};
+use klvmr::SExp;
 
 pub fn subtract_cost(
     a: &Allocator,
@@ -42,7 +42,7 @@ pub fn setup_generator_args<GenBuf: AsRef<[u8]>, I: IntoIterator<Item = GenBuf>>
 where
     <I as IntoIterator>::IntoIter: DoubleEndedIterator,
 {
-    let klvm_deserializer = node_from_bytes(a, &KLVM_DESERIALIZER)?;
+    let klvm_deserializer = node_from_bytes(a, &CHIKLISP_DESERIALISATION)?;
 
     // iterate in reverse order since we're building a linked list from
     // the tail
@@ -91,7 +91,7 @@ where
 
     subtract_cost(a, &mut cost_left, byte_cost)?;
 
-    let generator_rom = node_from_bytes(a, &GENERATOR_ROM)?;
+    let rom_generator = node_from_bytes(a, &ROM_BOOTSTRAP_GENERATOR)?;
     let program = node_from_bytes_backrefs(a, program)?;
 
     // this is setting up the arguments to be passed to the generator ROM,
@@ -110,7 +110,7 @@ where
 
     let dialect = ChikDialect::new(flags);
     let Reduction(klvm_cost, generator_output) =
-        run_program(a, &dialect, generator_rom, args, cost_left)?;
+        run_program(a, &dialect, rom_generator, args, cost_left)?;
 
     subtract_cost(a, &mut cost_left, klvm_cost)?;
 
@@ -252,6 +252,8 @@ where
     Ok(ret)
 }
 
+// this function is less capable of handling problematic generators as they are
+// returning serialized puzzles, which may not be possible. They will simply ignore many of the bad cases.
 pub fn get_coinspends_for_trusted_block<GenBuf: AsRef<[u8]>, I: IntoIterator<Item = GenBuf>>(
     constants: &ConsensusConstants,
     generator: &Program,
@@ -261,7 +263,7 @@ pub fn get_coinspends_for_trusted_block<GenBuf: AsRef<[u8]>, I: IntoIterator<Ite
 where
     <I as IntoIterator>::IntoIter: DoubleEndedIterator,
 {
-    let mut a = make_allocator(LIMIT_HEAP);
+    let mut a = make_allocator(flags);
     let mut output = Vec::<CoinSpend>::new();
 
     let program = node_from_bytes_backrefs(&mut a, generator)?;
@@ -316,6 +318,9 @@ where
     Ok(output)
 }
 
+// this function is less capable of handling problematic generators as they are
+// returning serialized puzzles, which may not be possible. They will simply ignore many of the bad cases.
+
 // this function returns a list of tuples (coinspend, conditions)
 // conditions are formatted as a vec of tuples of (condition_opcode, args)
 #[allow(clippy::type_complexity)]
@@ -331,7 +336,7 @@ pub fn get_coinspends_with_conditions_for_trusted_block<
 where
     <I as IntoIterator>::IntoIter: DoubleEndedIterator,
 {
-    let mut a = make_allocator(LIMIT_HEAP);
+    let mut a = make_allocator(flags);
     let mut output = Vec::<(CoinSpend, Vec<(u32, Vec<Vec<u8>>)>)>::new();
 
     let program = node_from_bytes_backrefs(&mut a, generator)?;
@@ -381,13 +386,15 @@ where
         let Ok(solution_program) = Program::from_klvm(&a, solution) else {
             continue;
         };
-        let coinspend = CoinSpend::new(coin, puzzle_program.clone(), solution_program.clone());
-        let Ok((_, res)) =
-            puzzle_program.run(&mut a, flags, constants.max_block_cost_klvm, &solution)
-        else {
-            output.push((coinspend, cond_output));
-            continue; // Skip this spend on error
-        };
+
+        let Reduction(_klvm_cost, res) = run_program(
+            &mut a,
+            &dialect,
+            puzzle,
+            solution,
+            constants.max_block_cost_klvm,
+        )
+        .map_err(|_| ValidationErr(program, ErrorCode::GeneratorRuntimeError))?;
         // conditions_list is the full returned output of puzzle ran with solution
         // ((51 0xcafef00d 100) (51 0x1234 200) ...)
 
@@ -425,7 +432,10 @@ where
             // we have a valid condition
             cond_output.push((opcode, bytes_vec));
         }
-        output.push((coinspend, cond_output));
+        output.push((
+            CoinSpend::new(coin, puzzle_program.clone(), solution_program.clone()),
+            cond_output,
+        ));
     }
     Ok(output)
 }

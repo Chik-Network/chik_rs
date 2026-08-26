@@ -1,7 +1,7 @@
-use chik_consensus::generator_rom::KLVM_DESERIALIZER;
 use chik_consensus::validation_error::{first, ErrorCode, ValidationErr};
 use chik_protocol::Bytes32;
 use chik_protocol::FullBlock;
+use chik_puzzles::CHIKLISP_DESERIALISATION;
 use chik_traits::streamable::Streamable;
 use klvm_traits::{destructure_list, match_list, FromKlvm};
 use klvmr::allocator::NodePtr;
@@ -97,7 +97,7 @@ pub fn visit_spends<
     max_cost: u64,
     mut callback: F,
 ) -> Result<(), ValidationErr> {
-    let klvm_deserializer = node_from_bytes(a, &KLVM_DESERIALIZER)?;
+    let klvm_deserializer = node_from_bytes(a, &CHIKLISP_DESERIALISATION)?;
     let program = node_from_bytes_backrefs(a, program)?;
 
     // iterate in reverse order since we're building a linked list from

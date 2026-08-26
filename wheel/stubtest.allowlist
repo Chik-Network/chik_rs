@@ -7,24 +7,6 @@ chik_rs\.chik_rs\..*
 # runtime accessible.  is there a better option for handling this?
 chik_rs\.ReadableBuffer
 
-# TODO: G1Element->PublicKey expects *args
-chik_rs\.G1Element\.__init__
-
-# TODO: G2Element->Signature expects *args
-chik_rs\.G2Element\.__init__
-
-# TODO: expects *args
-chik_rs\.GTElement\.__init__
-
-# TODO: PrivateKey->SecretKey expects *args
-chik_rs\.PrivateKey\.__init__
-
-# TODO: expects *args
-chik_rs\.RequestPeers\.__init__
-
-# TODO: expects *args
-chik_rs\.RequestCostInfo\.__init__
-
 # TODO: ask stubtest/mypy about these as they seem unlikely to be our doing
 chik_rs\.sized_byte_class\.Iterable
 chik_rs\.sized_byte_class\.BinaryIO\.write
@@ -46,10 +28,6 @@ chik_rs\.spend\.SpendConditions\.from_parent
 chik_rs\.Coin\.from_parent
 chik_rs\.CoinSpend\.from_parent
 chik_rs\.SpendBundle\.from_parent
-
-# these are here for backwards compatibility with the cyclical dependency on
-# chik-blockchain (for tests)
-chik_rs\.ALLOW_BACKREFS
 
 # banning * imports
 chik_rs\.datalayer\.__all__
