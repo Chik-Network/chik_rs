@@ -123,6 +123,7 @@ MEMPOOL_MODE: int = ...
 DONT_VALIDATE_SIGNATURE: int = ...
 COMPUTE_FINGERPRINT: int = ...
 COST_CONDITIONS: int = ...
+SIMPLE_GENERATOR: int = ...
 
 ELIGIBLE_FOR_DEDUP: int = ...
 ELIGIBLE_FOR_FF: int = ...
@@ -190,14 +191,14 @@ class MerkleSet:
     ) -> MerkleSet: ...
 
 @final
-class PlotSize:
+class PlotParam:
     @staticmethod
-    def make_v1(s: int) -> PlotSize: ...
+    def make_v1(s: int) -> PlotParam: ...
     @staticmethod
-    def make_v2(s: int) -> PlotSize: ...
+    def make_v2(s: int) -> PlotParam: ...
 
     size_v1: Optional[uint8]
-    size_v2: Optional[uint8]
+    strength_v2: Optional[uint8]
 
 # Proof-of-space 2
 @final
@@ -208,7 +209,7 @@ class QualityProof:
 class Prover:
     def __new__(cls, plot_path: str) -> Prover: ...
     def get_qualities_for_challenge(self, challenge: bytes32, proof_fragment_filter: int) -> list[QualityProof]: ...
-    def get_partial_proof(self, quality: QualityProof) -> tuple[list[uint64], int]: ...
+    def get_partial_proof(self, quality: QualityProof) -> tuple[PartialProof, int]: ...
     def size(self) -> int: ...
     def plot_id(self) -> bytes32: ...
     def get_strength(self) -> int: ...
@@ -227,7 +228,7 @@ def create_v2_plot(filename: str,
 
 def validate_proof_v2(plot_id: bytes32, size: int, challenge: bytes32, required_plot_strength: int, proof_fragment_scan_filter: int, proof: bytes) -> Optional[bytes32]: ...
 
-def solve_proof(fragments: list[uint64], plot_id: bytes32, strength: int, k: int) -> bytes: ...
+def solve_proof(fragments: PartialProof, plot_id: bytes32, strength: int, k: int) -> bytes: ...
 
 
 @final
@@ -2084,6 +2085,32 @@ class HeaderBlock:
         transactions_info: Union[ Optional[TransactionsInfo], _Unspec] = _Unspec()) -> HeaderBlock: ...
 
 @final
+class PartialProof:
+    proof_fragments: list[uint64]
+    def __new__(
+        cls,
+        proof_fragments: Sequence[uint64]
+    ) -> PartialProof: ...
+    def __hash__(self) -> int: ...
+    def __repr__(self) -> str: ...
+    def __deepcopy__(self, memo: object) -> Self: ...
+    def __copy__(self) -> Self: ...
+    @classmethod
+    def from_bytes(cls, blob: bytes) -> Self: ...
+    @classmethod
+    def from_bytes_unchecked(cls, blob: bytes) -> Self: ...
+    @classmethod
+    def parse_rust(cls, blob: ReadableBuffer, trusted: bool = False) -> tuple[Self, int]: ...
+    def to_bytes(self) -> bytes: ...
+    def __bytes__(self) -> bytes: ...
+    def stream_to_bytes(self) -> bytes: ...
+    def get_hash(self) -> bytes32: ...
+    def to_json_dict(self) -> dict[str, Any]: ...
+    @classmethod
+    def from_json_dict(cls, json_dict: dict[str, Any]) -> Self: ...
+    def replace(self, *, proof_fragments: Union[ list[uint64], _Unspec] = _Unspec()) -> PartialProof: ...
+
+@final
 class TimestampedPeerInfo:
     host: str
     port: uint16
@@ -2186,7 +2213,7 @@ class ProofOfSpace:
     plot_public_key: G1Element
     version_and_size: uint8
     proof: bytes
-    def size(self) -> PlotSize: ...
+    def param(self) -> PlotParam: ...
     def __new__(
         cls,
         challenge: bytes,
@@ -4458,8 +4485,7 @@ class ConsensusConstants:
     NUMBER_ZERO_BITS_PLOT_FILTER_V2: uint8
     MIN_PLOT_SIZE_V1: uint8
     MAX_PLOT_SIZE_V1: uint8
-    MIN_PLOT_SIZE_V2: uint8
-    MAX_PLOT_SIZE_V2: uint8
+    PLOT_SIZE_V2: uint8
     SUB_SLOT_TIME_TARGET: uint16
     NUM_SP_INTERVALS_EXTRA: uint8
     MAX_FUTURE_TIME2: uint32
@@ -4487,11 +4513,12 @@ class ConsensusConstants:
     POOL_SUB_SLOT_ITERS: uint64
     HARD_FORK_HEIGHT: uint32
     HARD_FORK2_HEIGHT: uint32
-    PLOT_V1_PHASE_OUT: uint32
+    PLOT_V1_PHASE_OUT_EPOCH_BITS: uint8
     PLOT_FILTER_128_HEIGHT: uint32
     PLOT_FILTER_64_HEIGHT: uint32
     PLOT_FILTER_32_HEIGHT: uint32
-    PLOT_STRENGTH_INITIAL: uint8
+    MIN_PLOT_STRENGTH: uint8
+    MAX_PLOT_STRENGTH: uint8
     QUALITY_PROOF_SCAN_FILTER: uint8
     PLOT_FILTER_V2_FIRST_ADJUSTMENT_HEIGHT: uint32
     PLOT_FILTER_V2_SECOND_ADJUSTMENT_HEIGHT: uint32
@@ -4514,8 +4541,7 @@ class ConsensusConstants:
         NUMBER_ZERO_BITS_PLOT_FILTER_V2: uint8,
         MIN_PLOT_SIZE_V1: uint8,
         MAX_PLOT_SIZE_V1: uint8,
-        MIN_PLOT_SIZE_V2: uint8,
-        MAX_PLOT_SIZE_V2: uint8,
+        PLOT_SIZE_V2: uint8,
         SUB_SLOT_TIME_TARGET: uint16,
         NUM_SP_INTERVALS_EXTRA: uint8,
         MAX_FUTURE_TIME2: uint32,
@@ -4543,11 +4569,12 @@ class ConsensusConstants:
         POOL_SUB_SLOT_ITERS: uint64,
         HARD_FORK_HEIGHT: uint32,
         HARD_FORK2_HEIGHT: uint32,
-        PLOT_V1_PHASE_OUT: uint32,
+        PLOT_V1_PHASE_OUT_EPOCH_BITS: uint8,
         PLOT_FILTER_128_HEIGHT: uint32,
         PLOT_FILTER_64_HEIGHT: uint32,
         PLOT_FILTER_32_HEIGHT: uint32,
-        PLOT_STRENGTH_INITIAL: uint8,
+        MIN_PLOT_STRENGTH: uint8,
+        MAX_PLOT_STRENGTH: uint8,
         QUALITY_PROOF_SCAN_FILTER: uint8,
         PLOT_FILTER_V2_FIRST_ADJUSTMENT_HEIGHT: uint32,
         PLOT_FILTER_V2_SECOND_ADJUSTMENT_HEIGHT: uint32,
@@ -4586,8 +4613,7 @@ class ConsensusConstants:
         NUMBER_ZERO_BITS_PLOT_FILTER_V2: Union[ uint8, _Unspec] = _Unspec(),
         MIN_PLOT_SIZE_V1: Union[ uint8, _Unspec] = _Unspec(),
         MAX_PLOT_SIZE_V1: Union[ uint8, _Unspec] = _Unspec(),
-        MIN_PLOT_SIZE_V2: Union[ uint8, _Unspec] = _Unspec(),
-        MAX_PLOT_SIZE_V2: Union[ uint8, _Unspec] = _Unspec(),
+        PLOT_SIZE_V2: Union[ uint8, _Unspec] = _Unspec(),
         SUB_SLOT_TIME_TARGET: Union[ uint16, _Unspec] = _Unspec(),
         NUM_SP_INTERVALS_EXTRA: Union[ uint8, _Unspec] = _Unspec(),
         MAX_FUTURE_TIME2: Union[ uint32, _Unspec] = _Unspec(),
@@ -4615,11 +4641,12 @@ class ConsensusConstants:
         POOL_SUB_SLOT_ITERS: Union[ uint64, _Unspec] = _Unspec(),
         HARD_FORK_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
         HARD_FORK2_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
-        PLOT_V1_PHASE_OUT: Union[ uint32, _Unspec] = _Unspec(),
+        PLOT_V1_PHASE_OUT_EPOCH_BITS: Union[ uint8, _Unspec] = _Unspec(),
         PLOT_FILTER_128_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
         PLOT_FILTER_64_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
         PLOT_FILTER_32_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
-        PLOT_STRENGTH_INITIAL: Union[ uint8, _Unspec] = _Unspec(),
+        MIN_PLOT_STRENGTH: Union[ uint8, _Unspec] = _Unspec(),
+        MAX_PLOT_STRENGTH: Union[ uint8, _Unspec] = _Unspec(),
         QUALITY_PROOF_SCAN_FILTER: Union[ uint8, _Unspec] = _Unspec(),
         PLOT_FILTER_V2_FIRST_ADJUSTMENT_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
         PLOT_FILTER_V2_SECOND_ADJUSTMENT_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),

@@ -1,6 +1,6 @@
 use crate::allocator::make_allocator;
 use crate::consensus_constants::ConsensusConstants;
-use crate::flags::COST_CONDITIONS;
+use crate::flags::{COST_CONDITIONS, SIMPLE_GENERATOR};
 use crate::owned_conditions::OwnedSpendBundleConditions;
 use crate::spendbundle_conditions::run_spendbundle;
 use crate::validation_error::{ErrorCode, ValidationErr};
@@ -10,7 +10,6 @@ use chik_protocol::SpendBundle;
 use chik_sha2::Sha256;
 use klvmr::chik_dialect::ENABLE_KECCAK_OPS_OUTSIDE_GUARD;
 use klvmr::{NodePtr, LIMIT_HEAP};
-use std::time::{Duration, Instant};
 
 // type definition makes clippy happy
 pub type ValidationPair = ([u8; 32], GTElement);
@@ -23,9 +22,7 @@ pub fn validate_klvm_and_signature(
     max_cost: u64,
     constants: &ConsensusConstants,
     flags: u32,
-) -> Result<(OwnedSpendBundleConditions, Vec<ValidationPair>, Duration), ValidationErr> {
-    let start_time = Instant::now();
-
+) -> Result<(OwnedSpendBundleConditions, Vec<ValidationPair>), ValidationErr> {
     let mut a = make_allocator(LIMIT_HEAP);
     let (sbc, pkm_pairs) = run_spendbundle(&mut a, spend_bundle, max_cost, flags, constants)?;
     let conditions = OwnedSpendBundleConditions::from(&a, sbc);
@@ -59,7 +56,7 @@ pub fn validate_klvm_and_signature(
     }
 
     // Collect results
-    Ok((conditions, pairs, start_time.elapsed()))
+    Ok((conditions, pairs))
 }
 
 pub fn get_flags_for_height_and_constants(height: u32, constants: &ConsensusConstants) -> u32 {
@@ -85,7 +82,7 @@ pub fn get_flags_for_height_and_constants(height: u32, constants: &ConsensusCons
     // In hard fork 2, we enable the keccak operator outside the softfork guard
     let mut flags: u32 = 0;
     if height >= constants.hard_fork2_height {
-        flags |= ENABLE_KECCAK_OPS_OUTSIDE_GUARD | COST_CONDITIONS;
+        flags |= ENABLE_KECCAK_OPS_OUTSIDE_GUARD | COST_CONDITIONS | SIMPLE_GENERATOR;
     }
     flags
 }
@@ -287,7 +284,7 @@ ff843B9ACA00\
             coin_spends: vec![spend],
             aggregated_signature: Signature::default(),
         };
-        let (conds, _pks, _timing) = validate_klvm_and_signature(
+        let (conds, _pks) = validate_klvm_and_signature(
             &spend_bundle,
             TEST_CONSTANTS.max_block_cost_klvm,
             &TEST_CONSTANTS,
@@ -316,7 +313,7 @@ ff843B9ACA00\
         };
         let expected_cost = 5_527_116_044;
         let max_cost = expected_cost;
-        let (conds, _, _) =
+        let (conds, _) =
             validate_klvm_and_signature(&spend_bundle, max_cost, &TEST_CONSTANTS, MEMPOOL_MODE)
                 .expect("validate_klvm_and_signature failed");
         assert_eq!(conds.cost, expected_cost);

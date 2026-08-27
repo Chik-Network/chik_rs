@@ -8,7 +8,7 @@ use chik_consensus::check_time_locks::py_check_time_locks;
 use chik_consensus::consensus_constants::ConsensusConstants;
 use chik_consensus::flags::{
     COMPUTE_FINGERPRINT, COST_CONDITIONS, DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE, NO_UNKNOWN_CONDS,
-    STRICT_ARGS_COUNT,
+    SIMPLE_GENERATOR, STRICT_ARGS_COUNT,
 };
 use chik_consensus::merkle_set::compute_merkle_set_root as compute_merkle_root_impl;
 use chik_consensus::merkle_tree::{validate_merkle_proof, MerkleSet};
@@ -25,7 +25,7 @@ use chik_consensus::spendbundle_validation::{
 };
 use chik_protocol::{
     calculate_ip_iters, calculate_sp_interval_iters, calculate_sp_iters, is_overflow_block,
-    py_expected_plot_size,
+    py_expected_plot_size, PartialProof,
 };
 use chik_protocol::{
     BlockRecord, Bytes32, ChallengeBlockInfo, ChallengeChainSubSlot, ClassgroupElement, Coin,
@@ -34,7 +34,7 @@ use chik_protocol::{
     FullBlock, Handshake, HeaderBlock, InfusedChallengeChainSubSlot, LazyNode, MempoolItemsAdded,
     MempoolItemsRemoved, Message, NewCompactVDF, NewPeak, NewPeakWallet,
     NewSignagePointOrEndOfSubSlot, NewTransaction, NewUnfinishedBlock, NewUnfinishedBlock2,
-    PoolTarget, Program, ProofBlockHeader, ProofOfSpace, PuzzleSolutionResponse, PyPlotSize,
+    PoolTarget, Program, ProofBlockHeader, ProofOfSpace, PuzzleSolutionResponse, PyPlotParam,
     RecentChainData, RegisterForCoinUpdates, RegisterForPhUpdates, RejectAdditionsRequest,
     RejectBlock, RejectBlockHeaders, RejectBlocks, RejectCoinState, RejectHeaderBlocks,
     RejectHeaderRequest, RejectPuzzleSolution, RejectPuzzleState, RejectRemovalsRequest,
@@ -71,6 +71,7 @@ use pyo3::wrap_pyfunction;
 use std::path::Path;
 
 use std::iter::zip;
+use std::time::Instant;
 
 use crate::run_program::{run_chik_program, serialized_length, serialized_length_trusted};
 
@@ -429,8 +430,10 @@ pub fn py_validate_klvm_and_signature(
     constants: &ConsensusConstants,
     flags: u32,
 ) -> PyResult<(OwnedSpendBundleConditions, Vec<([u8; 32], GTElement)>, f32)> {
-    let (owned_conditions, additions, duration) =
+    let start_time = Instant::now();
+    let (owned_conditions, additions) =
         py.allow_threads(|| validate_klvm_and_signature(new_spend, max_cost, constants, flags))?;
+    let duration = start_time.elapsed();
     Ok((owned_conditions, additions, duration.as_secs_f32()))
 }
 
@@ -632,12 +635,12 @@ impl Prover {
         Ok(qualities.into_iter().map(&QualityProof).collect())
     }
 
-    pub fn get_partial_proof(&self, quality: &QualityProof) -> PyResult<(Vec<u64>, u8)> {
+    pub fn get_partial_proof(&self, quality: &QualityProof) -> PyResult<(PartialProof, u8)> {
         let chik_pos2::PartialProof {
             proof_fragments,
             strength,
         } = self.0.get_partial_proof(&quality.0)?;
-        Ok((proof_fragments.to_vec(), strength))
+        Ok((PartialProof { proof_fragments }, strength))
     }
 
     pub fn size(&self) -> u8 {
@@ -716,30 +719,13 @@ pub fn validate_proof_v2(
 }
 
 #[pyo3::pyfunction]
-pub fn solve_proof(
-    fragments: Vec<u64>,
-    plot_id: Bytes32,
-    strength: u8,
-    k: u8,
-) -> PyResult<Vec<u8>> {
-    let num_fragments = fragments.len();
-    let partial_proof = match fragments.try_into() {
-        Err(_) => {
-            return Err(PyRuntimeError::new_err(format!(
-                "wrong number of proof fragments {num_fragments} expected 64"
-            )));
-        }
-        Ok(proof_fragments) => chik_pos2::PartialProof {
-            proof_fragments,
-            strength,
-        },
+pub fn solve_proof(fragments: &PartialProof, plot_id: Bytes32, strength: u8, k: u8) -> Vec<u8> {
+    let partial_proof = chik_pos2::PartialProof {
+        proof_fragments: fragments.proof_fragments,
+        strength,
     };
 
-    Ok(chik_pos2::solve_proof(
-        &partial_proof,
-        &plot_id.to_bytes(),
-        k,
-    ))
+    chik_pos2::solve_proof(&partial_proof, &plot_id.to_bytes(), k)
 }
 
 #[pymodule]
@@ -777,6 +763,7 @@ pub fn chik_rs(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(solve_proof, m)?)?;
     m.add_class::<Prover>()?;
     m.add_class::<QualityProof>()?;
+    m.add_class::<PartialProof>()?;
 
     // check time lock
     m.add_function(wrap_pyfunction!(py_check_time_locks, m)?)?;
@@ -811,8 +798,9 @@ pub fn chik_rs(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("DONT_VALIDATE_SIGNATURE", DONT_VALIDATE_SIGNATURE)?;
     m.add("COMPUTE_FINGERPRINT", COMPUTE_FINGERPRINT)?;
     m.add("COST_CONDITIONS", COST_CONDITIONS)?;
+    m.add("SIMPLE_GENERATOR", SIMPLE_GENERATOR)?;
 
-    m.add_class::<PyPlotSize>()?;
+    m.add_class::<PyPlotParam>()?;
 
     // Chik classes
     m.add_class::<Coin>()?;

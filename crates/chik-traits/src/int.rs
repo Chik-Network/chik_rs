@@ -79,3 +79,13 @@ impl<T: ChikToPython, U: ChikToPython, V: ChikToPython> ChikToPython for (T, U, 
         .into_any())
     }
 }
+
+impl<T: ChikToPython, const N: usize> ChikToPython for [T; N] {
+    fn to_python<'a>(&self, py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
+        let ret = PyList::empty(py);
+        for v in self {
+            ret.append(v.to_python(py)?)?;
+        }
+        Ok(ret.into_any())
+    }
+}
