@@ -55,6 +55,7 @@ use chik_protocol::{
     SubEpochSummary, SubSlotData, SubSlotProofs, TimestampedPeerInfo, TransactionAck,
     TransactionsInfo, UnfinishedBlock, UnfinishedHeaderBlock, VDFInfo, VDFProof, WeightProof,
 };
+use chik_sha2::Sha256;
 use chik_traits::ChikToPython;
 use klvm_utils::tree_hash_from_bytes;
 use klvmr::chik_dialect::ENABLE_KECCAK_OPS_OUTSIDE_GUARD;
@@ -683,8 +684,10 @@ pub struct QualityProof(chik_pos2::QualityChain);
 
 #[pymethods]
 impl QualityProof {
-    pub fn serialize(&self) -> Vec<u8> {
-        self.0.serialize().to_vec()
+    pub fn serialize(&self) -> Bytes32 {
+        let mut sha256 = Sha256::new();
+        sha256.update(self.0.serialize());
+        sha256.finalize().into()
     }
 }
 
@@ -696,7 +699,7 @@ pub fn validate_proof_v2(
     required_plot_strength: u8,
     proof_fragment_scan_filter: u8,
     proof: &[u8],
-) -> Option<Vec<u8>> {
+) -> Option<Bytes32> {
     chik_pos2::validate_proof_v2(
         &plot_id.to_bytes(),
         size,
@@ -705,7 +708,11 @@ pub fn validate_proof_v2(
         proof_fragment_scan_filter,
         proof,
     )
-    .map(|quality| quality.to_vec())
+    .map(|quality| -> Bytes32 {
+        let mut sha256 = Sha256::new();
+        sha256.update(quality);
+        sha256.finalize().into()
+    })
 }
 
 #[pyo3::pyfunction]
