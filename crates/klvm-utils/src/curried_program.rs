@@ -1,6 +1,6 @@
 use klvm_traits::{
-    destructure_list, destructure_quote, klvm_list, klvm_quote, match_list, match_quote, FromKlvm,
-    FromKlvmError, KlvmDecoder, KlvmEncoder, MatchByte, ToKlvm, ToKlvmError,
+    FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder, MatchByte, ToKlvm, ToKlvmError,
+    destructure_list, destructure_quote, klvm_list, klvm_quote, match_list, match_quote,
 };
 
 #[derive(Debug, Clone)]
@@ -36,7 +36,7 @@ mod tests {
     use std::fmt::Debug;
 
     use klvm_traits::klvm_curried_args;
-    use klvmr::{serde::node_to_bytes, Allocator};
+    use klvmr::{Allocator, serde::node_to_bytes};
 
     use super::*;
 

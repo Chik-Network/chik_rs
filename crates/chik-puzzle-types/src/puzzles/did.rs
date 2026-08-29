@@ -4,7 +4,7 @@ use chik_puzzles::DID_INNERPUZ_HASH;
 use klvm_traits::{FromKlvm, ToKlvm};
 use klvm_utils::{CurriedProgram, ToTreeHash, TreeHash};
 
-use crate::{singleton::SingletonStruct, CoinProof};
+use crate::{CoinProof, singleton::SingletonStruct};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -82,9 +82,8 @@ mod tests {
     use chik_puzzles::DID_INNERPUZ;
     use klvm_traits::{klvm_list, match_list};
     use klvmr::{
-        run_program,
+        Allocator, ChikDialect, run_program,
         serde::{node_from_bytes, node_to_bytes},
-        Allocator, ChikDialect,
     };
 
     use super::*;

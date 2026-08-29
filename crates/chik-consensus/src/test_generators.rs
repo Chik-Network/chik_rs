@@ -12,12 +12,12 @@ use chik_bls::Signature;
 use chik_protocol::Program;
 use chik_protocol::{Bytes, Bytes48};
 use chik_puzzles::CHIKLISP_DESERIALISATION;
+use klvmr::Allocator;
 use klvmr::allocator::NodePtr;
 use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
-use klvmr::Allocator;
 use std::iter::zip;
-use text_diff::diff;
 use text_diff::Difference;
+use text_diff::diff;
 
 use rstest::rstest;
 

@@ -1,17 +1,17 @@
-use chik_bls::{sign, SecretKey, Signature};
+use chik_bls::{SecretKey, Signature, sign};
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::make_aggsig_final_message::u64_to_bytes;
 use chik_sha2::Sha256;
 use linreg::linear_regression_of;
 use std::time::Instant;
 // use chik_consensus::gen::conditions::parse_conditions;
+use chik_consensus::conditions::{MempoolVisitor, SpendBundleConditions};
 use chik_consensus::conditions::{
+    ParseState, // SpendConditions,
     process_single_spend,
     validate_conditions,
     validate_signature,
-    ParseState, // SpendConditions,
 };
-use chik_consensus::conditions::{MempoolVisitor, SpendBundleConditions};
 use chik_consensus::opcodes;
 use chik_consensus::opcodes::ConditionOpcode;
 use chik_consensus::spend_visitor::SpendVisitor;

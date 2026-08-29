@@ -112,7 +112,7 @@ mod tests {
     use chik_protocol::Program;
     use chik_traits::Streamable;
     use hex_literal::hex;
-    use klvmr::{run_program, ChikDialect};
+    use klvmr::{ChikDialect, run_program};
     use rstest::rstest;
 
     const PUZZLE1: [u8; 291] = hex!(

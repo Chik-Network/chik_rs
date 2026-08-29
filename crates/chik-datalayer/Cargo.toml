@@ -1,7 +1,7 @@
 [package]
 name = "chik-datalayer"
-version = "0.34.0"
-edition = "2021"
+version = "0.36.0"
+edition = "2024"
 license = "Apache-2.0"
 description = "DataLayer modules for Chik blockchain"
 authors = ["Chik Network, Inc. <hello@chiknetwork.com>"]

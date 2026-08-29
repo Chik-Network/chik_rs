@@ -1,7 +1,7 @@
 use crate::consensus_constants::ConsensusConstants;
 use crate::opcodes::{
-    ConditionOpcode, AGG_SIG_AMOUNT, AGG_SIG_ME, AGG_SIG_PARENT, AGG_SIG_PARENT_AMOUNT,
-    AGG_SIG_PARENT_PUZZLE, AGG_SIG_PUZZLE, AGG_SIG_PUZZLE_AMOUNT,
+    AGG_SIG_AMOUNT, AGG_SIG_ME, AGG_SIG_PARENT, AGG_SIG_PARENT_AMOUNT, AGG_SIG_PARENT_PUZZLE,
+    AGG_SIG_PUZZLE, AGG_SIG_PUZZLE_AMOUNT, ConditionOpcode,
 };
 use crate::owned_conditions::OwnedSpendConditions;
 use chik_protocol::Coin;
@@ -79,8 +79,8 @@ mod tests {
     use crate::allocator::make_allocator;
     use crate::consensus_constants::TEST_CONSTANTS;
     use hex_literal::hex;
-    use klvmr::chik_dialect::LIMIT_HEAP;
     use klvmr::Allocator;
+    use klvmr::chik_dialect::LIMIT_HEAP;
     use rstest::rstest;
 
     #[test]

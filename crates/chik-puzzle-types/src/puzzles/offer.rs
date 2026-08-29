@@ -56,7 +56,7 @@ impl Payment {
 mod tests {
     use hex_literal::hex;
     use klvm_utils::tree_hash;
-    use klvmr::{serde::node_from_bytes, Allocator};
+    use klvmr::{Allocator, serde::node_from_bytes};
 
     use super::*;
 

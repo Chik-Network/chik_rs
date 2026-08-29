@@ -9,7 +9,7 @@ use chik_bls::{aggregate_verify_gt, hash_to_g2};
 use chik_protocol::SpendBundle;
 use chik_sha2::Sha256;
 use klvmr::chik_dialect::ENABLE_KECCAK_OPS_OUTSIDE_GUARD;
-use klvmr::{NodePtr, LIMIT_HEAP};
+use klvmr::{LIMIT_HEAP, NodePtr};
 
 // type definition makes clippy happy
 pub type ValidationPair = ([u8; 32], GTElement);
@@ -59,7 +59,14 @@ pub fn validate_klvm_and_signature(
     Ok((conditions, pairs))
 }
 
-pub fn get_flags_for_height_and_constants(height: u32, constants: &ConsensusConstants) -> u32 {
+/// The prev_tx_height is the previous transaction block height of the most
+/// recent transaction block prior / to the signage point index of the current
+/// block. (i.e. not necessarily the / transaction block preceeding the current
+/// one).
+pub fn get_flags_for_height_and_constants(
+    prev_tx_height: u32,
+    constants: &ConsensusConstants,
+) -> u32 {
     //  the hard-fork initiated with 2.0. To activate June 2024
     //  * costs are ascribed to some unknown condition codes, to allow for
     // soft-forking in new conditions with cost
@@ -81,7 +88,7 @@ pub fn get_flags_for_height_and_constants(height: u32, constants: &ConsensusCons
 
     // In hard fork 2, we enable the keccak operator outside the softfork guard
     let mut flags: u32 = 0;
-    if height >= constants.hard_fork2_height {
+    if prev_tx_height >= constants.hard_fork2_height {
         flags |= ENABLE_KECCAK_OPS_OUTSIDE_GUARD | COST_CONDITIONS | SIMPLE_GENERATOR;
     }
     flags
@@ -95,10 +102,10 @@ mod tests {
     use crate::flags::{COMPUTE_FINGERPRINT, MEMPOOL_MODE};
     use crate::make_aggsig_final_message::u64_to_bytes;
     use crate::opcodes::{
-        ConditionOpcode, AGG_SIG_AMOUNT, AGG_SIG_ME, AGG_SIG_PARENT, AGG_SIG_PARENT_AMOUNT,
-        AGG_SIG_PARENT_PUZZLE, AGG_SIG_PUZZLE, AGG_SIG_PUZZLE_AMOUNT, AGG_SIG_UNSAFE,
+        AGG_SIG_AMOUNT, AGG_SIG_ME, AGG_SIG_PARENT, AGG_SIG_PARENT_AMOUNT, AGG_SIG_PARENT_PUZZLE,
+        AGG_SIG_PUZZLE, AGG_SIG_PUZZLE_AMOUNT, AGG_SIG_UNSAFE, ConditionOpcode,
     };
-    use chik_bls::{sign, G2Element, PublicKey, SecretKey, Signature};
+    use chik_bls::{G2Element, PublicKey, SecretKey, Signature, sign};
     use chik_protocol::{Bytes, Coin, CoinSpend, Program};
     use hex::FromHex;
     use hex_literal::hex;
@@ -201,9 +208,9 @@ mod tests {
     #[case(0, 0)]
     #[case(TEST_CONSTANTS.hard_fork_height, 0)]
     #[case(5_716_000, 0)]
-    fn test_get_flags(#[case] height: u32, #[case] expected_value: u32) {
+    fn test_get_flags(#[case] prev_tx_height: u32, #[case] expected_value: u32) {
         assert_eq!(
-            get_flags_for_height_and_constants(height, &TEST_CONSTANTS),
+            get_flags_for_height_and_constants(prev_tx_height, &TEST_CONSTANTS),
             expected_value
         );
     }

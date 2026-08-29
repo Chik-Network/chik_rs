@@ -1,7 +1,7 @@
 [package]
 name = "chik-traits"
-version = "0.34.0"
-edition = "2021"
+version = "0.36.0"
+edition = "2024"
 license = "Apache-2.0"
 description = "Chik traits for Streamable types (chik's serialization format)"
 authors = ["Arvid Norberg <arvid@chiknetwork.com>"]

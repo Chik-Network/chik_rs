@@ -2,10 +2,10 @@
 use chik_py_streamable_macro::{PyJsonDict, PyStreamable};
 #[cfg(feature = "py-bindings")]
 use pyo3::{
+    Bound, IntoPyObject, PyAny, PyResult, Python,
     buffer::PyBuffer,
     pyclass, pymethods,
     types::{PyDict, PyDictMethods, PyListMethods, PyType},
-    Bound, IntoPyObject, PyResult, Python,
 };
 
 use crate::merkle::iterators::{BreadthFirstIterator, LeftChildFirstIterator, ParentFirstIterator};
@@ -14,8 +14,8 @@ use crate::merkle::{
     util::{sha256_bytes, sha256_num},
 };
 use crate::{
-    merkle::error::Error, Block, BlockBytes, Hash, InternalNode, KeyId, LeafNode, Node,
-    NodeMetadata, NodeType, Parent, TreeIndex, ValueId, BLOCK_SIZE,
+    BLOCK_SIZE, Block, BlockBytes, Hash, InternalNode, KeyId, LeafNode, Node, NodeMetadata,
+    NodeType, Parent, TreeIndex, ValueId, merkle::error::Error,
 };
 use bitvec::prelude::BitVec;
 use chik_protocol::Bytes32;
@@ -968,7 +968,7 @@ impl MerkleBlob {
                             return Ok(InsertLocation::Leaf {
                                 index: next_index,
                                 side: final_side,
-                            })
+                            });
                         }
                         Node::Internal(internal) => {
                             let bit = byte & (1 << bit_index) != 0;
@@ -1006,7 +1006,10 @@ impl MerkleBlob {
         let blob_length = self.blob.len();
         let index: TreeIndex = TreeIndex((blob_length / BLOCK_SIZE) as u32);
         let remainder = blob_length % BLOCK_SIZE;
-        assert_eq!(remainder, 0, "blob length {blob_length:?} not a multiple of {BLOCK_SIZE:?}, remainder: {remainder:?}");
+        assert_eq!(
+            remainder, 0,
+            "blob length {blob_length:?} not a multiple of {BLOCK_SIZE:?}, remainder: {remainder:?}"
+        );
 
         index
     }
@@ -1434,26 +1437,26 @@ impl MerkleBlob {
     }
 
     #[pyo3(name = "get_lineage_with_indexes")]
-    pub fn py_get_lineage_with_indexes(
+    pub fn py_get_lineage_with_indexes<'py>(
         &self,
         index: TreeIndex,
-        py: Python<'_>,
-    ) -> PyResult<pyo3::PyObject> {
+        py: Python<'py>,
+    ) -> PyResult<Bound<'py, PyAny>> {
         let list = pyo3::types::PyList::empty(py);
 
         for (index, node) in self.get_lineage_with_indexes(index)? {
             list.append((index.into_pyobject(py)?, node.into_pyobject(py)?))?;
         }
 
-        Ok(list.into())
+        Ok(list.into_any())
     }
 
     #[pyo3(name = "get_nodes_with_indexes", signature = (index=None))]
-    pub fn py_get_nodes_with_indexes(
+    pub fn py_get_nodes_with_indexes<'py>(
         &self,
         index: Option<TreeIndex>,
-        py: Python<'_>,
-    ) -> PyResult<pyo3::PyObject> {
+        py: Python<'py>,
+    ) -> PyResult<Bound<'py, PyAny>> {
         let list = pyo3::types::PyList::empty(py);
 
         for item in ParentFirstIterator::new(&self.blob, index) {
@@ -1461,7 +1464,7 @@ impl MerkleBlob {
             list.append((index.into_pyobject(py)?, block.node.into_pyobject(py)?))?;
         }
 
-        Ok(list.into())
+        Ok(list.into_any())
     }
 
     #[pyo3(name = "empty")]
@@ -1503,14 +1506,14 @@ impl MerkleBlob {
     }
 
     #[pyo3(name = "get_keys_values")]
-    pub fn py_get_keys_values(&self, py: Python<'_>) -> PyResult<pyo3::PyObject> {
+    pub fn py_get_keys_values<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let map = self.get_keys_values()?;
         let dict = PyDict::new(py);
         for (key, value) in map {
             dict.set_item(key, value)?;
         }
 
-        Ok(dict.into())
+        Ok(dict.into_any())
     }
 
     #[pyo3(name = "get_key_index")]
@@ -1610,7 +1613,7 @@ impl Drop for MerkleBlob {
 mod tests {
     use super::*;
     use crate::merkle::test_util::{
-        generate_hash, open_dot, small_blob, traversal_blob, HASH_ONE, HASH_ZERO,
+        HASH_ONE, HASH_ZERO, generate_hash, open_dot, small_blob, traversal_blob,
     };
     use crate::merkle::util::sha256_num;
     use chik_traits::Streamable;
@@ -2491,10 +2494,12 @@ mod tests {
         let key = KeyId(307);
         let index = traversal_blob.get_key_index(key).unwrap();
         traversal_blob.delete(key).unwrap();
-        assert!(traversal_blob
-            .block_status_cache
-            .free_indexes
-            .contains(&index));
+        assert!(
+            traversal_blob
+                .block_status_cache
+                .free_indexes
+                .contains(&index)
+        );
         let result = traversal_blob.block_status_cache.move_index(index, index);
         #[allow(clippy::needless_raw_string_hashes)]
         let expected = expect![[r#"
@@ -2515,10 +2520,12 @@ mod tests {
         let key = KeyId(307);
         let index = traversal_blob.get_key_index(key).unwrap();
         traversal_blob.delete(key).unwrap();
-        assert!(traversal_blob
-            .block_status_cache
-            .free_indexes
-            .contains(&index));
+        assert!(
+            traversal_blob
+                .block_status_cache
+                .free_indexes
+                .contains(&index)
+        );
         let result = traversal_blob
             .block_status_cache
             .move_index(TreeIndex(0), index);

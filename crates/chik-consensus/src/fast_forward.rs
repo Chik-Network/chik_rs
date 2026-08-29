@@ -1,8 +1,8 @@
 use crate::error::{Error, Result};
 use chik_protocol::Bytes32;
 use chik_protocol::Coin;
-use chik_puzzle_types::singleton::{SingletonArgs, SingletonSolution, SingletonStruct};
 use chik_puzzle_types::Proof;
+use chik_puzzle_types::singleton::{SingletonArgs, SingletonSolution, SingletonStruct};
 use chik_puzzles::SINGLETON_TOP_LAYER_V1_1_HASH;
 use klvm_traits::{FromKlvm, ToKlvm};
 use klvm_utils::CurriedProgram;
@@ -153,7 +153,7 @@ pub fn fast_forward_singleton(
 mod tests {
     use super::*;
     use crate::conditions::MempoolVisitor;
-    use crate::conditions::{parse_conditions, ParseState, SpendBundleConditions, SpendConditions};
+    use crate::conditions::{ParseState, SpendBundleConditions, SpendConditions, parse_conditions};
     use crate::consensus_constants::TEST_CONSTANTS;
     use crate::spend_visitor::SpendVisitor;
     use crate::validation_error::ValidationErr;

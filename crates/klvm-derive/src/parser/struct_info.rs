@@ -1,6 +1,6 @@
 use syn::{DataStruct, Fields, Ident};
 
-use super::{parse_named_fields, parse_unnamed_fields, FieldInfo, KlvmOptions, Repr};
+use super::{FieldInfo, KlvmOptions, Repr, parse_named_fields, parse_unnamed_fields};
 
 pub struct StructInfo {
     pub kind: StructKind,

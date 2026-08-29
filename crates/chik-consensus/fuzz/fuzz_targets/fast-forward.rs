@@ -1,7 +1,7 @@
 #![no_main]
 use chik_consensus::conditions::{
-    parse_conditions, MempoolVisitor, ParseState, SpendBundleConditions, SpendConditions,
-    ELIGIBLE_FOR_FF,
+    ELIGIBLE_FOR_FF, MempoolVisitor, ParseState, SpendBundleConditions, SpendConditions,
+    parse_conditions,
 };
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::fast_forward::fast_forward_singleton;

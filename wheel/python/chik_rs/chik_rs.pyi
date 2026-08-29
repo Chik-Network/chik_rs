@@ -65,7 +65,7 @@ def get_conditions_from_spendbundle(
     spend_bundle: SpendBundle,
     max_cost: int,
     constants: ConsensusConstants,
-    height: int,
+    prev_tx_height: int,
 ) -> SpendBundleConditions: ...
 
 def get_spends_for_trusted_block(
@@ -83,7 +83,7 @@ def get_spends_for_trusted_block_with_conditions(
 ) -> list[dict[str, Any]]: ...
 
 def get_flags_for_height_and_constants(
-    height: int,
+    prev_tx_height: int,
     constants: ConsensusConstants
 ) -> int: ...
 
@@ -200,16 +200,10 @@ class PlotParam:
     size_v1: Optional[uint8]
     strength_v2: Optional[uint8]
 
-# Proof-of-space 2
-@final
-class QualityProof:
-   def serialize(self) -> bytes32: ...
-
 @final
 class Prover:
     def __new__(cls, plot_path: str) -> Prover: ...
-    def get_qualities_for_challenge(self, challenge: bytes32, proof_fragment_filter: int) -> list[QualityProof]: ...
-    def get_partial_proof(self, quality: QualityProof) -> tuple[PartialProof, int]: ...
+    def get_qualities_for_challenge(self, challenge: bytes32) -> list[PartialProof]: ...
     def size(self) -> int: ...
     def plot_id(self) -> bytes32: ...
     def get_strength(self) -> int: ...
@@ -226,7 +220,7 @@ def create_v2_plot(filename: str,
     memo: bytes,
 ) -> None: ...
 
-def validate_proof_v2(plot_id: bytes32, size: int, challenge: bytes32, required_plot_strength: int, proof_fragment_scan_filter: int, proof: bytes) -> Optional[bytes32]: ...
+def validate_proof_v2(plot_id: bytes32, size: int, challenge: bytes32, plot_strength: int, proof: bytes) -> Optional[bytes32]: ...
 
 def solve_proof(fragments: PartialProof, plot_id: bytes32, strength: int, k: int) -> bytes: ...
 
@@ -2086,10 +2080,11 @@ class HeaderBlock:
 
 @final
 class PartialProof:
-    proof_fragments: list[uint64]
+    fragments: list[uint64]
+    def get_string(self, strength: uint8) -> bytes32: ...
     def __new__(
         cls,
-        proof_fragments: Sequence[uint64]
+        fragments: Sequence[uint64]
     ) -> PartialProof: ...
     def __hash__(self) -> int: ...
     def __repr__(self) -> str: ...
@@ -2108,7 +2103,7 @@ class PartialProof:
     def to_json_dict(self) -> dict[str, Any]: ...
     @classmethod
     def from_json_dict(cls, json_dict: dict[str, Any]) -> Self: ...
-    def replace(self, *, proof_fragments: Union[ list[uint64], _Unspec] = _Unspec()) -> PartialProof: ...
+    def replace(self, *, fragments: Union[ list[uint64], _Unspec] = _Unspec()) -> PartialProof: ...
 
 @final
 class TimestampedPeerInfo:
@@ -2309,6 +2304,7 @@ class RewardChainBlock:
     reward_chain_sp_signature: G2Element
     reward_chain_ip_vdf: VDFInfo
     infused_challenge_chain_ip_vdf: Optional[VDFInfo]
+    header_mmr_root: Optional[bytes32]
     is_transaction_block: bool
     def get_unfinished(self) -> RewardChainBlockUnfinished: ...
     def __new__(
@@ -2326,6 +2322,7 @@ class RewardChainBlock:
         reward_chain_sp_signature: G2Element,
         reward_chain_ip_vdf: VDFInfo,
         infused_challenge_chain_ip_vdf: Optional[VDFInfo],
+        header_mmr_root: Optional[bytes32],
         is_transaction_block: bool
     ) -> RewardChainBlock: ...
     def __hash__(self) -> int: ...
@@ -2358,6 +2355,7 @@ class RewardChainBlock:
         reward_chain_sp_signature: Union[ G2Element, _Unspec] = _Unspec(),
         reward_chain_ip_vdf: Union[ VDFInfo, _Unspec] = _Unspec(),
         infused_challenge_chain_ip_vdf: Union[ Optional[VDFInfo], _Unspec] = _Unspec(),
+        header_mmr_root: Union[ Optional[bytes32], _Unspec] = _Unspec(),
         is_transaction_block: Union[ bool, _Unspec] = _Unspec()) -> RewardChainBlock: ...
 
 @final
@@ -2567,13 +2565,15 @@ class SubEpochSummary:
     num_blocks_overflow: uint8
     new_difficulty: Optional[uint64]
     new_sub_slot_iters: Optional[uint64]
+    challenge_merkle_root: Optional[bytes32]
     def __new__(
         cls,
         prev_subepoch_summary_hash: bytes,
         reward_chain_hash: bytes,
         num_blocks_overflow: uint8,
         new_difficulty: Optional[uint64],
-        new_sub_slot_iters: Optional[uint64]
+        new_sub_slot_iters: Optional[uint64],
+        challenge_merkle_root: Optional[bytes32]
     ) -> SubEpochSummary: ...
     def __hash__(self) -> int: ...
     def __repr__(self) -> str: ...
@@ -2596,7 +2596,8 @@ class SubEpochSummary:
         reward_chain_hash: Union[ bytes32, _Unspec] = _Unspec(),
         num_blocks_overflow: Union[ uint8, _Unspec] = _Unspec(),
         new_difficulty: Union[ Optional[uint64], _Unspec] = _Unspec(),
-        new_sub_slot_iters: Union[ Optional[uint64], _Unspec] = _Unspec()) -> SubEpochSummary: ...
+        new_sub_slot_iters: Union[ Optional[uint64], _Unspec] = _Unspec(),
+        challenge_merkle_root: Union[ Optional[bytes32], _Unspec] = _Unspec()) -> SubEpochSummary: ...
 
 @final
 class UnfinishedBlock:
@@ -4229,12 +4230,14 @@ class SubEpochData:
     num_blocks_overflow: uint8
     new_sub_slot_iters: Optional[uint64]
     new_difficulty: Optional[uint64]
+    challenge_merkle_root: Optional[bytes32]
     def __new__(
         cls,
         reward_chain_hash: bytes,
         num_blocks_overflow: uint8,
         new_sub_slot_iters: Optional[uint64],
-        new_difficulty: Optional[uint64]
+        new_difficulty: Optional[uint64],
+        challenge_merkle_root: Optional[bytes32]
     ) -> SubEpochData: ...
     def __hash__(self) -> int: ...
     def __repr__(self) -> str: ...
@@ -4256,7 +4259,8 @@ class SubEpochData:
     def replace(self, *, reward_chain_hash: Union[ bytes32, _Unspec] = _Unspec(),
         num_blocks_overflow: Union[ uint8, _Unspec] = _Unspec(),
         new_sub_slot_iters: Union[ Optional[uint64], _Unspec] = _Unspec(),
-        new_difficulty: Union[ Optional[uint64], _Unspec] = _Unspec()) -> SubEpochData: ...
+        new_difficulty: Union[ Optional[uint64], _Unspec] = _Unspec(),
+        challenge_merkle_root: Union[ Optional[bytes32], _Unspec] = _Unspec()) -> SubEpochData: ...
 
 @final
 class SubSlotData:
@@ -4519,7 +4523,6 @@ class ConsensusConstants:
     PLOT_FILTER_32_HEIGHT: uint32
     MIN_PLOT_STRENGTH: uint8
     MAX_PLOT_STRENGTH: uint8
-    QUALITY_PROOF_SCAN_FILTER: uint8
     PLOT_FILTER_V2_FIRST_ADJUSTMENT_HEIGHT: uint32
     PLOT_FILTER_V2_SECOND_ADJUSTMENT_HEIGHT: uint32
     PLOT_FILTER_V2_THIRD_ADJUSTMENT_HEIGHT: uint32
@@ -4575,7 +4578,6 @@ class ConsensusConstants:
         PLOT_FILTER_32_HEIGHT: uint32,
         MIN_PLOT_STRENGTH: uint8,
         MAX_PLOT_STRENGTH: uint8,
-        QUALITY_PROOF_SCAN_FILTER: uint8,
         PLOT_FILTER_V2_FIRST_ADJUSTMENT_HEIGHT: uint32,
         PLOT_FILTER_V2_SECOND_ADJUSTMENT_HEIGHT: uint32,
         PLOT_FILTER_V2_THIRD_ADJUSTMENT_HEIGHT: uint32
@@ -4647,7 +4649,6 @@ class ConsensusConstants:
         PLOT_FILTER_32_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
         MIN_PLOT_STRENGTH: Union[ uint8, _Unspec] = _Unspec(),
         MAX_PLOT_STRENGTH: Union[ uint8, _Unspec] = _Unspec(),
-        QUALITY_PROOF_SCAN_FILTER: Union[ uint8, _Unspec] = _Unspec(),
         PLOT_FILTER_V2_FIRST_ADJUSTMENT_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
         PLOT_FILTER_V2_SECOND_ADJUSTMENT_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
         PLOT_FILTER_V2_THIRD_ADJUSTMENT_HEIGHT: Union[ uint32, _Unspec] = _Unspec()) -> ConsensusConstants: ...

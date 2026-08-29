@@ -1,8 +1,8 @@
 [package]
 name = "chik_wasm"
-version = "0.34.0"
+version = "0.36.0"
 authors = ["Richard Kiss <him@richardkiss.com>"]
-edition = "2021"
+edition = "2024"
 license = "Apache-2.0"
 description = "Code useful for implementing chik consensus."
 homepage = "https://github.com/Chik-Network/chik_rs"

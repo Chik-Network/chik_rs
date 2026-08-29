@@ -11,7 +11,7 @@ use chik_consensus::flags::{
     SIMPLE_GENERATOR, STRICT_ARGS_COUNT,
 };
 use chik_consensus::merkle_set::compute_merkle_set_root as compute_merkle_root_impl;
-use chik_consensus::merkle_tree::{validate_merkle_proof, MerkleSet};
+use chik_consensus::merkle_tree::{MerkleSet, validate_merkle_proof};
 use chik_consensus::owned_conditions::{OwnedSpendBundleConditions, OwnedSpendConditions};
 use chik_consensus::run_block_generator::setup_generator_args;
 use chik_consensus::run_block_generator::{
@@ -22,10 +22,6 @@ use chik_consensus::solution_generator::solution_generator_backrefs as native_so
 use chik_consensus::spendbundle_conditions::get_conditions_from_spendbundle;
 use chik_consensus::spendbundle_validation::{
     get_flags_for_height_and_constants, validate_klvm_and_signature,
-};
-use chik_protocol::{
-    calculate_ip_iters, calculate_sp_interval_iters, calculate_sp_iters, is_overflow_block,
-    py_expected_plot_size, PartialProof,
 };
 use chik_protocol::{
     BlockRecord, Bytes32, ChallengeBlockInfo, ChallengeChainSubSlot, ClassgroupElement, Coin,
@@ -55,6 +51,10 @@ use chik_protocol::{
     SubEpochSummary, SubSlotData, SubSlotProofs, TimestampedPeerInfo, TransactionAck,
     TransactionsInfo, UnfinishedBlock, UnfinishedHeaderBlock, VDFInfo, VDFProof, WeightProof,
 };
+use chik_protocol::{
+    PartialProof, calculate_ip_iters, calculate_sp_interval_iters, calculate_sp_iters,
+    is_overflow_block, py_expected_plot_size,
+};
 use chik_sha2::Sha256;
 use chik_traits::ChikToPython;
 use klvm_utils::tree_hash_from_bytes;
@@ -78,6 +78,7 @@ use crate::run_program::{run_chik_program, serialized_length, serialized_length_
 use chik_consensus::fast_forward::fast_forward_singleton as native_ff;
 use chik_consensus::get_puzzle_and_solution::get_puzzle_and_solution_for_coin as parse_puzzle_solution;
 use chik_consensus::validation_error::ValidationErr;
+use klvmr::ChikDialect;
 use klvmr::allocator::NodePtr;
 use klvmr::cost::Cost;
 use klvmr::error::EvalErr;
@@ -85,11 +86,10 @@ use klvmr::reduction::Reduction;
 use klvmr::run_program;
 use klvmr::serde::is_canonical_serialization;
 use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs, node_to_bytes};
-use klvmr::ChikDialect;
 
 use chik_bls::{
-    hash_to_g2 as native_hash_to_g2, BlsCache, DerivableKey, GTElement, PublicKey, SecretKey,
-    Signature,
+    BlsCache, DerivableKey, GTElement, PublicKey, SecretKey, Signature,
+    hash_to_g2 as native_hash_to_g2,
 };
 #[pyfunction]
 pub fn compute_merkle_set_root<'p>(
@@ -160,7 +160,7 @@ pub fn get_puzzle_and_solution_for_coin<'a>(
     let dialect = &ChikDialect::new(flags);
 
     let (puzzle, solution) = py
-        .allow_threads(|| -> Result<(NodePtr, NodePtr), EvalErr> {
+        .detach(|| -> Result<(NodePtr, NodePtr), EvalErr> {
             let Reduction(_cost, result) =
                 run_program(&mut allocator, dialect, program, args, max_cost)?;
             match parse_puzzle_solution(
@@ -219,7 +219,7 @@ pub fn get_puzzle_and_solution_for_coin2<'a>(
     let dialect = &ChikDialect::new(flags);
 
     let (puzzle, solution) = py
-        .allow_threads(|| -> Result<(NodePtr, NodePtr), EvalErr> {
+        .detach(|| -> Result<(NodePtr, NodePtr), EvalErr> {
             let Reduction(_cost, result) =
                 run_program(&mut allocator, dialect, generator, args, max_cost)?;
             match parse_puzzle_solution(&allocator, result, find_coin) {
@@ -250,7 +250,7 @@ fn convert_list_of_tuples(spends: &Bound<'_, PyAny>) -> PyResult<Vec<CoinSpendRe
     let mut native_spends = Vec::<CoinSpendRef>::new();
     for s in spends.try_iter()? {
         let s = s?;
-        let tuple = s.downcast::<PyTuple>()?;
+        let tuple = s.cast::<PyTuple>()?;
         let coin = tuple.get_item(0)?.extract::<Coin>()?;
         let puzzle = tuple.get_item(1)?.extract::<PyBackedBytes>()?;
         let solution = tuple.get_item(2)?.extract::<PyBackedBytes>()?;
@@ -309,7 +309,7 @@ impl AugSchemeMPL {
 
     #[staticmethod]
     pub fn verify(py: Python<'_>, pk: &PublicKey, msg: &[u8], sig: &Signature) -> bool {
-        py.allow_threads(|| chik_bls::verify(sig, pk, msg))
+        py.detach(|| chik_bls::verify(sig, pk, msg))
     }
 
     #[staticmethod]
@@ -331,7 +331,7 @@ impl AugSchemeMPL {
             data.push((pk, msg));
         }
 
-        py.allow_threads(|| Ok(chik_bls::aggregate_verify(sig, data)))
+        py.detach(|| Ok(chik_bls::aggregate_verify(sig, data)))
     }
 
     #[staticmethod]
@@ -432,7 +432,7 @@ pub fn py_validate_klvm_and_signature(
 ) -> PyResult<(OwnedSpendBundleConditions, Vec<([u8; 32], GTElement)>, f32)> {
     let start_time = Instant::now();
     let (owned_conditions, additions) =
-        py.allow_threads(|| validate_klvm_and_signature(new_spend, max_cost, constants, flags))?;
+        py.detach(|| validate_klvm_and_signature(new_spend, max_cost, constants, flags))?;
     let duration = start_time.elapsed();
     Ok((owned_conditions, additions, duration.as_secs_f32()))
 }
@@ -443,20 +443,23 @@ pub fn py_get_conditions_from_spendbundle(
     spend_bundle: &SpendBundle,
     max_cost: u64,
     constants: &ConsensusConstants,
-    height: u32,
+    prev_tx_height: u32,
 ) -> PyResult<OwnedSpendBundleConditions> {
     use chik_consensus::allocator::make_allocator;
     use chik_consensus::owned_conditions::OwnedSpendBundleConditions;
     let mut a = make_allocator(LIMIT_HEAP);
     let conditions =
-        get_conditions_from_spendbundle(&mut a, spend_bundle, max_cost, height, constants)?;
+        get_conditions_from_spendbundle(&mut a, spend_bundle, max_cost, prev_tx_height, constants)?;
     Ok(OwnedSpendBundleConditions::from(&a, conditions))
 }
 
 #[pyfunction]
 #[pyo3(name = "get_flags_for_height_and_constants")]
-pub fn py_get_flags_for_height_and_constants(height: u32, constants: &ConsensusConstants) -> u32 {
-    get_flags_for_height_and_constants(height, constants)
+pub fn py_get_flags_for_height_and_constants(
+    prev_tx_height: u32,
+    constants: &ConsensusConstants,
+) -> u32 {
+    get_flags_for_height_and_constants(prev_tx_height, constants)
 }
 
 #[pyo3::pyfunction]
@@ -522,7 +525,7 @@ pub fn get_spends_for_trusted_block<'a>(
     generator: Program,
     block_refs: &Bound<'_, PyList>,
     flags: u32,
-) -> pyo3::PyResult<PyObject> {
+) -> pyo3::PyResult<Py<PyAny>> {
     let refs = block_refs
         .into_iter()
         .map(|b| {
@@ -534,11 +537,11 @@ pub fn get_spends_for_trusted_block<'a>(
         .collect::<Vec<&'a [u8]>>();
 
     let output =
-        py.allow_threads(|| get_coinspends_for_trusted_block(constants, &generator, &refs, flags))?;
+        py.detach(|| get_coinspends_for_trusted_block(constants, &generator, &refs, flags))?;
 
     let dict = PyDict::new(py);
     dict.set_item("block_spends", output)?;
-    Ok(dict.into())
+    Ok(dict.into_any().unbind())
 }
 
 #[pyo3::pyfunction]
@@ -548,7 +551,7 @@ pub fn get_spends_for_trusted_block_with_conditions<'a>(
     generator: Program,
     block_refs: &Bound<'a, PyList>,
     flags: u32,
-) -> pyo3::PyResult<PyObject> {
+) -> pyo3::PyResult<Py<PyAny>> {
     let refs = block_refs
         .into_iter()
         .map(|b| {
@@ -559,7 +562,7 @@ pub fn get_spends_for_trusted_block_with_conditions<'a>(
         })
         .collect::<Vec<&'a [u8]>>();
 
-    let output = py.allow_threads(|| {
+    let output = py.detach(|| {
         get_coinspends_with_conditions_for_trusted_block(constants, &generator, &refs, flags)
     })?;
 
@@ -582,7 +585,7 @@ pub fn get_spends_for_trusted_block_with_conditions<'a>(
         dict.set_item("conditions", cond_list)?;
         pylist.append(dict)?;
     }
-    Ok(pylist.into())
+    Ok(pylist.into_any().unbind())
 }
 
 #[pyo3::pyfunction]
@@ -624,23 +627,14 @@ impl Prover {
         Ok(Self(chik_pos2::Prover::new(Path::new(plot_path))?))
     }
 
-    pub fn get_qualities_for_challenge(
-        &self,
-        challenge: Bytes32,
-        proof_fragment_filter: u8,
-    ) -> PyResult<Vec<QualityProof>> {
-        let qualities = self
-            .0
-            .get_qualities_for_challenge(&challenge.to_bytes(), proof_fragment_filter)?;
-        Ok(qualities.into_iter().map(&QualityProof).collect())
-    }
-
-    pub fn get_partial_proof(&self, quality: &QualityProof) -> PyResult<(PartialProof, u8)> {
-        let chik_pos2::PartialProof {
-            proof_fragments,
-            strength,
-        } = self.0.get_partial_proof(&quality.0)?;
-        Ok((PartialProof { proof_fragments }, strength))
+    pub fn get_qualities_for_challenge(&self, challenge: Bytes32) -> PyResult<Vec<PartialProof>> {
+        let qualities = self.0.get_qualities_for_challenge(&challenge.to_bytes())?;
+        Ok(qualities
+            .into_iter()
+            .map(|q| PartialProof {
+                fragments: q.chain_links,
+            })
+            .collect())
     }
 
     pub fn size(&self) -> u8 {
@@ -681,51 +675,41 @@ impl Prover {
     }
 }
 
-#[pyclass]
-#[derive(Clone)]
-pub struct QualityProof(chik_pos2::QualityChain);
-
-#[pymethods]
-impl QualityProof {
-    pub fn serialize(&self) -> Bytes32 {
-        let mut sha256 = Sha256::new();
-        sha256.update(self.0.serialize());
-        sha256.finalize().into()
-    }
-}
-
 #[pyo3::pyfunction]
 pub fn validate_proof_v2(
     plot_id: Bytes32,
     size: u8,
     challenge: Bytes32,
-    required_plot_strength: u8,
-    proof_fragment_scan_filter: u8,
+    plot_strength: u8,
     proof: &[u8],
 ) -> Option<Bytes32> {
     chik_pos2::validate_proof_v2(
         &plot_id.to_bytes(),
         size,
         &challenge.to_bytes(),
-        required_plot_strength,
-        proof_fragment_scan_filter,
+        plot_strength,
         proof,
     )
     .map(|quality| -> Bytes32 {
         let mut sha256 = Sha256::new();
-        sha256.update(quality);
+        sha256.update(chik_pos2::serialize_quality(
+            &quality.chain_links,
+            plot_strength,
+        ));
         sha256.finalize().into()
     })
 }
 
 #[pyo3::pyfunction]
 pub fn solve_proof(fragments: &PartialProof, plot_id: Bytes32, strength: u8, k: u8) -> Vec<u8> {
-    let partial_proof = chik_pos2::PartialProof {
-        proof_fragments: fragments.proof_fragments,
+    chik_pos2::solve_proof(
+        &chik_pos2::QualityChain {
+            chain_links: fragments.fragments,
+        },
+        &plot_id.to_bytes(),
+        k,
         strength,
-    };
-
-    chik_pos2::solve_proof(&partial_proof, &plot_id.to_bytes(), k)
+    )
 }
 
 #[pymodule]
@@ -762,7 +746,6 @@ pub fn chik_rs(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(validate_proof_v2, m)?)?;
     m.add_function(wrap_pyfunction!(solve_proof, m)?)?;
     m.add_class::<Prover>()?;
-    m.add_class::<QualityProof>()?;
     m.add_class::<PartialProof>()?;
 
     // check time lock

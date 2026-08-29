@@ -29,7 +29,7 @@ impl From<Error> for chik_traits::Error {
 mod pybindings {
     use super::*;
 
-    use pyo3::{exceptions::PyValueError, PyErr};
+    use pyo3::{PyErr, exceptions::PyValueError};
 
     impl From<Error> for PyErr {
         fn from(err: Error) -> PyErr {

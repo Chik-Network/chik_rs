@@ -1,6 +1,6 @@
-use crate::validation_error::{atom, check_nil, first, next, rest, ErrorCode, ValidationErr};
+use crate::validation_error::{ErrorCode, ValidationErr, atom, check_nil, first, next, rest};
 use chik_protocol::Coin;
-use klvm_utils::{tree_hash_cached, TreeCache};
+use klvm_utils::{TreeCache, tree_hash_cached};
 use klvmr::allocator::{Allocator, Atom, NodePtr};
 use klvmr::op_utils::u64_from_bytes;
 
@@ -69,7 +69,7 @@ mod test {
     use klvm_utils::tree_hash;
     use klvmr::reduction::Reduction;
     use klvmr::serde::node_from_bytes_backrefs;
-    use klvmr::{run_program, ChikDialect};
+    use klvmr::{ChikDialect, run_program};
     use rstest::rstest;
     use std::collections::HashSet;
     use std::fs;

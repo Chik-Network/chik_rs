@@ -1,7 +1,7 @@
 use clap::Parser;
-use klvmr::serde::{node_from_bytes, node_to_bytes_backrefs};
 use klvmr::Allocator;
-use std::fs::{read_to_string, File};
+use klvmr::serde::{node_from_bytes, node_to_bytes_backrefs};
+use std::fs::{File, read_to_string};
 use std::io::Write;
 
 /// Analyze the blocks in a chik blockchain database

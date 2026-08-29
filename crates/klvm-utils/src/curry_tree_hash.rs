@@ -1,4 +1,4 @@
-use crate::{tree_hash_atom, tree_hash_pair, TreeHash};
+use crate::{TreeHash, tree_hash_atom, tree_hash_pair};
 
 pub fn curry_tree_hash(program_hash: TreeHash, arg_hashes: &[TreeHash]) -> TreeHash {
     let nil = tree_hash_atom(&[]);
@@ -24,10 +24,10 @@ pub fn curry_tree_hash(program_hash: TreeHash, arg_hashes: &[TreeHash]) -> TreeH
 #[cfg(test)]
 mod tests {
     use hex::ToHex;
-    use klvm_traits::{klvm_curried_args, ToKlvm};
+    use klvm_traits::{ToKlvm, klvm_curried_args};
     use klvmr::Allocator;
 
-    use crate::{tree_hash, CurriedProgram};
+    use crate::{CurriedProgram, tree_hash};
 
     use super::*;
 

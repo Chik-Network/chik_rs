@@ -102,7 +102,7 @@ mod tests {
     };
     use klvm_traits::ToKlvm;
     use klvm_utils::tree_hash;
-    use klvmr::{serde::node_from_bytes, Allocator};
+    use klvmr::{Allocator, serde::node_from_bytes};
 
     use super::*;
 

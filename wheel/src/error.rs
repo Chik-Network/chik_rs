@@ -1,8 +1,8 @@
+use klvmr::Allocator;
 use klvmr::error::EvalErr;
 use klvmr::serde::node_to_bytes;
-use klvmr::Allocator;
-use pyo3::exceptions::PyValueError;
 use pyo3::PyErr;
+use pyo3::exceptions::PyValueError;
 
 pub fn map_pyerr(err: EvalErr) -> PyErr {
     PyValueError::new_err(err.to_string())

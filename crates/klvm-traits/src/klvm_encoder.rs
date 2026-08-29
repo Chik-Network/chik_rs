@@ -1,7 +1,7 @@
 use klvmr::{Allocator, Atom, NodePtr};
 use num_bigint::BigInt;
 
-use crate::{klvm_list, klvm_quote, ToKlvm, ToKlvmError};
+use crate::{ToKlvm, ToKlvmError, klvm_list, klvm_quote};
 
 pub trait KlvmEncoder: Sized {
     type Node: Clone + ToKlvm<Self>;

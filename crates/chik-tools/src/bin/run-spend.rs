@@ -1,9 +1,9 @@
 use chik_consensus::conditions::Condition;
+use chik_puzzle_types::Proof;
 use chik_puzzle_types::cat::{CatArgs, CatSolution};
 use chik_puzzle_types::did::{DidArgs, DidSolution};
 use chik_puzzle_types::singleton::{SingletonArgs, SingletonSolution};
 use chik_puzzle_types::standard::{StandardArgs, StandardSolution};
-use chik_puzzle_types::Proof;
 use chik_puzzles::CAT_PUZZLE_HASH;
 use chik_puzzles::DID_INNERPUZ_HASH;
 use chik_puzzles::P2_DELEGATED_PUZZLE_OR_HIDDEN_PUZZLE_HASH;
@@ -11,9 +11,9 @@ use chik_puzzles::SINGLETON_TOP_LAYER_V1_1_HASH;
 use chik_traits::Streamable;
 use clap::Parser;
 use klvm_traits::{FromKlvm, ToKlvm};
-use klvm_utils::tree_hash;
 use klvm_utils::CurriedProgram;
-use klvmr::{allocator::NodePtr, Allocator};
+use klvm_utils::tree_hash;
+use klvmr::{Allocator, allocator::NodePtr};
 
 /// Run a puzzle given a solution and print the resulting conditions
 #[derive(Parser, Debug)]
@@ -267,7 +267,7 @@ fn main() {
     use chik_consensus::validation_error::{first, rest};
     use chik_protocol::CoinSpend;
     use klvmr::reduction::Reduction;
-    use klvmr::{run_program, ChikDialect};
+    use klvmr::{ChikDialect, run_program};
     use std::fs::read;
 
     let args = Args::parse();

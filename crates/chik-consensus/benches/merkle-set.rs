@@ -1,5 +1,5 @@
-use chik_consensus::merkle_tree::{validate_merkle_proof, MerkleSet};
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use chik_consensus::merkle_tree::{MerkleSet, validate_merkle_proof};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
 use std::iter::zip;

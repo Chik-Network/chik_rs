@@ -48,7 +48,7 @@ pub fn run_chik_program(
             .map_err(|e| map_pyerr_w_ptr(&e, &allocator))?;
         let dialect = ChikDialect::new(flags);
 
-        Ok(py.allow_threads(|| run_program(&mut allocator, &dialect, program, args, max_cost)))
+        Ok(py.detach(|| run_program(&mut allocator, &dialect, program, args, max_cost)))
     })()?
     .map_err(|e| map_pyerr_w_ptr(&e, &allocator))?;
     let val = LazyNode::new(Rc::new(allocator), reduction.1);

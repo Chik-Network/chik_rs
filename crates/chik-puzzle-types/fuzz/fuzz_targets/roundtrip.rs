@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use chik_puzzle_types::{nft::NftMetadata, Proof};
+use chik_puzzle_types::{Proof, nft::NftMetadata};
 use klvm_traits::{FromKlvm, ToKlvm};
 use klvmr::Allocator;
 use libfuzzer_sys::arbitrary::{Arbitrary, Unstructured};

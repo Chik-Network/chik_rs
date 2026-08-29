@@ -1,6 +1,6 @@
 #![no_main]
 use chik_consensus::conditions::{
-    process_single_spend, MempoolVisitor, ParseState, SpendBundleConditions,
+    MempoolVisitor, ParseState, SpendBundleConditions, process_single_spend,
 };
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::flags::{NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT};

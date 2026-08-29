@@ -11,7 +11,7 @@ use from_klvm::from_klvm;
 use proc_macro::TokenStream;
 
 use proc_macro2::Span;
-use syn::{parse_macro_input, DeriveInput, Ident};
+use syn::{DeriveInput, Ident, parse_macro_input};
 use to_klvm::to_klvm;
 
 const CRATE_NAME: &str = "klvm_traits";

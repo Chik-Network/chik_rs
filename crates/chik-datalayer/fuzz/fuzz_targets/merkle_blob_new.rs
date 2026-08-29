@@ -2,7 +2,7 @@
 
 use libfuzzer_sys::{arbitrary::Unstructured, fuzz_target};
 
-use chik_datalayer::{MerkleBlob, BLOCK_SIZE};
+use chik_datalayer::{BLOCK_SIZE, MerkleBlob};
 
 fuzz_target!(|data: &[u8]| {
     let mut unstructured = Unstructured::new(data);

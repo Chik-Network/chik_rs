@@ -1,4 +1,4 @@
-use chik_streamable_macro::{streamable, Streamable};
+use chik_streamable_macro::{Streamable, streamable};
 
 use crate::Coin;
 use crate::CoinState;

@@ -7,7 +7,7 @@ use chik_consensus::{
 use chik_protocol::{Bytes, Coin, CoinSpend, Program, SpendBundle};
 use chik_traits::Streamable;
 use klvm_traits::ToKlvm;
-use klvmr::{serde::node_to_bytes, Allocator, NodePtr};
+use klvmr::{Allocator, NodePtr, serde::node_to_bytes};
 use libfuzzer_sys::fuzz_target;
 use std::io::{Cursor, Read};
 

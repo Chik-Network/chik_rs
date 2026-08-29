@@ -1,7 +1,7 @@
 use chik_bls::PublicKey;
 use chik_puzzles::P2_DELEGATED_PUZZLE_OR_HIDDEN_PUZZLE_HASH;
 use hex_literal::hex;
-use klvm_traits::{klvm_quote, FromKlvm, ToKlvm};
+use klvm_traits::{FromKlvm, ToKlvm, klvm_quote};
 use klvm_utils::{CurriedProgram, ToTreeHash, TreeHash};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
@@ -60,7 +60,7 @@ mod tests {
     use chik_puzzles::P2_DELEGATED_PUZZLE_OR_HIDDEN_PUZZLE;
     use klvm_traits::ToKlvm;
     use klvm_utils::tree_hash;
-    use klvmr::{serde::node_from_bytes, Allocator};
+    use klvmr::{Allocator, serde::node_from_bytes};
 
     use super::*;
 

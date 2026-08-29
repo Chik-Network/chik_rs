@@ -2,8 +2,8 @@
 use libfuzzer_sys::fuzz_target;
 
 use chik_consensus::puzzle_fingerprint::compute_puzzle_fingerprint;
-use klvmr::serde::node_from_bytes;
 use klvmr::Allocator;
+use klvmr::serde::node_from_bytes;
 
 fuzz_target!(|data: &[u8]| {
     let mut a = Allocator::new();

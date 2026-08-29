@@ -1,7 +1,7 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use chik_consensus::sanitize_int::{sanitize_uint, SanitizedUint};
+use chik_consensus::sanitize_int::{SanitizedUint, sanitize_uint};
 use chik_consensus::validation_error::{ErrorCode, ValidationErr};
 use klvmr::allocator::Allocator;
 

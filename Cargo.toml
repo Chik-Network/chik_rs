@@ -1,7 +1,7 @@
 [package]
 name = "chik"
-version = "0.34.0"
-edition = "2021"
+version = "0.36.0"
+edition = "2024"
 license = "Apache-2.0"
 description = "A meta-crate that exports all of the Chik crates in the workspace."
 authors = [
@@ -49,6 +49,9 @@ cast_possible_wrap = "allow"
 cast_lossless = "allow"
 similar_names = "allow"
 implicit_hasher = "allow"
+
+# TODO: This will be cleaned up separately
+collapsible_if = "allow"
 
 [dependencies]
 chik-bls = { workspace = true, optional = true }
@@ -111,31 +114,31 @@ lto = "thin"
 bench = false
 
 [workspace.dependencies]
-chik_py_streamable_macro = { path = "./crates/chik_py_streamable_macro", version = "0.34.0" }
-chik_streamable_macro = { path = "./crates/chik_streamable_macro", version = "0.34.0" }
-chik-bls = { path = "./crates/chik-bls", version = "0.34.0" }
-chik-client = { path = "./crates/chik-client", version = "0.34.0" }
-chik-consensus = { path = "./crates/chik-consensus", version = "0.34.0" }
-chik-datalayer = { path = "./crates/chik-datalayer", version = "0.34.0" }
-chik-datalayer-macro = { path = "./crates/chik-datalayer/macro", version = "0.34.0" }
-chik-protocol = { path = "./crates/chik-protocol", version = "0.34.0" }
-chik-secp = { path = "./crates/chik-secp", version = "0.34.0" }
-chik-ssl = { path = "./crates/chik-ssl", version = "0.34.0" }
-chik-traits = { path = "./crates/chik-traits", version = "0.34.0" }
-chik-puzzle-types = { path = "./crates/chik-puzzle-types", version = "0.34.0" }
-chik-sha2 = { path = "./crates/chik-sha2", version = "0.34.0" }
-chik-serde = { path = "./crates/chik-serde", version = "0.34.0" }
-klvm-traits = { path = "./crates/klvm-traits", version = "0.34.0" }
-klvm-utils = { path = "./crates/klvm-utils", version = "0.34.0" }
-klvm-derive = { path = "./crates/klvm-derive", version = "0.34.0" }
-chik-pos2 = "0.1.4"
-chik-consensus-fuzz = { path = "./crates/chik-consensus/fuzz", version = "0.34.0" }
-chik-bls-fuzz = { path = "./crates/chik-bls/fuzz", version = "0.34.0" }
-chik-datalayer-fuzz = { path = "./crates/chik-datalayer/fuzz", version = "0.34.0" }
-chik-protocol-fuzz = { path = "./crates/chik-protocol/fuzz", version = "0.34.0" }
-chik-puzzle-types-fuzz = { path = "./crates/chik-puzzle-types/fuzz", version = "0.34.0" }
-klvm-traits-fuzz = { path = "./crates/klvm-traits/fuzz", version = "0.34.0" }
-klvm-utils-fuzz = { path = "./crates/klvm-utils/fuzz", version = "0.34.0" }
+chik_py_streamable_macro = { path = "./crates/chik_py_streamable_macro", version = "0.36.0" }
+chik_streamable_macro = { path = "./crates/chik_streamable_macro", version = "0.36.0" }
+chik-bls = { path = "./crates/chik-bls", version = "0.36.0" }
+chik-client = { path = "./crates/chik-client", version = "0.36.0" }
+chik-consensus = { path = "./crates/chik-consensus", version = "0.36.0" }
+chik-datalayer = { path = "./crates/chik-datalayer", version = "0.36.0" }
+chik-datalayer-macro = { path = "./crates/chik-datalayer/macro", version = "0.36.0" }
+chik-protocol = { path = "./crates/chik-protocol", version = "0.36.0" }
+chik-secp = { path = "./crates/chik-secp", version = "0.36.0" }
+chik-ssl = { path = "./crates/chik-ssl", version = "0.36.0" }
+chik-traits = { path = "./crates/chik-traits", version = "0.36.0" }
+chik-puzzle-types = { path = "./crates/chik-puzzle-types", version = "0.36.0" }
+chik-sha2 = { path = "./crates/chik-sha2", version = "0.36.0" }
+chik-serde = { path = "./crates/chik-serde", version = "0.36.0" }
+klvm-traits = { path = "./crates/klvm-traits", version = "0.36.0" }
+klvm-utils = { path = "./crates/klvm-utils", version = "0.36.0" }
+klvm-derive = { path = "./crates/klvm-derive", version = "0.36.0" }
+chik-pos2 = "0.1.6"
+chik-consensus-fuzz = { path = "./crates/chik-consensus/fuzz", version = "0.36.0" }
+chik-bls-fuzz = { path = "./crates/chik-bls/fuzz", version = "0.36.0" }
+chik-datalayer-fuzz = { path = "./crates/chik-datalayer/fuzz", version = "0.36.0" }
+chik-protocol-fuzz = { path = "./crates/chik-protocol/fuzz", version = "0.36.0" }
+chik-puzzle-types-fuzz = { path = "./crates/chik-puzzle-types/fuzz", version = "0.36.0" }
+klvm-traits-fuzz = { path = "./crates/klvm-traits/fuzz", version = "0.36.0" }
+klvm-utils-fuzz = { path = "./crates/klvm-utils/fuzz", version = "0.36.0" }
 blst = { version = "0.3.16", features = ["portable"] }
 klvmr = "0.16.2"
 klvm-fuzzing = "0.16.1"
@@ -148,7 +151,7 @@ sha2 = "0.10.9"
 hkdf = "0.12.0"
 hex = "0.4.3"
 thiserror = "1.0.69"
-pyo3 = "0.24.1"
+pyo3 = "0.27.1"
 arbitrary = "1.4.1"
 rand = "0.8.5"
 criterion = "0.5.1"

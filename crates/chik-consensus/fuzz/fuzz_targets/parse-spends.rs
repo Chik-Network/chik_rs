@@ -2,7 +2,7 @@
 use libfuzzer_sys::{arbitrary, fuzz_target};
 
 use chik_bls::Signature;
-use chik_consensus::conditions::{parse_spends, MempoolVisitor};
+use chik_consensus::conditions::{MempoolVisitor, parse_spends};
 use klvmr::{Allocator, NodePtr};
 
 use chik_consensus::consensus_constants::TEST_CONSTANTS;

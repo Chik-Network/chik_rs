@@ -2,8 +2,8 @@ use crate::{Bytes32, BytesImpl};
 use chik_sha2::Sha256;
 use chik_streamable_macro::streamable;
 use klvm_traits::{
-    destructure_list, klvm_list, match_list, FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder,
-    ToKlvm, ToKlvmError,
+    FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder, ToKlvm, ToKlvmError, destructure_list,
+    klvm_list, match_list,
 };
 
 #[cfg(feature = "py-bindings")]
@@ -64,7 +64,7 @@ impl Coin {
 impl Coin {
     #[classmethod]
     #[pyo3(name = "from_parent")]
-    pub fn from_parent(_cls: &Bound<'_, PyType>, _coin: Self) -> PyResult<PyObject> {
+    pub fn from_parent(_cls: &Bound<'_, PyType>, _coin: Self) -> PyResult<Py<PyAny>> {
         Err(PyNotImplementedError::new_err(
             "Coin does not support from_parent().",
         ))
@@ -93,8 +93,8 @@ impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for Coin {
 mod tests {
     use super::*;
     use klvmr::{
-        serde::{node_from_bytes, node_to_bytes},
         Allocator,
+        serde::{node_from_bytes, node_to_bytes},
     };
     use rstest::rstest;
 

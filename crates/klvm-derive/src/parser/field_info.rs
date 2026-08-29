@@ -1,6 +1,6 @@
-use syn::{spanned::Spanned, Expr, FieldsNamed, FieldsUnnamed, Ident, Type};
+use syn::{Expr, FieldsNamed, FieldsUnnamed, Ident, Type, spanned::Spanned};
 
-use super::{parse_klvm_options, KlvmOptions};
+use super::{KlvmOptions, parse_klvm_options};
 
 pub struct FieldInfo {
     pub ident: Ident,
