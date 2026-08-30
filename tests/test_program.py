@@ -16,7 +16,7 @@ def test_raise() -> None:
         # We expect this to throw
         assert False
     except ValueError as e:
-        assert f"{e}" == "('klvm raise', '86666f6f626172')"
+        assert f"{e}" == "klvm raise"
 
 
 def test_raise_program() -> None:
@@ -39,7 +39,7 @@ def test_repr() -> None:
         run_chik_program(bytes(temp), bytes.fromhex("00"), 1100000000, 0)
         assert False
     except ValueError as e:
-        assert f"{e}" == "('klvm raise', '83666f6f')"
+        assert f"{e}" == "klvm raise"
 
 
 def test_print() -> None:

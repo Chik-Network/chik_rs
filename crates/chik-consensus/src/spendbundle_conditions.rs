@@ -4,9 +4,10 @@ use crate::conditions::{
 };
 use crate::consensus_constants::ConsensusConstants;
 use crate::flags::{ConsensusFlags, MEMPOOL_MODE};
+use crate::generator_cost::interned_vbytes;
 use crate::puzzle_fingerprint::compute_puzzle_fingerprint;
 use crate::run_block_generator::subtract_cost;
-use crate::solution_generator::calculate_generator_length;
+use crate::solution_generator::{build_generator, calculate_generator_length};
 use crate::spend_visitor::SpendVisitor;
 use crate::spendbundle_validation::get_flags_for_height_and_constants;
 use crate::validation_error::ErrorCode;
@@ -19,6 +20,7 @@ use klvmr::allocator::Allocator;
 use klvmr::chik_dialect::ChikDialect;
 use klvmr::reduction::Reduction;
 use klvmr::run_program::run_program;
+use klvmr::serde::intern_tree_limited;
 use klvmr::serde::node_from_bytes;
 
 const QUOTE_BYTES: usize = 2;
@@ -41,6 +43,37 @@ pub fn get_conditions_from_spendbundle(
     .0)
 }
 
+/// Computes the base cost of a spend bundle's generator before any puzzles run.
+/// For INTERNED_GENERATOR, builds the generator tree, interns it, and charges
+/// based on the interned structure. Otherwise charges cost_per_byte on the raw
+/// generator length (excluding the quote wrapper).
+fn calculate_base_cost(
+    spend_bundle: &SpendBundle,
+    flags: ConsensusFlags,
+    constants: &ConsensusConstants,
+) -> Result<u64, ValidationErr> {
+    if flags.contains(ConsensusFlags::INTERNED_GENERATOR) {
+        let mut gen_allocator = Allocator::new();
+        let generator = build_generator(
+            &mut gen_allocator,
+            spend_bundle
+                .coin_spends
+                .iter()
+                .map(|cs| (cs.coin, cs.puzzle_reveal.as_slice(), cs.solution.as_slice())),
+        )
+        .map_err(|_| ValidationErr::Err(ErrorCode::GeneratorRuntimeError))?;
+        let interned = intern_tree_limited(&gen_allocator, generator, u32::MAX as usize)
+            .map_err(|_| ValidationErr::Err(ErrorCode::GeneratorRuntimeError))?;
+        Ok(interned_vbytes(&interned) * constants.cost_per_byte)
+    } else {
+        // We don't pay the size cost (nor execution cost) of being wrapped by a
+        // quote (in solution_generator).
+        let generator_length_without_quote =
+            calculate_generator_length(&spend_bundle.coin_spends) - QUOTE_BYTES;
+        Ok(generator_length_without_quote as u64 * constants.cost_per_byte)
+    }
+}
+
 // returns the conditions for the spendbundle, along with the (public key,
 // message) pairs emitted by the spends (for validating the aggregate signature)
 #[allow(clippy::type_complexity)]
@@ -57,18 +90,13 @@ pub fn run_spendbundle(
     let dialect = ChikDialect::new(flags.to_klvm_flags());
     let mut ret = SpendBundleConditions::default();
     let mut state = ParseState::default();
-    // We don't pay the size cost (nor execution cost) of being wrapped by a
-    // quote (in solution_generator).
-    let generator_length_without_quote =
-        calculate_generator_length(&spend_bundle.coin_spends) - QUOTE_BYTES;
-
-    let byte_cost = generator_length_without_quote as u64 * constants.cost_per_byte;
-    subtract_cost(a, &mut cost_left, byte_cost)?;
+    let base_cost = calculate_base_cost(spend_bundle, flags, constants)?;
+    subtract_cost(&mut cost_left, base_cost)?;
 
     if flags.contains(ConsensusFlags::LIMIT_SPENDS)
         && spend_bundle.coin_spends.len() > MAX_SPENDS_PER_BLOCK
     {
-        return Err(ValidationErr(a.nil(), ErrorCode::TooManySpends));
+        return Err(ValidationErr::Err(ErrorCode::TooManySpends));
     }
 
     for coin_spend in &spend_bundle.coin_spends {
@@ -80,11 +108,11 @@ pub fn run_spendbundle(
         let Reduction(klvm_cost, conditions) = run_program(a, &dialect, puz, sol, cost_left)?;
 
         ret.execution_cost += klvm_cost;
-        subtract_cost(a, &mut cost_left, klvm_cost)?;
+        subtract_cost(&mut cost_left, klvm_cost)?;
 
         let buf = tree_hash(a, puz);
         if coin_spend.coin.puzzle_hash != buf.into() {
-            return Err(ValidationErr(puz, ErrorCode::WrongPuzzleHash));
+            return Err(ValidationErr::Err(ErrorCode::WrongPuzzleHash));
         }
         let puzzle_hash = a.new_atom(&buf)?;
         let spend = process_single_spend::<MempoolVisitor>(
@@ -109,7 +137,7 @@ pub fn run_spendbundle(
     }
 
     MempoolVisitor::post_process(a, &state, &mut ret)?;
-    validate_conditions(a, &ret, &state, a.nil(), flags)?;
+    validate_conditions(a, &ret, &state, flags)?;
 
     assert!(max_cost >= cost_left);
     ret.cost = max_cost - cost_left;
@@ -606,7 +634,7 @@ mod tests {
                     (
                         0,
                         0,
-                        format!("FAILED: {}\n", u32::from(code.1)),
+                        format!("FAILED: {code} ({:?})\n", u32::from(code.error_code())),
                         block_conds,
                     )
                 }
@@ -666,7 +694,7 @@ mod tests {
             }
             Err(code) => {
                 println!("error: {code:?}");
-                format!("FAILED: {}\n", u32::from(code.1))
+                format!("FAILED: {code} ({:?})\n", u32::from(code.error_code()))
             }
         };
 
@@ -720,7 +748,7 @@ mod tests {
         let result = run_spendbundle(&mut alloc, &bundle, u64::MAX, flags, &TEST_CONSTANTS);
         match (expected_err, result) {
             (Some(err), Err(e)) => {
-                assert_eq!(e.1, err);
+                assert_eq!(e.error_code(), err);
             }
             (None, Ok((conds, _))) => {
                 assert_eq!(conds.spends.len(), num_spends);

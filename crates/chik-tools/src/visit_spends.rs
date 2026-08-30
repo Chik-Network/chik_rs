@@ -128,7 +128,7 @@ pub fn visit_spends<
         // process the spend
         let destructure_list!(parent_id, puzzle, amount, solution, _spend_level_extra) =
             <match_list!(Bytes32, NodePtr, u64, NodePtr, NodePtr)>::from_klvm(a, spend)
-                .map_err(|_| ValidationErr(spend, ErrorCode::InvalidCondition))?;
+                .map_err(|_| ValidationErr::Err(ErrorCode::InvalidCondition))?;
         callback(a, parent_id, amount, puzzle, solution);
     }
     Ok(())

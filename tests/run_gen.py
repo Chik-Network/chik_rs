@@ -91,12 +91,13 @@ DEFAULT_CONSTANTS = ConsensusConstants(
     PLOT_FILTER_V2_FIRST_ADJUSTMENT_HEIGHT=uint32(0xFFFFFFFF),
     PLOT_FILTER_V2_SECOND_ADJUSTMENT_HEIGHT=uint32(0xFFFFFFFF),
     PLOT_FILTER_V2_THIRD_ADJUSTMENT_HEIGHT=uint32(0xFFFFFFFF),
+    TESTNET=True,
 )
 
 
 def run_gen(
     fn: str, flags: int = 0, args: Optional[str] = None, version: int = 2
-) -> tuple[Optional[int], Optional[SpendBundleConditions], float]:
+) -> tuple[Optional[int], Optional[str], Optional[SpendBundleConditions], float]:
 
     # constants from the main chik blockchain:
     # https://github.com/Chik-Network/chik-blockchain/blob/main/chik/consensus/default_constants.py
@@ -129,10 +130,14 @@ def run_gen(
         )
         run_time = perf_counter() - start_time
         return ret + (run_time,)
-    except Exception as e:
-        # GENERATOR_RUNTIME_ERROR
+    except ValueError as e:
         run_time = perf_counter() - start_time
-        return (117, None, run_time)
+        if e.args and e.args[0] == "ValidationError":
+            return (e.args[1], e.args[2], None, run_time)
+        return (117, f"GeneratorRuntimeError: {e}", None, run_time)
+    except Exception as e:
+        run_time = perf_counter() - start_time
+        return (117, f"GeneratorRuntimeError: {e}", None, run_time)
 
 
 def print_spend_bundle_conditions(result: SpendBundleConditions) -> str:
@@ -193,13 +198,13 @@ def print_spend_bundle_conditions(result: SpendBundleConditions) -> str:
 
 if __name__ == "__main__":
     try:
-        error_code, result, run_time = run_gen(
+        error_code, error_msg, result, run_time = run_gen(
             sys.argv[1],
             0 if len(sys.argv) < 3 else int(sys.argv[2]),
             None if len(sys.argv) < 4 else sys.argv[3],
         )
         if error_code is not None:
-            print(f"Validation Error: {error_code}")
+            print(f"Validation Error: {error_msg} ({error_code})")
             print(f"run-time: {run_time:.2f}s")
             sys.exit(1)
         start_time = time()

@@ -29509,4 +29509,4 @@ atoms: 3068184
 pairs: 61803191
 heap: 9263041
 STRICT:
-FAILED: 149
+FAILED: validation error: TooManySpends (149)

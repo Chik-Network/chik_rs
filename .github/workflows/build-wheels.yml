@@ -447,7 +447,7 @@ jobs:
       - build-sdist
       - fmt
       - clippy
-#      - unit_tests
+      - unit_tests
     strategy:
       fail-fast: false
       matrix:

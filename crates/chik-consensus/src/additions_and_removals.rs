@@ -10,7 +10,7 @@ use crate::validation_error::{ErrorCode, ValidationErr, atom, first, next, rest}
 use chik_protocol::{Bytes, Bytes32};
 use klvm_traits::FromKlvm;
 use klvm_utils::{TreeCache, tree_hash_cached};
-use klvmr::allocator::NodePtr;
+use klvmr::allocator::{NodePtr, SExp};
 use klvmr::chik_dialect::ChikDialect;
 use klvmr::reduction::Reduction;
 use klvmr::run_program::run_program;
@@ -43,7 +43,7 @@ where
 
     let Reduction(klvm_cost, all_spends) = run_program(&mut a, &dialect, program, args, cost_left)?;
 
-    subtract_cost(&a, &mut cost_left, klvm_cost)?;
+    subtract_cost(&mut cost_left, klvm_cost)?;
     let all_spends = first(&a, all_spends)?;
 
     let mut cache = TreeCache::default();
@@ -59,7 +59,7 @@ where
         iter = rest;
         let (_parent_id, (puzzle, _rest)) =
             <(NodePtr, (NodePtr, NodePtr))>::from_klvm(&a, spend)
-                .map_err(|_| ValidationErr(spend, ErrorCode::InvalidCondition))?;
+                .map_err(|_| ValidationErr::Err(ErrorCode::InvalidCondition))?;
         cache.visit_tree(&a, puzzle);
     }
 
@@ -69,13 +69,13 @@ where
         // process the spend
         let (parent_id, (puzzle, (amount, (solution, _spend_level_extra)))) =
             <(Bytes32, (NodePtr, (NodePtr, (NodePtr, NodePtr))))>::from_klvm(&a, spend)
-                .map_err(|_| ValidationErr(spend, ErrorCode::InvalidCondition))?;
+                .map_err(|_| ValidationErr::Err(ErrorCode::InvalidCondition))?;
         let amount = parse_amount(&a, amount, ErrorCode::InvalidCoinAmount)?;
 
         let Reduction(klvm_cost, mut iter) =
             run_program(&mut a, &dialect, puzzle, solution, cost_left)?;
 
-        subtract_cost(&a, &mut cost_left, klvm_cost)?;
+        subtract_cost(&mut cost_left, klvm_cost)?;
 
         let puzzle_hash = tree_hash_cached(&a, puzzle, &mut cache);
 
@@ -91,7 +91,11 @@ where
         while let Some((mut c, next)) = next(&a, iter)? {
             iter = next;
             let op = first(&a, c)?;
-            let Ok(op) = atom(&a, op, ErrorCode::InvalidConditionOpcode) else {
+            let Ok(op) = atom(
+                &a,
+                op,
+                ValidationErr::Err(ErrorCode::InvalidConditionOpcode),
+            ) else {
                 // unknown opcodes (including pairs) are simply ingnored in
                 // consensus mode
                 continue;
@@ -104,7 +108,7 @@ where
 
             let (puzzle_hash, (amount, hint)) =
                 <(Bytes32, (NodePtr, NodePtr))>::from_klvm(&a, c)
-                    .map_err(|_| ValidationErr(c, ErrorCode::InvalidCondition))?;
+                    .map_err(|_| ValidationErr::Err(ErrorCode::InvalidCondition))?;
             let amount = parse_amount(&a, amount, ErrorCode::InvalidCoinAmount)?;
 
             let coin = Coin {
@@ -118,8 +122,16 @@ where
             // side, the list element
 
             let hint =
-                if let Ok(((hint, _), _)) = <((Bytes, NodePtr), NodePtr)>::from_klvm(&a, hint) {
-                    if hint.len() <= 32 { Some(hint) } else { None }
+                if let Ok(((hint, _), _)) = <((NodePtr, NodePtr), NodePtr)>::from_klvm(&a, hint) {
+                    if let SExp::Atom = a.sexp(hint) {
+                        if a.atom_len(hint) <= 32 {
+                            Some(Into::<Bytes>::into(a.atom(hint).as_ref()))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
                 } else {
                     None
                 };
@@ -245,5 +257,82 @@ mod test {
         for r in &removals {
             assert!(expect_removals.contains(&r.1));
         }
+    }
+
+    fn make_create_coin_generator(hint_size: usize) -> Vec<u8> {
+        use crate::solution_generator::solution_generator;
+        use klvm_traits::ToKlvm;
+        use klvmr::allocator::Allocator;
+        use klvmr::serde::node_to_bytes;
+
+        let mut a = Allocator::new();
+
+        let hint = Bytes::new(vec![0x42u8; hint_size]);
+        let ph = Bytes32::from([0xab; 32]);
+
+        // ((51 puzzle_hash amount (hint)))
+        let conditions = ((51u8, (ph, (1000u64, ((hint, ()), ())))), ())
+            .to_klvm(&mut a)
+            .unwrap();
+
+        let solution_bytes = node_to_bytes(&a, conditions).unwrap();
+        let puzzle_bytes = [0x01u8];
+        let coin = Coin::new([0xcc; 32].into(), [0xdd; 32].into(), 1000);
+        solution_generator([(coin, puzzle_bytes.as_slice(), solution_bytes.as_slice())]).unwrap()
+    }
+
+    #[rstest]
+    #[case(1, true)]
+    #[case(32, true)]
+    #[case(33, false)]
+    #[case(100_000, false)]
+    fn test_hint_length_filtering(#[case] hint_size: usize, #[case] expect_hint: bool) {
+        let no_blocks: &[&[u8]] = &[];
+        let generator = make_create_coin_generator(hint_size);
+        let (additions, _removals) = additions_and_removals(
+            &generator,
+            no_blocks,
+            ConsensusFlags::empty(),
+            &TEST_CONSTANTS,
+        )
+        .unwrap();
+        assert_eq!(additions.len(), 1);
+        assert_eq!(additions[0].1.is_some(), expect_hint);
+    }
+
+    #[test]
+    fn test_pair_hint_is_ignored() {
+        use crate::solution_generator::solution_generator;
+        use klvm_traits::ToKlvm;
+        use klvmr::allocator::Allocator;
+        use klvmr::serde::node_to_bytes;
+
+        let mut a = Allocator::new();
+
+        let pair_hint = (1u8, 2u8).to_klvm(&mut a).unwrap();
+        let ph = Bytes32::from([0xab; 32]);
+
+        // ((51 puzzle_hash amount ((1 . 2))))
+        let conditions = ((51u8, (ph, (1000u64, ((pair_hint, ()), ())))), ())
+            .to_klvm(&mut a)
+            .unwrap();
+
+        let solution_bytes = node_to_bytes(&a, conditions).unwrap();
+        let puzzle_bytes = [0x01u8];
+        let coin = Coin::new([0xcc; 32].into(), [0xdd; 32].into(), 1000);
+        let generator =
+            solution_generator([(coin, puzzle_bytes.as_slice(), solution_bytes.as_slice())])
+                .unwrap();
+
+        let no_blocks: &[&[u8]] = &[];
+        let (additions, _removals) = additions_and_removals(
+            &generator,
+            no_blocks,
+            ConsensusFlags::empty(),
+            &TEST_CONSTANTS,
+        )
+        .unwrap();
+        assert_eq!(additions.len(), 1);
+        assert!(additions[0].1.is_none(), "pair hint should be ignored");
     }
 }

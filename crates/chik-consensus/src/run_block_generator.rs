@@ -6,6 +6,7 @@ use crate::conditions::{
 };
 use crate::consensus_constants::ConsensusConstants;
 use crate::flags::ConsensusFlags;
+use crate::generator_cost::interned_vbytes;
 use crate::opcodes::{
     AGG_SIG_AMOUNT, AGG_SIG_ME, AGG_SIG_PARENT, AGG_SIG_PARENT_AMOUNT, AGG_SIG_PARENT_PUZZLE,
     AGG_SIG_PUZZLE, AGG_SIG_PUZZLE_AMOUNT, AGG_SIG_UNSAFE, CREATE_COIN,
@@ -23,15 +24,11 @@ use klvmr::chik_dialect::ChikDialect;
 use klvmr::cost::Cost;
 use klvmr::reduction::Reduction;
 use klvmr::run_program::run_program;
-use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
+use klvmr::serde::{InternedTree, intern_tree_limited, node_from_bytes, node_from_bytes_backrefs};
 
-pub fn subtract_cost(
-    a: &Allocator,
-    cost_left: &mut Cost,
-    subtract: Cost,
-) -> Result<(), ValidationErr> {
+pub fn subtract_cost(cost_left: &mut Cost, subtract: Cost) -> Result<(), ValidationErr> {
     if subtract > *cost_left {
-        Err(ValidationErr(a.nil(), ErrorCode::CostExceeded))
+        Err(ValidationErr::Err(ErrorCode::CostExceeded))
     } else {
         *cost_left -= subtract;
         Ok(())
@@ -52,7 +49,7 @@ where
     // need to pass in the deserialization program
     if flags.contains(ConsensusFlags::SIMPLE_GENERATOR) {
         if block_refs.into_iter().next().is_some() {
-            return Err(ValidationErr(a.nil(), ErrorCode::TooManyGeneratorRefs));
+            return Err(ValidationErr::Err(ErrorCode::TooManyGeneratorRefs));
         }
         return Ok(a.nil());
     }
@@ -104,7 +101,7 @@ where
     let mut cost_left = max_cost;
     let byte_cost = program.len() as u64 * constants.cost_per_byte;
 
-    subtract_cost(&a, &mut cost_left, byte_cost)?;
+    subtract_cost(&mut cost_left, byte_cost)?;
 
     let rom_generator = node_from_bytes(&mut a, &ROM_BOOTSTRAP_GENERATOR)?;
     let program = node_from_bytes_backrefs(&mut a, program)?;
@@ -128,7 +125,7 @@ where
     let Reduction(klvm_cost, generator_output) =
         run_program(&mut a, &dialect, rom_generator, args, cost_left)?;
 
-    subtract_cost(&a, &mut cost_left, klvm_cost)?;
+    subtract_cost(&mut cost_left, klvm_cost)?;
 
     // we pass in what's left of max_cost here, to fail early in case the
     // cost of a condition brings us over the cost limit
@@ -164,7 +161,7 @@ fn extract_n<const N: usize>(
         counter += 1;
     }
     if counter != N - 1 {
-        return Err(ValidationErr(n, e));
+        return Err(ValidationErr::Err(e));
     }
     ret[counter] = n;
     Ok(ret)
@@ -177,10 +174,7 @@ pub fn check_generator_quote(program: &[u8], flags: ConsensusFlags) -> Result<()
     if !flags.contains(ConsensusFlags::SIMPLE_GENERATOR) || program.starts_with(&[0xff, 0x01]) {
         Ok(())
     } else {
-        Err(ValidationErr(
-            NodePtr::NIL,
-            ErrorCode::ComplexGeneratorReceived,
-        ))
+        Err(ValidationErr::Err(ErrorCode::ComplexGeneratorReceived))
     }
 }
 
@@ -197,10 +191,7 @@ pub fn check_generator_node(
     }
     // this expects an atom with a single byte value of 1 as the first value in the list
     match <(MatchByte<1>, NodePtr)>::from_klvm(a, program) {
-        Err(..) => Err(ValidationErr(
-            NodePtr::NIL,
-            ErrorCode::ComplexGeneratorReceived,
-        )),
+        Err(..) => Err(ValidationErr::Err(ErrorCode::ComplexGeneratorReceived)),
         _ => Ok(()),
     }
 }
@@ -229,13 +220,28 @@ where
     <I as IntoIterator>::IntoIter: DoubleEndedIterator,
 {
     check_generator_quote(program, flags)?;
-    let mut a = make_allocator(flags);
-    let byte_cost = program.len() as u64 * constants.cost_per_byte;
+
+    let (mut a, base_cost, program) = if flags.contains(ConsensusFlags::INTERNED_GENERATOR) {
+        let mut decode_allocator = Allocator::new();
+        let program_node = node_from_bytes_backrefs(&mut decode_allocator, program)?;
+        let interned = intern_tree_limited(&decode_allocator, program_node, u32::MAX as usize)
+            .map_err(|_| ValidationErr::Err(ErrorCode::GeneratorRuntimeError))?;
+        let cost = interned_vbytes(&interned) * constants.cost_per_byte;
+        let InternedTree {
+            allocator, root, ..
+        } = interned;
+        drop(decode_allocator);
+        (allocator, cost, root)
+    } else {
+        let mut a = make_allocator(flags);
+        let byte_cost = program.len() as u64 * constants.cost_per_byte;
+        let program = node_from_bytes_backrefs(&mut a, program)?;
+        (a, byte_cost, program)
+    };
 
     let mut cost_left = max_cost;
-    subtract_cost(&a, &mut cost_left, byte_cost)?;
+    subtract_cost(&mut cost_left, base_cost)?;
 
-    let program = node_from_bytes_backrefs(&mut a, program)?;
     check_generator_node(&a, program, flags)?;
 
     let args = setup_generator_args(&mut a, block_refs, flags)?;
@@ -243,7 +249,7 @@ where
 
     let Reduction(klvm_cost, all_spends) = run_program(&mut a, &dialect, program, args, cost_left)?;
 
-    subtract_cost(&a, &mut cost_left, klvm_cost)?;
+    subtract_cost(&mut cost_left, klvm_cost)?;
 
     let mut ret = SpendBundleConditions::default();
 
@@ -277,7 +283,7 @@ where
     while let Some((spend, rest)) = a.next(iter) {
         iter = rest;
         if spends_left == 0 {
-            return Err(ValidationErr(spend, ErrorCode::TooManySpends));
+            return Err(ValidationErr::Err(ErrorCode::TooManySpends));
         }
         spends_left -= 1;
         // process the spend
@@ -287,7 +293,7 @@ where
         let Reduction(klvm_cost, conditions) =
             run_program(&mut a, &dialect, puzzle, solution, cost_left)?;
 
-        subtract_cost(&a, &mut cost_left, klvm_cost)?;
+        subtract_cost(&mut cost_left, klvm_cost)?;
         ret.execution_cost += klvm_cost;
 
         let buf = tree_hash_cached(&a, puzzle, &mut cache);
@@ -308,10 +314,10 @@ where
         )?;
     }
     if a.atom_len(iter) != 0 {
-        return Err(ValidationErr(iter, ErrorCode::GeneratorRuntimeError));
+        return Err(ValidationErr::Err(ErrorCode::GeneratorRuntimeError));
     }
 
-    validate_conditions(&a, &ret, &state, a.nil(), flags)?;
+    validate_conditions(&a, &ret, &state, flags)?;
     validate_signature(&state, signature, flags, bls_cache)?;
     ret.validated_signature = !flags.contains(ConsensusFlags::DONT_VALIDATE_SIGNATURE);
 
@@ -349,7 +355,7 @@ where
 
     let (first, _rest) = a
         .next(res)
-        .ok_or(ValidationErr(res, ErrorCode::GeneratorRuntimeError))?;
+        .ok_or(ValidationErr::Err(ErrorCode::GeneratorRuntimeError))?;
     let mut cache = TreeCache::default();
     let mut iter = first;
     while let Some((spend, rest)) = a.next(iter) {
@@ -369,7 +375,7 @@ where
         };
         let puzhash = tree_hash_cached(&a, puzzle, &mut cache);
         let parent_id = BytesImpl::<32>::from_klvm(&a, parent_id)
-            .map_err(|_| ValidationErr(first, ErrorCode::InvalidParentId))?;
+            .map_err(|_| ValidationErr::Err(ErrorCode::InvalidParentId))?;
         let coin = Coin::new(
             parent_id,
             puzhash.into(),
@@ -445,11 +451,11 @@ where
         args,
         constants.max_block_cost_klvm,
     )
-    .map_err(|_| ValidationErr(program, ErrorCode::GeneratorRuntimeError))?;
+    .map_err(|_| ValidationErr::Err(ErrorCode::GeneratorRuntimeError))?;
 
     let (first, _rest) = a
         .next(res)
-        .ok_or(ValidationErr(res, ErrorCode::GeneratorRuntimeError))?;
+        .ok_or(ValidationErr::Err(ErrorCode::GeneratorRuntimeError))?;
     let mut cache = TreeCache::default();
     let mut iter = first;
     while let Some((spend, rest)) = a.next(iter) {
@@ -468,7 +474,7 @@ where
         };
         let puzhash = tree_hash_cached(&a, puzzle, &mut cache);
         let parent_id = BytesImpl::<32>::from_klvm(&a, parent_id)
-            .map_err(|_| ValidationErr(first, ErrorCode::InvalidParentId))?;
+            .map_err(|_| ValidationErr::Err(ErrorCode::InvalidParentId))?;
         let coin = Coin::new(
             parent_id,
             puzhash.into(),
@@ -484,7 +490,7 @@ where
             solution,
             constants.max_block_cost_klvm,
         )
-        .map_err(|_| ValidationErr(program, ErrorCode::GeneratorRuntimeError))?;
+        .map_err(|_| ValidationErr::Err(ErrorCode::GeneratorRuntimeError))?;
         // conditions_list is the full returned output of puzzle ran with solution
         // ((51 0xcafef00d 100) (51 0x1234 200) ...)
 
@@ -617,7 +623,7 @@ mod tests {
         );
         match (expected_err, result) {
             (Some(err), Err(e)) => {
-                assert_eq!(e.1, err);
+                assert_eq!(e.error_code(), err);
             }
             (None, Ok(conds)) => {
                 assert_eq!(conds.1.spends.len(), num_spends);

@@ -1,0 +1,25 @@
+# Python 3.9 specific suppressions (not needed on 3.10+)
+
+chik_rs\.ReadableBuffer
+
+chik_rs\.sized_byte_class\.Iterable
+chik_rs\.sized_byte_class\.BinaryIO\.write
+chik_rs\.struct_stream\.BinaryIO\.write
+
+# from_parent methods
+chik_rs\.G1Element\.from_parent
+chik_rs\.G2Element\.from_parent
+chik_rs\.GTElement\.from_parent
+chik_rs\.PrivateKey\.from_parent
+chik_rs\.Program\.from_parent
+chik_rs\.Spend\.from_parent
+chik_rs\.SpendBundleConditions\.from_parent
+chik_rs\.SpendConditions\.from_parent
+chik_rs\.spend\.SpendConditions\.from_parent
+chik_rs\.Coin\.from_parent
+chik_rs\.CoinSpend\.from_parent
+chik_rs\.SpendBundle\.from_parent
+
+# disjoint base (3.9 only)
+chik_rs\.sized_bytes\.SizedBytes
+chik_rs\.sized_ints\.StructStream

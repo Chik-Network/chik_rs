@@ -1,4 +1,7 @@
+import pytest
+
 from chik_rs import (
+    generator_interned_vbytes,
     run_block_generator,
     run_block_generator2,
     G2Element,
@@ -25,7 +28,7 @@ def test_run_block_generator_cost() -> None:
 
     byte_cost = len(generator) * 12000
 
-    err, conds = run_block_generator(
+    err, err_msg, conds = run_block_generator(
         generator,
         [],
         original_consensus_cost,
@@ -35,12 +38,13 @@ def test_run_block_generator_cost() -> None:
         DEFAULT_CONSTANTS,
     )
     assert err is None
+    assert err_msg is None
     assert conds is not None
     assert conds.cost == original_consensus_cost
     assert conds.execution_cost + condition_cost + byte_cost == original_consensus_cost
     assert conds.condition_cost == condition_cost
 
-    err2, conds2 = run_block_generator2(
+    err2, err_msg2, conds2 = run_block_generator2(
         generator,
         [],
         hard_fork_consensus_cost,
@@ -50,6 +54,7 @@ def test_run_block_generator_cost() -> None:
         DEFAULT_CONSTANTS,
     )
     assert err2 is None
+    assert err_msg2 is None
     assert conds2 is not None
     assert conds2.cost == hard_fork_consensus_cost
     assert conds2.condition_cost == condition_cost
@@ -72,7 +77,7 @@ def test_run_block_generator_cost() -> None:
         assert l1 == l2
 
     # we exceed the cost limit by 1
-    err, conds = run_block_generator(
+    err, err_msg, conds = run_block_generator(
         generator,
         [],
         original_consensus_cost - 1,
@@ -83,9 +88,10 @@ def test_run_block_generator_cost() -> None:
     )
     # BLOCK_COST_EXCEEDS_MAX = 23
     assert err == 23
+    assert err_msg == "validation error: CostExceeded"
     assert conds is None
 
-    err, conds = run_block_generator2(
+    err, err_msg, conds = run_block_generator2(
         generator,
         [],
         hard_fork_consensus_cost - 1,
@@ -96,10 +102,11 @@ def test_run_block_generator_cost() -> None:
     )
     # BLOCK_COST_EXCEEDS_MAX = 23
     assert err == 23
+    assert err_msg == "validation error: CostExceeded"
     assert conds is None
 
     # the byte cost alone exceeds the limit by 1
-    err, conds = run_block_generator(
+    err, err_msg, conds = run_block_generator(
         generator,
         [],
         byte_cost - 1,
@@ -110,10 +117,11 @@ def test_run_block_generator_cost() -> None:
     )
     # BLOCK_COST_EXCEEDS_MAX = 23
     assert err == 23
+    assert err_msg == "validation error: CostExceeded"
     assert conds is None
 
     # the byte cost alone exceeds the limit by 1
-    err, conds = run_block_generator2(
+    err, err_msg, conds = run_block_generator2(
         generator,
         [],
         byte_cost - 1,
@@ -124,4 +132,42 @@ def test_run_block_generator_cost() -> None:
     )
     # BLOCK_COST_EXCEEDS_MAX = 23
     assert err == 23
+    assert err_msg == "validation error: CostExceeded"
     assert conds is None
+
+
+def test_generator_interned_vbytes_nil() -> None:
+    # \x80 encodes the nil atom (0-byte atom).
+    # Interned tree: 1 atom (0 atom bytes), 0 pairs.
+    # weight = atom_bytes + 2*atoms + 3*pairs = 0 + 2 + 0 = 2
+    assert generator_interned_vbytes(b"\x80") == 2
+
+
+def test_generator_interned_vbytes_single_byte_atom() -> None:
+    # \x01 encodes a 1-byte atom with value 1.
+    # Interned tree: 1 atom (1 atom byte), 0 pairs.
+    # weight = 1 + 2*1 + 3*0 = 3
+    assert generator_interned_vbytes(b"\x01") == 3
+
+
+def test_generator_interned_vbytes_dedup_pair() -> None:
+    # \xff\x80\x80 encodes (nil . nil).
+    # After interning, both nil atoms collapse to one unique atom.
+    # Interned tree: 1 unique atom (0 bytes), 1 pair.
+    # weight = 0 + 2*1 + 3*1 = 5
+    assert generator_interned_vbytes(b"\xff\x80\x80") == 5
+
+
+def test_generator_interned_vbytes_real_block() -> None:
+    generator = bytes.fromhex(
+        open("generator-tests/block-834768.txt", "r").read().split("\n")[0]
+    )
+    weight = generator_interned_vbytes(generator)
+    # Pinned value for block-834768 (39090 bytes serialized, 13465 unique weight).
+    # Interning deduplicates shared subtrees: 13465 << 39090.
+    assert weight == 13465
+
+
+def test_generator_interned_vbytes_bad_input() -> None:
+    with pytest.raises(ValueError):
+        generator_interned_vbytes(b"\xff\xff")

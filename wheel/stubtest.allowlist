@@ -3,31 +3,8 @@
 #       https://github.com/Chik-Network/chik_rs/pull/731
 chik_rs\.chik_rs\..*
 
-# this is offered to help with hinting only and is not intended to be
-# runtime accessible.  is there a better option for handling this?
-chik_rs\.ReadableBuffer
-
-# TODO: ask stubtest/mypy about these as they seem unlikely to be our doing
-chik_rs\.sized_byte_class\.Iterable
-chik_rs\.sized_byte_class\.BinaryIO\.write
-chik_rs\.struct_stream\.BinaryIO\.write
-
 # these raise unimplemented
-chik_rs\.G1Element\.from_parent
-chik_rs\.G2Element\.from_parent
-chik_rs\.GTElement\.from_parent
-chik_rs\.PrivateKey\.from_parent
-chik_rs\.Program\.from_parent
-chik_rs\.Spend\.from_parent
-chik_rs\.SpendBundleConditions\.from_parent
-chik_rs\.SpendConditions\.from_parent
 chik_rs\.spend\.Spend\.from_parent
-chik_rs\.spend\.SpendConditions\.from_parent
-
-# these are implemented but not intended to be called from python
-chik_rs\.Coin\.from_parent
-chik_rs\.CoinSpend\.from_parent
-chik_rs\.SpendBundle\.from_parent
 
 # banning * imports
 chik_rs\.datalayer\.__all__

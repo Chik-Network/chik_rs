@@ -1,6 +1,4 @@
 # We get: X is a disjoint base at runtime, but isn't marked with @disjoint_base in the stub
 # or .__disjoint_base__ is not present in stub when adding the decorator
 chik_rs\.sized_byte_class\.SizedBytes
-chik_rs\.sized_bytes\.SizedBytes
-chik_rs\.sized_ints\.StructStream
 chik_rs\.struct_stream\.StructStream

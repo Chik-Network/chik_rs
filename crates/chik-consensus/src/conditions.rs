@@ -354,7 +354,7 @@ fn check_agg_sig_unsafe_message(
         constants.agg_sig_parent_puzzle_additional_data.as_ref(),
     ] {
         if buf.as_ref().ends_with(additional_data) {
-            return Err(ValidationErr(msg, ErrorCode::InvalidMessage));
+            return Err(ValidationErr::Err(ErrorCode::InvalidMessage));
         }
     }
     Ok(())
@@ -412,12 +412,17 @@ pub fn parse_args(
             let puzzle_hash = sanitize_hash(a, first(a, c)?, 32, ErrorCode::InvalidPuzzleHash)?;
             c = rest(a, c)?;
             let node = first(a, c)?;
-            let amount = match sanitize_uint(a, node, 8, ErrorCode::InvalidCoinAmount)? {
+            let amount = match sanitize_uint(
+                a,
+                node,
+                8,
+                ValidationErr::Err(ErrorCode::InvalidCoinAmount),
+            )? {
                 SanitizedUint::PositiveOverflow => {
-                    return Err(ValidationErr(node, ErrorCode::CoinAmountExceedsMaximum));
+                    return Err(ValidationErr::Err(ErrorCode::CoinAmountExceedsMaximum));
                 }
                 SanitizedUint::NegativeOverflow => {
-                    return Err(ValidationErr(node, ErrorCode::CoinAmountNegative));
+                    return Err(ValidationErr::Err(ErrorCode::CoinAmountNegative));
                 }
                 SanitizedUint::Ok(amount) => amount,
             };
@@ -453,13 +458,18 @@ pub fn parse_args(
             if flags.contains(ConsensusFlags::NO_UNKNOWN_CONDS) {
                 // We don't know of any new softforked-in conditions, so they
                 // are all unknown
-                Err(ValidationErr(c, ErrorCode::InvalidConditionOpcode))
+                Err(ValidationErr::Err(ErrorCode::InvalidConditionOpcode))
             } else {
-                match sanitize_uint(a, first(a, c)?, 4, ErrorCode::InvalidSoftforkCost)? {
+                match sanitize_uint(
+                    a,
+                    first(a, c)?,
+                    4,
+                    ValidationErr::Err(ErrorCode::InvalidSoftforkCost),
+                )? {
                     // the first argument represents the cost of the condition.
                     // We scale it by 10000 to make the argument be a bit smaller
                     SanitizedUint::Ok(cost) => Ok(Condition::Softfork(cost * 10000)),
-                    _ => Err(ValidationErr(c, ErrorCode::InvalidSoftforkCost)),
+                    _ => Err(ValidationErr::Err(ErrorCode::InvalidSoftforkCost)),
                 }
             }
         }
@@ -467,7 +477,7 @@ pub fn parse_args(
             // All of these conditions are unknown
             // but they have costs
             if flags.contains(ConsensusFlags::NO_UNKNOWN_CONDS) {
-                Err(ValidationErr(c, ErrorCode::InvalidConditionOpcode))
+                Err(ValidationErr::Err(ErrorCode::InvalidConditionOpcode))
             } else {
                 Ok(Condition::Softfork(compute_unknown_condition_cost(op)))
             }
@@ -535,10 +545,14 @@ pub fn parse_args(
         ASSERT_MY_BIRTH_SECONDS => {
             maybe_check_args_terminator(a, c, flags)?;
             let node = first(a, c)?;
-            let code = ErrorCode::AssertMyBirthSecondsFailed;
-            match sanitize_uint(a, node, 8, code)? {
+            match sanitize_uint(
+                a,
+                node,
+                8,
+                ValidationErr::Err(ErrorCode::AssertMyBirthSecondsFailed),
+            )? {
                 SanitizedUint::PositiveOverflow | SanitizedUint::NegativeOverflow => {
-                    Err(ValidationErr(node, code))
+                    Err(ValidationErr::Err(ErrorCode::AssertMyBirthSecondsFailed))
                 }
                 SanitizedUint::Ok(r) => Ok(Condition::AssertMyBirthSeconds(r)),
             }
@@ -546,10 +560,14 @@ pub fn parse_args(
         ASSERT_MY_BIRTH_HEIGHT => {
             maybe_check_args_terminator(a, c, flags)?;
             let node = first(a, c)?;
-            let code = ErrorCode::AssertMyBirthHeightFailed;
-            match sanitize_uint(a, node, 4, code)? {
+            match sanitize_uint(
+                a,
+                node,
+                4,
+                ValidationErr::Err(ErrorCode::AssertMyBirthHeightFailed),
+            )? {
                 SanitizedUint::PositiveOverflow | SanitizedUint::NegativeOverflow => {
-                    Err(ValidationErr(node, code))
+                    Err(ValidationErr::Err(ErrorCode::AssertMyBirthHeightFailed))
                 }
                 SanitizedUint::Ok(r) => Ok(Condition::AssertMyBirthHeight(r as u32)),
             }
@@ -564,9 +582,15 @@ pub fn parse_args(
         ASSERT_SECONDS_RELATIVE => {
             maybe_check_args_terminator(a, c, flags)?;
             let node = first(a, c)?;
-            let code = ErrorCode::AssertSecondsRelativeFailed;
-            match sanitize_uint(a, node, 8, code)? {
-                SanitizedUint::PositiveOverflow => Err(ValidationErr(node, code)),
+            match sanitize_uint(
+                a,
+                node,
+                8,
+                ValidationErr::Err(ErrorCode::AssertSecondsRelativeFailed),
+            )? {
+                SanitizedUint::PositiveOverflow => {
+                    Err(ValidationErr::Err(ErrorCode::AssertSecondsRelativeFailed))
+                }
                 SanitizedUint::NegativeOverflow => Ok(Condition::SkipRelativeCondition),
                 SanitizedUint::Ok(r) => Ok(Condition::AssertSecondsRelative(r)),
             }
@@ -574,9 +598,15 @@ pub fn parse_args(
         ASSERT_SECONDS_ABSOLUTE => {
             maybe_check_args_terminator(a, c, flags)?;
             let node = first(a, c)?;
-            let code = ErrorCode::AssertSecondsAbsoluteFailed;
-            match sanitize_uint(a, node, 8, code)? {
-                SanitizedUint::PositiveOverflow => Err(ValidationErr(node, code)),
+            match sanitize_uint(
+                a,
+                node,
+                8,
+                ValidationErr::Err(ErrorCode::AssertSecondsAbsoluteFailed),
+            )? {
+                SanitizedUint::PositiveOverflow => {
+                    Err(ValidationErr::Err(ErrorCode::AssertSecondsAbsoluteFailed))
+                }
                 SanitizedUint::NegativeOverflow => Ok(Condition::Skip),
                 SanitizedUint::Ok(r) => Ok(Condition::AssertSecondsAbsolute(r)),
             }
@@ -584,9 +614,15 @@ pub fn parse_args(
         ASSERT_HEIGHT_RELATIVE => {
             maybe_check_args_terminator(a, c, flags)?;
             let node = first(a, c)?;
-            let code = ErrorCode::AssertHeightRelativeFailed;
-            match sanitize_uint(a, node, 4, code)? {
-                SanitizedUint::PositiveOverflow => Err(ValidationErr(node, code)),
+            match sanitize_uint(
+                a,
+                node,
+                4,
+                ValidationErr::Err(ErrorCode::AssertHeightRelativeFailed),
+            )? {
+                SanitizedUint::PositiveOverflow => {
+                    Err(ValidationErr::Err(ErrorCode::AssertHeightRelativeFailed))
+                }
                 SanitizedUint::NegativeOverflow => Ok(Condition::SkipRelativeCondition),
                 SanitizedUint::Ok(r) => Ok(Condition::AssertHeightRelative(r as u32)),
             }
@@ -594,9 +630,15 @@ pub fn parse_args(
         ASSERT_HEIGHT_ABSOLUTE => {
             maybe_check_args_terminator(a, c, flags)?;
             let node = first(a, c)?;
-            let code = ErrorCode::AssertHeightAbsoluteFailed;
-            match sanitize_uint(a, node, 4, code)? {
-                SanitizedUint::PositiveOverflow => Err(ValidationErr(node, code)),
+            match sanitize_uint(
+                a,
+                node,
+                4,
+                ValidationErr::Err(ErrorCode::AssertHeightAbsoluteFailed),
+            )? {
+                SanitizedUint::PositiveOverflow => {
+                    Err(ValidationErr::Err(ErrorCode::AssertHeightAbsoluteFailed))
+                }
                 SanitizedUint::NegativeOverflow => Ok(Condition::Skip),
                 SanitizedUint::Ok(r) => Ok(Condition::AssertHeightAbsolute(r as u32)),
             }
@@ -604,41 +646,64 @@ pub fn parse_args(
         ASSERT_BEFORE_SECONDS_RELATIVE => {
             maybe_check_args_terminator(a, c, flags)?;
             let node = first(a, c)?;
-            let code = ErrorCode::AssertBeforeSecondsRelativeFailed;
-            match sanitize_uint(a, node, 8, code)? {
+            match sanitize_uint(
+                a,
+                node,
+                8,
+                ValidationErr::Err(ErrorCode::AssertBeforeSecondsRelativeFailed),
+            )? {
                 SanitizedUint::PositiveOverflow => Ok(Condition::SkipRelativeCondition),
-                SanitizedUint::NegativeOverflow => Err(ValidationErr(node, code)),
+                SanitizedUint::NegativeOverflow => Err(ValidationErr::Err(
+                    ErrorCode::AssertBeforeSecondsRelativeFailed,
+                )),
                 SanitizedUint::Ok(r) => Ok(Condition::AssertBeforeSecondsRelative(r)),
             }
         }
         ASSERT_BEFORE_SECONDS_ABSOLUTE => {
             maybe_check_args_terminator(a, c, flags)?;
-
             let node = first(a, c)?;
-            let code = ErrorCode::AssertBeforeSecondsAbsoluteFailed;
-            match sanitize_uint(a, node, 8, code)? {
+            match sanitize_uint(
+                a,
+                node,
+                8,
+                ValidationErr::Err(ErrorCode::AssertBeforeSecondsAbsoluteFailed),
+            )? {
                 SanitizedUint::PositiveOverflow => Ok(Condition::Skip),
-                SanitizedUint::NegativeOverflow => Err(ValidationErr(node, code)),
+                SanitizedUint::NegativeOverflow => Err(ValidationErr::Err(
+                    ErrorCode::AssertBeforeSecondsAbsoluteFailed,
+                )),
                 SanitizedUint::Ok(r) => Ok(Condition::AssertBeforeSecondsAbsolute(r)),
             }
         }
         ASSERT_BEFORE_HEIGHT_RELATIVE => {
             maybe_check_args_terminator(a, c, flags)?;
             let node = first(a, c)?;
-            let code = ErrorCode::AssertBeforeHeightRelativeFailed;
-            match sanitize_uint(a, node, 4, code)? {
+            match sanitize_uint(
+                a,
+                node,
+                4,
+                ValidationErr::Err(ErrorCode::AssertBeforeHeightRelativeFailed),
+            )? {
                 SanitizedUint::PositiveOverflow => Ok(Condition::SkipRelativeCondition),
-                SanitizedUint::NegativeOverflow => Err(ValidationErr(node, code)),
+                SanitizedUint::NegativeOverflow => Err(ValidationErr::Err(
+                    ErrorCode::AssertBeforeHeightRelativeFailed,
+                )),
                 SanitizedUint::Ok(r) => Ok(Condition::AssertBeforeHeightRelative(r as u32)),
             }
         }
         ASSERT_BEFORE_HEIGHT_ABSOLUTE => {
             maybe_check_args_terminator(a, c, flags)?;
             let node = first(a, c)?;
-            let code = ErrorCode::AssertBeforeHeightAbsoluteFailed;
-            match sanitize_uint(a, node, 4, code)? {
+            match sanitize_uint(
+                a,
+                node,
+                4,
+                ValidationErr::Err(ErrorCode::AssertBeforeHeightAbsoluteFailed),
+            )? {
                 SanitizedUint::PositiveOverflow => Ok(Condition::Skip),
-                SanitizedUint::NegativeOverflow => Err(ValidationErr(node, code)),
+                SanitizedUint::NegativeOverflow => Err(ValidationErr::Err(
+                    ErrorCode::AssertBeforeHeightAbsoluteFailed,
+                )),
                 SanitizedUint::Ok(r) => Ok(Condition::AssertBeforeHeightAbsolute(r as u32)),
             }
         }
@@ -679,7 +744,7 @@ pub fn parse_args(
             // this condition is always true, we always ignore arguments
             Ok(Condition::Skip)
         }
-        _ => Err(ValidationErr(c, ErrorCode::InvalidConditionOpcode)),
+        _ => Err(ValidationErr::Err(ErrorCode::InvalidConditionOpcode)),
     }
 }
 
@@ -956,7 +1021,7 @@ pub fn process_single_spend<'a, V: SpendVisitor>(
     {
         // if this coin ID has already been added to this set, it's a double
         // spend
-        return Err(ValidationErr(parent_id, ErrorCode::DoubleSpend));
+        return Err(ValidationErr::Err(ErrorCode::DoubleSpend));
     }
 
     state.spent_puzzles.insert(puzzle_hash);
@@ -967,7 +1032,7 @@ pub fn process_single_spend<'a, V: SpendVisitor>(
 
     if flags.contains(ConsensusFlags::COST_CONDITIONS) {
         if *max_cost < SPEND_COST {
-            return Err(ValidationErr(parent_id, ErrorCode::CostExceeded));
+            return Err(ValidationErr::Err(ErrorCode::CostExceeded));
         }
         *max_cost -= SPEND_COST;
         ret.condition_cost += SPEND_COST;
@@ -998,9 +1063,9 @@ fn assert_not_ephemeral(spend_flags: &mut u32, state: &mut ParseState, idx: usiz
     *spend_flags |= HAS_RELATIVE_CONDITION;
 }
 
-fn decrement(cnt: &mut u32, n: NodePtr) -> Result<(), ValidationErr> {
+fn decrement(cnt: &mut u32) -> Result<(), ValidationErr> {
     if *cnt == 0 {
-        Err(ValidationErr(n, ErrorCode::TooManyAnnouncements))
+        Err(ValidationErr::Err(ErrorCode::TooManyAnnouncements))
     } else {
         *cnt -= 1;
         Ok(())
@@ -1009,9 +1074,9 @@ fn decrement(cnt: &mut u32, n: NodePtr) -> Result<(), ValidationErr> {
 
 fn to_key(a: &Allocator, pk: NodePtr) -> Result<PublicKey, ValidationErr> {
     let key = PublicKey::from_bytes(a.atom(pk).as_ref().try_into().expect("internal error"))
-        .map_err(|_| ValidationErr(pk, ErrorCode::InvalidPublicKey))?;
+        .map_err(|_| ValidationErr::Err(ErrorCode::InvalidPublicKey))?;
     if key.is_inf() {
-        Err(ValidationErr(pk, ErrorCode::InvalidPublicKey))
+        Err(ValidationErr::Err(ErrorCode::InvalidPublicKey))
     } else {
         Ok(key)
     }
@@ -1037,13 +1102,13 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
         let Some(op) = parse_opcode(a, first(a, c)?, flags) else {
             // in strict mode we don't allow unknown conditions
             if flags.contains(ConsensusFlags::NO_UNKNOWN_CONDS) {
-                return Err(ValidationErr(c, ErrorCode::InvalidConditionOpcode));
+                return Err(ValidationErr::Err(ErrorCode::InvalidConditionOpcode));
             }
             // in consensus-mode, we ignore unknown conditions, but still charge
             // cost for them
             if flags.contains(ConsensusFlags::COST_CONDITIONS) {
                 if *max_cost < GENERIC_CONDITION_COST {
-                    return Err(ValidationErr(c, ErrorCode::CostExceeded));
+                    return Err(ValidationErr::Err(ErrorCode::CostExceeded));
                 }
                 *max_cost -= GENERIC_CONDITION_COST;
                 ret.condition_cost += GENERIC_CONDITION_COST;
@@ -1062,7 +1127,7 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
                     CREATE_COIN_COST
                 };
                 if *max_cost < cost {
-                    return Err(ValidationErr(c, ErrorCode::CostExceeded));
+                    return Err(ValidationErr::Err(ErrorCode::CostExceeded));
                 }
                 *max_cost -= cost;
                 ret.condition_cost += cost;
@@ -1077,7 +1142,7 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
             | AGG_SIG_PARENT_PUZZLE
             | AGG_SIG_PARENT_AMOUNT => {
                 if *max_cost < AGG_SIG_COST {
-                    return Err(ValidationErr(c, ErrorCode::CostExceeded));
+                    return Err(ValidationErr::Err(ErrorCode::CostExceeded));
                 }
                 *max_cost -= AGG_SIG_COST;
                 ret.condition_cost += AGG_SIG_COST;
@@ -1093,7 +1158,7 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
             | RECEIVE_MESSAGE => {
                 if flags.contains(ConsensusFlags::COST_CONDITIONS) {
                     if *max_cost < MESSAGE_CONDITION_COST {
-                        return Err(ValidationErr(c, ErrorCode::CostExceeded));
+                        return Err(ValidationErr::Err(ErrorCode::CostExceeded));
                     }
                     *max_cost -= MESSAGE_CONDITION_COST;
                     ret.condition_cost += MESSAGE_CONDITION_COST;
@@ -1103,7 +1168,7 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
             _ => {
                 if flags.contains(ConsensusFlags::COST_CONDITIONS) {
                     if *max_cost < GENERIC_CONDITION_COST {
-                        return Err(ValidationErr(c, ErrorCode::CostExceeded));
+                        return Err(ValidationErr::Err(ErrorCode::CostExceeded));
                     }
                     *max_cost -= GENERIC_CONDITION_COST;
                     ret.condition_cost += GENERIC_CONDITION_COST;
@@ -1120,7 +1185,7 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
                 ret.reserve_fee = ret
                     .reserve_fee
                     .checked_add(limit)
-                    .ok_or(ValidationErr(c, ErrorCode::ReserveFeeConditionFailed))?;
+                    .ok_or(ValidationErr::Err(ErrorCode::ReserveFeeConditionFailed))?;
             }
             Condition::CreateCoin(ph, amount, hint) => {
                 let new_coin = NewCoin {
@@ -1129,7 +1194,7 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
                     hint,
                 };
                 if !spend.create_coin.insert(new_coin) {
-                    return Err(ValidationErr(c, ErrorCode::DuplicateOutput));
+                    return Err(ValidationErr::Err(ErrorCode::DuplicateOutput));
                 }
                 ret.addition_amount += amount as u128;
             }
@@ -1145,8 +1210,7 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
                         // this spend bundle requres to be spent *before* a
                         // timestamp and also *after* a timestamp that's the
                         // same or later. that's impossible.
-                        return Err(ValidationErr(
-                            c,
+                        return Err(ValidationErr::Err(
                             ErrorCode::ImpossibleSecondsRelativeConstraints,
                         ));
                     }
@@ -1169,8 +1233,7 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
                         // this spend bundle requres to be spent *before* a
                         // height and also *after* a height that's the
                         // same or later. that's impossible.
-                        return Err(ValidationErr(
-                            c,
+                        return Err(ValidationErr::Err(
                             ErrorCode::ImpossibleHeightRelativeConstraints,
                         ));
                     }
@@ -1193,8 +1256,7 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
                         // this spend bundle requres to be spent *before* a
                         // timestamp and also *after* a timestamp that's the
                         // same or later. that's impossible.
-                        return Err(ValidationErr(
-                            c,
+                        return Err(ValidationErr::Err(
                             ErrorCode::ImpossibleSecondsRelativeConstraints,
                         ));
                     }
@@ -1221,8 +1283,7 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
                         // this spend bundle requres to be spent *before* a
                         // height and also *after* a height that's the
                         // same or later. that's impossible.
-                        return Err(ValidationErr(
-                            c,
+                        return Err(ValidationErr::Err(
                             ErrorCode::ImpossibleHeightRelativeConstraints,
                         ));
                     }
@@ -1239,12 +1300,12 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
             }
             Condition::AssertMyCoinId(id) => {
                 if a.atom(id).as_ref() != (*spend.coin_id).as_ref() {
-                    return Err(ValidationErr(c, ErrorCode::AssertMyCoinIdFailed));
+                    return Err(ValidationErr::Err(ErrorCode::AssertMyCoinIdFailed));
                 }
             }
             Condition::AssertMyAmount(amount) => {
                 if amount != spend.coin_amount {
-                    return Err(ValidationErr(c, ErrorCode::AssertMyAmountFailed));
+                    return Err(ValidationErr::Err(ErrorCode::AssertMyAmountFailed));
                 }
             }
             Condition::AssertMyBirthSeconds(s) => {
@@ -1252,7 +1313,7 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
                 // error if it's different from the new birth assertion. One of
                 // them must be false
                 if spend.birth_seconds.is_some_and(|v| v != s) {
-                    return Err(ValidationErr(c, ErrorCode::AssertMyBirthSecondsFailed));
+                    return Err(ValidationErr::Err(ErrorCode::AssertMyBirthSecondsFailed));
                 }
                 spend.birth_seconds = Some(s);
                 assert_not_ephemeral(&mut spend.flags, state, ret.spends.len());
@@ -1262,7 +1323,7 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
                 // error if it's different from the new birth assertion. One of
                 // them must be false
                 if spend.birth_height.is_some_and(|v| v != h) {
-                    return Err(ValidationErr(c, ErrorCode::AssertMyBirthHeightFailed));
+                    return Err(ValidationErr::Err(ErrorCode::AssertMyBirthHeightFailed));
                 }
                 spend.birth_height = Some(h);
                 assert_not_ephemeral(&mut spend.flags, state, ret.spends.len());
@@ -1272,47 +1333,47 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
             }
             Condition::AssertMyParentId(id) => {
                 if a.atom(id).as_ref() != a.atom(spend.parent_id).as_ref() {
-                    return Err(ValidationErr(c, ErrorCode::AssertMyParentIdFailed));
+                    return Err(ValidationErr::Err(ErrorCode::AssertMyParentIdFailed));
                 }
             }
             Condition::AssertMyPuzzlehash(hash) => {
                 if a.atom(hash).as_ref() != a.atom(spend.puzzle_hash).as_ref() {
-                    return Err(ValidationErr(c, ErrorCode::AssertMyPuzzleHashFailed));
+                    return Err(ValidationErr::Err(ErrorCode::AssertMyPuzzleHashFailed));
                 }
             }
             Condition::CreateCoinAnnouncement(msg) => {
                 if !flags.contains(ConsensusFlags::COST_CONDITIONS) {
-                    decrement(&mut announce_countdown, msg)?;
+                    decrement(&mut announce_countdown)?;
                 }
                 state.announce_coin.insert((spend.coin_id.clone(), msg));
             }
             Condition::CreatePuzzleAnnouncement(msg) => {
                 if !flags.contains(ConsensusFlags::COST_CONDITIONS) {
-                    decrement(&mut announce_countdown, msg)?;
+                    decrement(&mut announce_countdown)?;
                 }
                 state.announce_puzzle.insert((spend.puzzle_hash, msg));
             }
             Condition::AssertCoinAnnouncement(msg) => {
                 if !flags.contains(ConsensusFlags::COST_CONDITIONS) {
-                    decrement(&mut announce_countdown, msg)?;
+                    decrement(&mut announce_countdown)?;
                 }
                 state.assert_coin.insert(msg);
             }
             Condition::AssertPuzzleAnnouncement(msg) => {
                 if !flags.contains(ConsensusFlags::COST_CONDITIONS) {
-                    decrement(&mut announce_countdown, msg)?;
+                    decrement(&mut announce_countdown)?;
                 }
                 state.assert_puzzle.insert(msg);
             }
             Condition::AssertConcurrentSpend(id) => {
                 if !flags.contains(ConsensusFlags::COST_CONDITIONS) {
-                    decrement(&mut announce_countdown, id)?;
+                    decrement(&mut announce_countdown)?;
                 }
                 state.assert_concurrent_spend.insert(id);
             }
             Condition::AssertConcurrentPuzzle(id) => {
                 if !flags.contains(ConsensusFlags::COST_CONDITIONS) {
-                    decrement(&mut announce_countdown, id)?;
+                    decrement(&mut announce_countdown)?;
                 }
                 state.assert_concurrent_puzzle.insert(id);
             }
@@ -1395,7 +1456,7 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
             }
             Condition::Softfork(cost) => {
                 if *max_cost < cost {
-                    return Err(ValidationErr(c, ErrorCode::CostExceeded));
+                    return Err(ValidationErr::Err(ErrorCode::CostExceeded));
                 }
                 *max_cost -= cost;
                 ret.condition_cost += cost;
@@ -1403,7 +1464,7 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
             }
             Condition::SendMessage(src_mode, dst, msg) => {
                 if !flags.contains(ConsensusFlags::COST_CONDITIONS) {
-                    decrement(&mut announce_countdown, msg)?;
+                    decrement(&mut announce_countdown)?;
                 }
                 let src = SpendId::from_self(
                     src_mode,
@@ -1421,7 +1482,7 @@ pub fn parse_conditions<'a, V: SpendVisitor>(
             }
             Condition::ReceiveMessage(src, dst_mode, msg) => {
                 if !flags.contains(ConsensusFlags::COST_CONDITIONS) {
-                    decrement(&mut announce_countdown, msg)?;
+                    decrement(&mut announce_countdown)?;
                 }
                 let dst = SpendId::from_self(
                     dst_mode,
@@ -1503,7 +1564,7 @@ pub fn parse_spends<V: SpendVisitor>(
     while let Some((spend, next)) = next(a, iter)? {
         iter = next;
         if spends_left == 0 {
-            return Err(ValidationErr(spend, ErrorCode::TooManySpends));
+            return Err(ValidationErr::Err(ErrorCode::TooManySpends));
         }
         spends_left -= 1;
         // cost_left is passed in as a mutable reference and decremented by the
@@ -1529,7 +1590,7 @@ pub fn parse_spends<V: SpendVisitor>(
     }
 
     V::post_process(a, &state, &mut ret)?;
-    validate_conditions(a, &ret, &state, spends, flags)?;
+    validate_conditions(a, &ret, &state, flags)?;
     validate_signature(&state, aggregate_signature, flags, bls_cache)?;
     ret.validated_signature = !flags.contains(ConsensusFlags::DONT_VALIDATE_SIGNATURE);
 
@@ -1541,18 +1602,17 @@ pub fn validate_conditions(
     a: &Allocator,
     ret: &SpendBundleConditions,
     state: &ParseState,
-    spends: NodePtr,
     _flags: ConsensusFlags,
 ) -> Result<(), ValidationErr> {
     if ret.removal_amount < ret.addition_amount {
         // The sum of removal amounts must not be less than the sum of addition
         // amounts
-        return Err(ValidationErr(spends, ErrorCode::MintingCoin));
+        return Err(ValidationErr::Err(ErrorCode::MintingCoin));
     }
 
     if ret.removal_amount - ret.addition_amount < ret.reserve_fee as u128 {
         // the actual fee is lower than the reserved fee
-        return Err(ValidationErr(spends, ErrorCode::ReserveFeeConditionFailed));
+        return Err(ValidationErr::Err(ErrorCode::ReserveFeeConditionFailed));
     }
 
     if let Some(bh) = ret.before_height_absolute {
@@ -1560,8 +1620,7 @@ pub fn validate_conditions(
             // this spend bundle requres to be spent *before* a
             // height and also *after* a height that's the
             // same or later. that's impossible.
-            return Err(ValidationErr(
-                spends,
+            return Err(ValidationErr::Err(
                 ErrorCode::ImpossibleHeightAbsoluteConstraints,
             ));
         }
@@ -1572,8 +1631,7 @@ pub fn validate_conditions(
             // this spend bundle requres to be spent *before* a
             // timestamp and also *after* a timestamp that's the
             // same or later. that's impossible.
-            return Err(ValidationErr(
-                spends,
+            return Err(ValidationErr::Err(
                 ErrorCode::ImpossibleSecondsAbsoluteConstraints,
             ));
         }
@@ -1585,10 +1643,7 @@ pub fn validate_conditions(
             .spent_coins
             .contains_key(&Bytes32::try_from(a.atom(*coin_id).as_ref()).unwrap())
         {
-            return Err(ValidationErr(
-                *coin_id,
-                ErrorCode::AssertConcurrentSpendFailed,
-            ));
+            return Err(ValidationErr::Err(ErrorCode::AssertConcurrentSpendFailed));
         }
     }
 
@@ -1603,10 +1658,7 @@ pub fn validate_conditions(
 
         for puzzle_assert in &state.assert_concurrent_puzzle {
             if !spent_phs.contains(&a.atom(*puzzle_assert).as_ref().try_into().unwrap()) {
-                return Err(ValidationErr(
-                    *puzzle_assert,
-                    ErrorCode::AssertConcurrentPuzzleFailed,
-                ));
+                return Err(ValidationErr::Err(ErrorCode::AssertConcurrentPuzzleFailed));
             }
         }
     }
@@ -1626,10 +1678,7 @@ pub fn validate_conditions(
 
         for coin_assert in &state.assert_coin {
             if !announcements.contains(&a.atom(*coin_assert).as_ref().try_into().unwrap()) {
-                return Err(ValidationErr(
-                    *coin_assert,
-                    ErrorCode::AssertCoinAnnouncementFailed,
-                ));
+                return Err(ValidationErr::Err(ErrorCode::AssertCoinAnnouncementFailed));
             }
         }
     }
@@ -1637,10 +1686,7 @@ pub fn validate_conditions(
     for spend_idx in &state.assert_ephemeral {
         // make sure this coin was created in this block
         if !is_ephemeral(a, *spend_idx, &state.spent_coins, &ret.spends) {
-            return Err(ValidationErr(
-                ret.spends[*spend_idx].parent_id,
-                ErrorCode::AssertEphemeralFailed,
-            ));
+            return Err(ValidationErr::Err(ErrorCode::AssertEphemeralFailed));
         }
     }
 
@@ -1649,10 +1695,7 @@ pub fn validate_conditions(
         // because consensus rules do not allow relative conditions on
         // ephemeral spends
         if is_ephemeral(a, *spend_idx, &state.spent_coins, &ret.spends) {
-            return Err(ValidationErr(
-                ret.spends[*spend_idx].parent_id,
-                ErrorCode::EphemeralRelativeCondition,
-            ));
+            return Err(ValidationErr::Err(ErrorCode::EphemeralRelativeCondition));
         }
     }
 
@@ -1669,8 +1712,7 @@ pub fn validate_conditions(
 
         for puzzle_assert in &state.assert_puzzle {
             if !announcements.contains(&a.atom(*puzzle_assert).as_ref().try_into().unwrap()) {
-                return Err(ValidationErr(
-                    *puzzle_assert,
+                return Err(ValidationErr::Err(
                     ErrorCode::AssertPuzzleAnnouncementFailed,
                 ));
             }
@@ -1690,10 +1732,7 @@ pub fn validate_conditions(
 
         for count in messages.values() {
             if *count != 0 {
-                return Err(ValidationErr(
-                    NodePtr::NIL,
-                    ErrorCode::MessageNotSentOrReceived,
-                ));
+                return Err(ValidationErr::Err(ErrorCode::MessageNotSentOrReceived));
             }
         }
     }
@@ -1720,19 +1759,13 @@ pub fn validate_signature(
             state.pkm_pairs.iter().map(|(pk, msg)| (pk, msg.as_slice())),
             signature,
         ) {
-            return Err(ValidationErr(
-                NodePtr::NIL,
-                ErrorCode::BadAggregateSignature,
-            ));
+            return Err(ValidationErr::Err(ErrorCode::BadAggregateSignature));
         }
     } else if !aggregate_verify(
         signature,
         state.pkm_pairs.iter().map(|(pk, msg)| (pk, msg.as_slice())),
     ) {
-        return Err(ValidationErr(
-            NodePtr::NIL,
-            ErrorCode::BadAggregateSignature,
-        ));
+        return Err(ValidationErr::Err(ErrorCode::BadAggregateSignature));
     }
     Ok(())
 }
@@ -2039,7 +2072,9 @@ fn cond_test_sig(
 #[test]
 fn test_invalid_condition_list1() {
     assert_eq!(
-        cond_test("((({h1} ({h2} (123 (8 )))").unwrap_err().1,
+        cond_test("((({h1} ({h2} (123 (8 )))")
+            .unwrap_err()
+            .error_code(),
         ErrorCode::InvalidCondition
     );
 }
@@ -2047,7 +2082,9 @@ fn test_invalid_condition_list1() {
 #[test]
 fn test_invalid_condition_list2() {
     assert_eq!(
-        cond_test("((({h1} ({h2} (123 ((8 ))))").unwrap_err().1,
+        cond_test("((({h1} ({h2} (123 ((8 ))))")
+            .unwrap_err()
+            .error_code(),
         ErrorCode::InvalidCondition
     );
 }
@@ -2080,7 +2117,7 @@ fn test_invalid_condition_args_terminator_mempool() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((80 (50 8 ))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::InvalidCondition
     );
 }
@@ -2110,7 +2147,7 @@ fn test_invalid_condition_list_terminator_mempool() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((80 (50 8 ))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::InvalidCondition
     );
 }
@@ -2119,7 +2156,9 @@ fn test_invalid_condition_list_terminator_mempool() {
 fn test_invalid_condition_short_list_terminator() {
     // ASSERT_SECONDS_RELATIVE
     assert_eq!(
-        cond_test("((({h1} ({h2} (123 (((80 8 ))))").unwrap_err().1,
+        cond_test("((({h1} ({h2} (123 (((80 8 ))))")
+            .unwrap_err()
+            .error_code(),
         ErrorCode::InvalidCondition
     );
 }
@@ -2127,7 +2166,7 @@ fn test_invalid_condition_short_list_terminator() {
 #[test]
 fn test_invalid_spend_list1() {
     assert_eq!(
-        cond_test("(8 )").unwrap_err().1,
+        cond_test("(8 )").unwrap_err().error_code(),
         ErrorCode::InvalidCondition
     );
 }
@@ -2135,7 +2174,7 @@ fn test_invalid_spend_list1() {
 #[test]
 fn test_invalid_spend_list2() {
     assert_eq!(
-        cond_test("((8 ))").unwrap_err().1,
+        cond_test("((8 ))").unwrap_err().error_code(),
         ErrorCode::InvalidCondition
     );
 }
@@ -2143,7 +2182,9 @@ fn test_invalid_spend_list2() {
 #[test]
 fn test_invalid_spend_list_terminator() {
     assert_eq!(
-        cond_test("((({h1} ({h2} (123 (()) 8 ))").unwrap_err().1,
+        cond_test("((({h1} ({h2} (123 (()) 8 ))")
+            .unwrap_err()
+            .error_code(),
         ErrorCode::InvalidCondition
     );
 }
@@ -2196,17 +2237,20 @@ fn test_strict_args_count(
     if flags.is_empty() {
         // two of the cases won't pass, even when garbage at the end is allowed.
         if condition == ASSERT_COIN_ANNOUNCEMENT {
-            assert_eq!(ret.unwrap_err().1, ErrorCode::AssertCoinAnnouncementFailed,);
+            assert_eq!(
+                ret.unwrap_err().error_code(),
+                ErrorCode::AssertCoinAnnouncementFailed,
+            );
         } else if condition == ASSERT_PUZZLE_ANNOUNCEMENT {
             assert_eq!(
-                ret.unwrap_err().1,
+                ret.unwrap_err().error_code(),
                 ErrorCode::AssertPuzzleAnnouncementFailed,
             );
         } else {
             assert!(ret.is_ok());
         }
     } else {
-        assert_eq!(ret.unwrap_err().1, ErrorCode::InvalidCondition);
+        assert_eq!(ret.unwrap_err().error_code(), ErrorCode::InvalidCondition);
     }
 }
 
@@ -2241,7 +2285,7 @@ fn test_message_strict_args_count(
     if flags.is_empty() {
         ret.unwrap();
     } else {
-        assert_eq!(ret.unwrap_err().1, ErrorCode::InvalidCondition);
+        assert_eq!(ret.unwrap_err().error_code(), ErrorCode::InvalidCondition);
     }
 }
 
@@ -2303,7 +2347,7 @@ fn test_extra_arg(
             MEMPOOL_MODE,
         )
         .unwrap_err()
-        .1,
+        .error_code(),
         ErrorCode::InvalidCondition
     );
 
@@ -2496,7 +2540,7 @@ fn test_single_condition_failure(
         condition as u8, arg
     ))
     .unwrap_err()
-    .1;
+    .error_code();
 
     assert_eq!(err, expected_error);
 }
@@ -2574,7 +2618,7 @@ fn test_missing_arg(#[case] condition: ConditionOpcode) {
             ConsensusFlags::empty()
         )
         .unwrap_err()
-        .1,
+        .error_code(),
         ErrorCode::InvalidCondition
     );
 }
@@ -2604,7 +2648,7 @@ fn test_reserve_fee_exceed_max() {
     assert_eq!(
         cond_test("((({h1} ({h2} (0x00ffffffffffffffff (((52 (0x00fffffffffffffff0 ))) (({h2} ({h1} (0x00ffffff (((52 (0x10 )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::ReserveFeeConditionFailed
     );
 }
@@ -2616,7 +2660,7 @@ fn test_reserve_fee_insufficient_spends() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((52 (124 ) ))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::ReserveFeeConditionFailed
     );
 }
@@ -2629,7 +2673,7 @@ fn test_reserve_fee_insufficient_fee() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((52 (100 ) ((51 ({h2} (24 )) )))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::ReserveFeeConditionFailed
     );
 }
@@ -2672,7 +2716,7 @@ fn test_failing_coin_consume() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((61 ({c11} )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::AssertCoinAnnouncementFailed
     );
 }
@@ -2684,7 +2728,7 @@ fn test_coin_announce_mismatch() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((60 ({msg1} ) ((61 ({c12} )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::AssertCoinAnnouncementFailed
     );
 }
@@ -2725,7 +2769,7 @@ fn test_failing_puzzle_consume() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((63 ({p21} )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::AssertPuzzleAnnouncementFailed
     );
 }
@@ -2737,7 +2781,7 @@ fn test_puzzle_announce_mismatch() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((62 ({msg1} ) ((63 ({p11} )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::AssertPuzzleAnnouncementFailed
     );
 }
@@ -2748,7 +2792,7 @@ fn test_single_assert_my_amount_exceed_max() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((73 (0x010000000000000000 )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::AssertMyAmountFailed
     );
 }
@@ -2763,7 +2807,7 @@ fn test_single_assert_my_amount_overlong() {
             ConsensusFlags::empty()
         )
         .unwrap_err()
-        .1,
+        .error_code(),
         ErrorCode::AssertMyAmountFailed
     );
 }
@@ -2775,7 +2819,7 @@ fn test_single_assert_my_amount_overlong_mempool() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((73 (0x0000007b )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::AssertMyAmountFailed
     );
 }
@@ -2799,7 +2843,7 @@ fn test_multiple_failing_assert_my_amount() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((73 (123 ) ((73 (122 ) ))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::AssertMyAmountFailed
     );
 }
@@ -2810,7 +2854,7 @@ fn test_single_failing_assert_my_amount() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((73 (124 ) ))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::AssertMyAmountFailed
     );
 }
@@ -2825,7 +2869,7 @@ fn test_single_assert_my_coin_id_overlong() {
             ConsensusFlags::empty()
         )
         .unwrap_err()
-        .1,
+        .error_code(),
         ErrorCode::InvalidCoinAmount
     );
 }
@@ -2850,7 +2894,7 @@ fn test_single_assert_my_coin_id_mismatch() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((70 ({coin11} )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::AssertMyCoinIdFailed
     );
 }
@@ -2863,7 +2907,7 @@ fn test_multiple_assert_my_coin_id_mismatch() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((60 (123 ))) (({h1} ({h1} (123 (((70 ({coin12} )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::AssertMyCoinIdFailed
     );
 }
@@ -2887,7 +2931,7 @@ fn test_single_assert_my_parent_coin_id_mismatch() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((71 ({h2} )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::AssertMyParentIdFailed
     );
 }
@@ -2899,7 +2943,7 @@ fn test_single_invalid_assert_my_parent_coin_id() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((71 ({long} )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::AssertMyParentIdFailed
     );
 }
@@ -2925,7 +2969,7 @@ fn test_single_assert_my_puzzle_hash_mismatch() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((72 ({h1} )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::AssertMyPuzzleHashFailed
     );
 }
@@ -2937,7 +2981,7 @@ fn test_single_invalid_assert_my_puzzle_hash() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((72 ({long} )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::AssertMyPuzzleHashFailed
     );
 }
@@ -2993,7 +3037,7 @@ fn test_minting_coin() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((51 ({h2} (124 )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::MintingCoin
     );
 }
@@ -3004,7 +3048,7 @@ fn test_create_coin_amount_exceeds_max() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((51 ({h2} (0x010000000000000000 )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::CoinAmountExceedsMaximum
     );
 }
@@ -3015,7 +3059,7 @@ fn test_create_coin_negative_amount() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((51 ({h2} (-1 )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::CoinAmountNegative
     );
 }
@@ -3026,7 +3070,7 @@ fn test_create_coin_invalid_puzzlehash() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((51 ({long} (42 )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::InvalidPuzzleHash
     );
 }
@@ -3153,7 +3197,7 @@ fn test_create_coin_with_invalid_hint_as_terminator_mempool() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((51 ({h2} (42 {h1}))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::InvalidCondition
     );
 }
@@ -3301,7 +3345,7 @@ fn test_create_coin_exceed_cost() {
             None,
         )
         .unwrap_err()
-        .1,
+        .error_code(),
         ErrorCode::CostExceeded
     );
 }
@@ -3312,7 +3356,7 @@ fn test_duplicate_create_coin() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((51 ({h2} (42 ) ((51 ({h2} (42 ) ))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::DuplicateOutput
     );
 }
@@ -3323,7 +3367,7 @@ fn test_duplicate_create_coin_with_hint() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((51 ({h2} (42 (({h1})) ((51 ({h2} (42 ) ))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::DuplicateOutput
     );
 }
@@ -3443,7 +3487,7 @@ fn test_agg_sig_invalid_pubkey(
             mempool | ConsensusFlags::DONT_VALIDATE_SIGNATURE
         )
         .unwrap_err()
-        .1,
+        .error_code(),
         ErrorCode::InvalidPublicKey
     );
 }
@@ -3470,7 +3514,7 @@ fn test_agg_sig_infinity_pubkey(
         mempool,
     );
 
-    assert_eq!(ret.unwrap_err().1, ErrorCode::InvalidPublicKey);
+    assert_eq!(ret.unwrap_err().error_code(), ErrorCode::InvalidPublicKey);
 }
 
 #[cfg(test)]
@@ -3495,7 +3539,7 @@ fn test_agg_sig_invalid_msg(
             mempool
         )
         .unwrap_err()
-        .1,
+        .error_code(),
         ErrorCode::InvalidMessage
     );
 }
@@ -3536,7 +3580,7 @@ fn test_agg_sig_exceed_cost(#[case] condition: ConditionOpcode) {
             None,
         )
         .unwrap_err()
-        .1,
+        .error_code(),
         ErrorCode::CostExceeded
     );
 }
@@ -3612,7 +3656,7 @@ fn test_agg_sig_extra_arg(#[case] condition: ConditionOpcode) {
             MEMPOOL_MODE,
         )
         .unwrap_err()
-        .1,
+        .error_code(),
         ErrorCode::InvalidCondition
     );
 }
@@ -3709,7 +3753,7 @@ fn test_agg_sig_unsafe_invalid_pubkey() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((49 ({h2} ({msg1} )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::InvalidPublicKey
     );
 }
@@ -3720,7 +3764,7 @@ fn test_agg_sig_unsafe_long_msg() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 (((49 ({pubkey} ({longmsg} )))))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::InvalidMessage
     );
 }
@@ -3808,7 +3852,7 @@ fn test_agg_sig_unsafe_invalid_msg(
         ConsensusFlags::empty(),
     );
     if opcode == AGG_SIG_UNSAFE {
-        assert_eq!(ret.unwrap_err().1, ErrorCode::InvalidMessage);
+        assert_eq!(ret.unwrap_err().error_code(), ErrorCode::InvalidMessage);
     } else {
         assert!(ret.is_ok());
     }
@@ -3843,7 +3887,7 @@ fn test_agg_sig_unsafe_exceed_cost() {
             None,
         )
         .unwrap_err()
-        .1,
+        .error_code(),
         ErrorCode::CostExceeded
     );
 }
@@ -3854,7 +3898,7 @@ fn test_spend_amount_exceeds_max() {
     assert_eq!(
         cond_test("((({h1} ({h2} (0x010000000000000000 ())))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::InvalidCoinAmount
     );
 }
@@ -3863,7 +3907,9 @@ fn test_spend_amount_exceeds_max() {
 fn test_single_spend_negative_amount() {
     // the coin we're trying to spend has a negative amount (i.e. it's invalid)
     assert_eq!(
-        cond_test("((({h1} ({h2} (-123 ())))").unwrap_err().1,
+        cond_test("((({h1} ({h2} (-123 ())))")
+            .unwrap_err()
+            .error_code(),
         ErrorCode::InvalidCoinAmount
     );
 }
@@ -3872,7 +3918,9 @@ fn test_single_spend_negative_amount() {
 fn test_single_spend_invalid_puzle_hash() {
     // the puzzle hash in the spend is 33 bytes
     assert_eq!(
-        cond_test("((({h1} ({long} (123 ())))").unwrap_err().1,
+        cond_test("((({h1} ({long} (123 ())))")
+            .unwrap_err()
+            .error_code(),
         ErrorCode::InvalidPuzzleHash
     );
 }
@@ -3881,7 +3929,9 @@ fn test_single_spend_invalid_puzle_hash() {
 fn test_single_spend_invalid_parent_id() {
     // the parent coin ID is 33 bytes long
     assert_eq!(
-        cond_test("((({long} ({h2} (123 ())))").unwrap_err().1,
+        cond_test("((({long} ({h2} (123 ())))")
+            .unwrap_err()
+            .error_code(),
         ErrorCode::InvalidParentId
     );
 }
@@ -3892,7 +3942,7 @@ fn test_double_spend() {
     assert_eq!(
         cond_test("((({h1} ({h2} (123 ()) (({h1} ({h2} (123 ())))")
             .unwrap_err()
-            .1,
+            .error_code(),
         ErrorCode::DoubleSpend
     );
 }
@@ -4035,7 +4085,7 @@ fn test_concurrent_spend_fail() {
 
     for test in test_cases {
         assert_eq!(
-            cond_test(test).unwrap_err().1,
+            cond_test(test).unwrap_err().error_code(),
             ErrorCode::AssertConcurrentSpendFailed
         );
     }
@@ -4161,7 +4211,7 @@ fn test_concurrent_puzzle_fail() {
 
     for test in test_cases {
         assert_eq!(
-            cond_test(test).unwrap_err().1,
+            cond_test(test).unwrap_err().error_code(),
             ErrorCode::AssertConcurrentPuzzleFailed
         );
     }
@@ -4396,7 +4446,7 @@ fn test_impossible_constraints_single_spend(
         cond1 as u8, value1, cond2 as u8, value2
     );
     if let Some(e) = expected_err {
-        assert_eq!(cond_test(test).unwrap_err().1, e);
+        assert_eq!(cond_test(test).unwrap_err().error_code(), e);
     } else {
         // we don't expect any error
         let (a, conds) = cond_test(test).unwrap();
@@ -4493,7 +4543,7 @@ fn test_impossible_constraints_separate_spends(
         cond1 as u8, value1, cond2 as u8, value2
     );
     if let Some(e) = expected_err {
-        assert_eq!(cond_test(test).unwrap_err().1, e);
+        assert_eq!(cond_test(test).unwrap_err().error_code(), e);
     } else {
         // we don't expect any error
         let (a, conds) = cond_test(test).unwrap();
@@ -4533,7 +4583,7 @@ fn test_conflicting_my_birth_assertions(
             "((({{h1}} ({{h2}} (1234 ((({val} (100 ) (({val} (503 ) (({val} (90 )))))"
         ))
         .unwrap_err()
-        .1,
+        .error_code(),
         expected
     );
 }
@@ -4713,7 +4763,7 @@ fn test_assert_ephemeral_wrong_ph() {
 
     // this is an invalid ASSERT_EPHEMERAL
     assert_eq!(
-        cond_test(test).unwrap_err().1,
+        cond_test(test).unwrap_err().error_code(),
         ErrorCode::AssertEphemeralFailed
     );
 }
@@ -4737,7 +4787,7 @@ fn test_assert_ephemeral_wrong_amount() {
 
     // this is an invalid ASSERT_EPHEMERAL
     assert_eq!(
-        cond_test(test).unwrap_err().1,
+        cond_test(test).unwrap_err().error_code(),
         ErrorCode::AssertEphemeralFailed
     );
 }
@@ -4761,7 +4811,7 @@ fn test_assert_ephemeral_wrong_parent() {
 
     // this is an invalid ASSERT_EPHEMERAL
     assert_eq!(
-        cond_test(test).unwrap_err().1,
+        cond_test(test).unwrap_err().error_code(),
         ErrorCode::AssertEphemeralFailed
     );
 }
@@ -4813,7 +4863,7 @@ fn test_relative_condition_on_ephemeral(
     );
 
     if let Some(err) = expect_error {
-        assert_eq!(cond_test(&test).unwrap_err().1, err);
+        assert_eq!(cond_test(&test).unwrap_err().error_code(), err);
     } else {
         // we don't expect any error
         let (a, conds) = cond_test(&test).unwrap();
@@ -4904,7 +4954,7 @@ fn test_softfork_condition_failures(#[case] conditions: &str, #[case] expected_e
             ConsensusFlags::empty()
         )
         .unwrap_err()
-        .1,
+        .error_code(),
         expected_err
     );
 }
@@ -5032,7 +5082,7 @@ fn test_limit_announcements(
     );
 
     if expect_err.is_some() {
-        assert_eq!(r.unwrap_err().1, expect_err.unwrap());
+        assert_eq!(r.unwrap_err().error_code(), expect_err.unwrap());
     } else {
         r.unwrap();
     }
@@ -5498,9 +5548,9 @@ fn test_message_conditions_single_spend(#[case] test_case: &str, #[case] expect:
         assert_eq!(a.atom(spend.puzzle_hash).as_ref(), H2);
         assert_eq!(spend.flags, 0);
     } else if expect_pass {
-        panic!("failed: {:?}", ret.unwrap_err().1);
+        panic!("failed: {:?}", ret.unwrap_err().error_code());
     } else {
-        let actual_err = ret.unwrap_err().1;
+        let actual_err = ret.unwrap_err().error_code();
         println!("Error: {actual_err:?}");
         assert_eq!(ErrorCode::MessageNotSentOrReceived, actual_err);
     }
@@ -5557,7 +5607,7 @@ fn test_limit_messages(
     );
 
     if expect_err.is_some() {
-        assert_eq!(r.unwrap_err().1, expect_err.unwrap());
+        assert_eq!(r.unwrap_err().error_code(), expect_err.unwrap());
     } else {
         r.unwrap();
     }
@@ -5676,7 +5726,7 @@ fn test_message_conditions_failures(#[case] test_case: &str, #[case] expect: Err
     let flags = MEMPOOL_MODE;
     let ret = cond_test_flag(&format!("((({{h1}} ({{h2}} (123 (({test_case}))))"), flags);
 
-    let Err(ValidationErr(_, code)) = ret else {
+    let Err(ValidationErr::Err(code)) = ret else {
         panic!("expected failure: {expect:?}");
     };
     assert_eq!(code, expect);
@@ -5922,9 +5972,9 @@ fn test_message_conditions_two_spends(
         assert_eq!(a.atom(spend.puzzle_hash).as_ref(), H1);
         assert_eq!(spend.flags, 0);
     } else if expect_pass {
-        panic!("failed: {:?}", ret.unwrap_err().1);
+        panic!("failed: {:?}", ret.unwrap_err().error_code());
     } else {
-        let actual_err = ret.unwrap_err().1;
+        let actual_err = ret.unwrap_err().error_code();
         println!("Error: {actual_err:?}");
         assert_eq!(ErrorCode::MessageNotSentOrReceived, actual_err);
     }
@@ -6251,7 +6301,7 @@ fn test_limit_spends_parse_spends(
     );
     match (expected_err, result) {
         (Some(err), Err(e)) => {
-            assert_eq!(e.1, err);
+            assert_eq!(e.error_code(), err);
         }
         (None, Ok(conds)) => {
             assert_eq!(conds.spends.len(), num_spends);

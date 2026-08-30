@@ -8,7 +8,12 @@ use klvmr::allocator::Allocator;
 fuzz_target!(|data: &[u8]| {
     let mut a = Allocator::new();
     let atom = a.new_atom(data).unwrap();
-    match sanitize_uint(&a, atom, 8, ErrorCode::InvalidCoinAmount) {
+    match sanitize_uint(
+        &a,
+        atom,
+        8,
+        ValidationErr::Err(ErrorCode::InvalidCoinAmount),
+    ) {
         Ok(SanitizedUint::Ok(_)) => {
             assert!(data.len() <= 9);
             if data.len() == 9 {
@@ -21,13 +26,20 @@ fuzz_target!(|data: &[u8]| {
         Ok(SanitizedUint::PositiveOverflow) => {
             assert!(data.len() > 8);
         }
-        Err(ValidationErr(n, c)) => {
-            assert!(n == atom);
+        Err(ValidationErr::Err(c)) => {
             assert!(c == ErrorCode::InvalidCoinAmount);
+        }
+        _ => {
+            panic!("invalid state");
         }
     }
 
-    match sanitize_uint(&a, atom, 4, ErrorCode::InvalidCoinAmount) {
+    match sanitize_uint(
+        &a,
+        atom,
+        4,
+        ValidationErr::Err(ErrorCode::InvalidCoinAmount),
+    ) {
         Ok(SanitizedUint::Ok(_)) => {
             assert!(data.len() <= 5);
             if data.len() == 5 {
@@ -40,9 +52,11 @@ fuzz_target!(|data: &[u8]| {
         Ok(SanitizedUint::PositiveOverflow) => {
             assert!(data.len() > 4);
         }
-        Err(ValidationErr(n, c)) => {
-            assert!(n == atom);
+        Err(ValidationErr::Err(c)) => {
             assert!(c == ErrorCode::InvalidCoinAmount);
+        }
+        _ => {
+            panic!("invalid state");
         }
     }
 });

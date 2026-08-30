@@ -58,13 +58,17 @@ impl SpendId {
         };
 
         let amount = if (mode & AMOUNT) != 0 {
-            let amount = match sanitize_uint(a, first(a, *args)?, 8, ErrorCode::InvalidCoinAmount)?
-            {
+            let amount = match sanitize_uint(
+                a,
+                first(a, *args)?,
+                8,
+                ValidationErr::Err(ErrorCode::InvalidCoinAmount),
+            )? {
                 SanitizedUint::PositiveOverflow => {
-                    return Err(ValidationErr(*args, ErrorCode::CoinAmountExceedsMaximum));
+                    return Err(ValidationErr::Err(ErrorCode::CoinAmountExceedsMaximum));
                 }
                 SanitizedUint::NegativeOverflow => {
-                    return Err(ValidationErr(*args, ErrorCode::CoinAmountNegative));
+                    return Err(ValidationErr::Err(ErrorCode::CoinAmountNegative));
                 }
                 SanitizedUint::Ok(amount) => amount,
             };
@@ -82,7 +86,7 @@ impl SpendId {
             PARENTAMOUNT => Ok(Self::ParentAmount(parent, amount)),
             PUZZLEAMOUNT => Ok(Self::PuzzleAmount(puzzle, amount)),
             0 => Ok(Self::None),
-            _ => Err(ValidationErr(*args, ErrorCode::InvalidMessageMode)),
+            _ => Err(ValidationErr::Err(ErrorCode::InvalidMessageMode)),
         }
     }
 
@@ -105,7 +109,7 @@ impl SpendId {
             PARENTAMOUNT => Ok(Self::ParentAmount(parent, amount)),
             PUZZLEAMOUNT => Ok(Self::PuzzleAmount(puzzle, amount)),
             0 => Ok(Self::None),
-            _ => Err(ValidationErr(NodePtr::NIL, ErrorCode::InvalidMessageMode)),
+            _ => Err(ValidationErr::Err(ErrorCode::InvalidMessageMode)),
         }
     }
 
