@@ -1,7 +1,7 @@
 use chik_bls::Signature;
 use chik_consensus::additions_and_removals::additions_and_removals;
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::flags::DONT_VALIDATE_SIGNATURE;
+use chik_consensus::flags::ConsensusFlags;
 use chik_consensus::run_block_generator::{run_block_generator, run_block_generator2};
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use klvmr::Allocator;
@@ -49,15 +49,13 @@ fn run(c: &mut Criterion) {
         for (generator, name_suffix) in &[(generator, ""), (compressed_generator, "-compressed")] {
             group.bench_function(format!("run_block_generator {name}{name_suffix}"), |b| {
                 b.iter(|| {
-                    let mut a = Allocator::new();
                     let start = Instant::now();
 
                     let conds = run_block_generator(
-                        &mut a,
                         generator,
                         &block_refs,
                         11_000_000_000,
-                        DONT_VALIDATE_SIGNATURE,
+                        ConsensusFlags::DONT_VALIDATE_SIGNATURE,
                         &Signature::default(),
                         None,
                         &TEST_CONSTANTS,
@@ -69,15 +67,13 @@ fn run(c: &mut Criterion) {
 
             group.bench_function(format!("run_block_generator2 {name}{name_suffix}"), |b| {
                 b.iter(|| {
-                    let mut a = Allocator::new();
                     let start = Instant::now();
 
                     let conds = run_block_generator2(
-                        &mut a,
                         generator,
                         &block_refs,
                         11_000_000_000,
-                        DONT_VALIDATE_SIGNATURE,
+                        ConsensusFlags::DONT_VALIDATE_SIGNATURE,
                         &Signature::default(),
                         None,
                         &TEST_CONSTANTS,
@@ -90,8 +86,12 @@ fn run(c: &mut Criterion) {
             group.bench_function(format!("additions_and_removals {name}{name_suffix}"), |b| {
                 b.iter(|| {
                     let start = Instant::now();
-                    let results =
-                        additions_and_removals(generator, &block_refs, 0, &TEST_CONSTANTS);
+                    let results = additions_and_removals(
+                        generator,
+                        &block_refs,
+                        ConsensusFlags::empty(),
+                        &TEST_CONSTANTS,
+                    );
                     let _ = black_box(results);
                     start.elapsed()
                 });

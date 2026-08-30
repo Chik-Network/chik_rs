@@ -6,10 +6,9 @@ use std::thread::available_parallelism;
 use std::time::Instant;
 
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::flags::{DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE};
+use chik_consensus::flags::{ConsensusFlags, MEMPOOL_MODE};
 use chik_consensus::run_block_generator::{run_block_generator, run_block_generator2};
 use chik_tools::iterate_blocks;
-use klvmr::Allocator;
 
 /// Analyze the blocks in a chik blockchain database
 #[derive(Parser, Debug)]
@@ -39,7 +38,11 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let flags = if args.mempool_mode { MEMPOOL_MODE } else { 0 } | DONT_VALIDATE_SIGNATURE;
+    let flags = if args.mempool_mode {
+        MEMPOOL_MODE
+    } else {
+        ConsensusFlags::LIMIT_HEAP
+    } | ConsensusFlags::DONT_VALIDATE_SIGNATURE;
 
     let num_cores = args
         .num_jobs
@@ -71,8 +74,7 @@ fn main() {
             }
             let output = output.clone();
             pool.execute(move || {
-                // after the hard fork, we run blocks without paying for the
-                // KLVM generator ROM
+                // after the hard fork, we run blocks without paying for the KLVM generator ROM
                 let block_runner = if height >= TEST_CONSTANTS.hard_fork_height {
                     run_block_generator2
                 } else {
@@ -90,11 +92,9 @@ fn main() {
                     .foliage_transaction_block
                     .expect("foliage_transaction_block");
 
-                let mut a = Allocator::new_limited(500_000_000);
-
                 let start_run_block = Instant::now();
-                let conditions = block_runner(
-                    &mut a,
+
+                let (a, conditions) = block_runner(
                     generator,
                     &block_refs,
                     ti.cost,
@@ -114,17 +114,21 @@ fn main() {
                     .write_fmt(format_args!(
                         "{height} \
                     atoms: {} \
-                    small_atoms: {} \
+                    allocated_atoms: {} \
                     pairs: {} \
+                    allocated_pairs: {} \
                     heap: {} \
+                    allocated_heap: {} \
                     block_cost: {} \
                     execute_time: {} \
                     timestamp: {} \
                     \n",
                         a.atom_count(),
-                        a.small_atom_count(),
+                        a.allocated_atom_count(),
                         a.pair_count(),
+                        a.allocated_pair_count(),
                         a.heap_size(),
+                        a.allocated_heap_size(),
                         ti.cost,
                         execute_timing.as_micros(),
                         ftb.timestamp,

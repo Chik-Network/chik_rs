@@ -1,6 +1,6 @@
 [package]
 name = "klvm-traits"
-version = "0.36.1"
+version.workspace = true
 edition = "2024"
 license = "Apache-2.0"
 description = "Traits for encoding and decoding KLVM objects."
@@ -32,3 +32,4 @@ thiserror = { workspace = true }
 [dev-dependencies]
 hex = { workspace = true }
 hex-literal = { workspace = true }
+rstest = { workspace = true }

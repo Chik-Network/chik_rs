@@ -81,6 +81,7 @@ pub struct DidRecoverySolution {
 mod tests {
     use chik_puzzles::DID_INNERPUZ;
     use klvm_traits::{klvm_list, match_list};
+    use klvmr::chik_dialect::KlvmFlags;
     use klvmr::{
         Allocator, ChikDialect, run_program,
         serde::{node_from_bytes, node_to_bytes},
@@ -107,8 +108,14 @@ mod tests {
         .to_klvm(a)
         .unwrap();
 
-        let output = run_program(a, &ChikDialect::new(0), curried, ptr, u64::MAX)
-            .expect("could not run did puzzle and solution");
+        let output = run_program(
+            a,
+            &ChikDialect::new(KlvmFlags::empty()),
+            curried,
+            ptr,
+            u64::MAX,
+        )
+        .expect("could not run did puzzle and solution");
         assert_eq!(
             hex::encode(node_to_bytes(a, output.1).unwrap()),
             "ff2aff847465737480"

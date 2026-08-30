@@ -1,7 +1,7 @@
 use chik_bls::{BlsCache, Signature};
 use chik_consensus::additions_and_removals::additions_and_removals as native_additions_and_removals;
-use chik_consensus::allocator::make_allocator;
 use chik_consensus::consensus_constants::ConsensusConstants;
+use chik_consensus::flags::ConsensusFlags;
 use chik_consensus::owned_conditions::OwnedSpendBundleConditions;
 use chik_consensus::run_block_generator::run_block_generator as native_run_block_generator;
 use chik_consensus::run_block_generator::run_block_generator2 as native_run_block_generator2;
@@ -28,13 +28,11 @@ pub fn run_block_generator<'a>(
     program: PyBuffer<u8>,
     block_refs: &Bound<'_, PyList>,
     max_cost: Cost,
-    flags: u32,
+    flags: ConsensusFlags,
     signature: &Signature,
     bls_cache: Option<&BlsCache>,
     constants: &ConsensusConstants,
 ) -> (Option<u32>, Option<OwnedSpendBundleConditions>) {
-    let mut allocator = make_allocator(flags);
-
     let refs = block_refs
         .into_iter()
         .map(|b| {
@@ -48,16 +46,9 @@ pub fn run_block_generator<'a>(
 
     py.detach(|| {
         match native_run_block_generator(
-            &mut allocator,
-            program,
-            refs,
-            max_cost,
-            flags,
-            signature,
-            bls_cache,
-            constants,
+            program, refs, max_cost, flags, signature, bls_cache, constants,
         ) {
-            Ok(spend_bundle_conds) => (
+            Ok((allocator, spend_bundle_conds)) => (
                 None,
                 Some(OwnedSpendBundleConditions::from(
                     &allocator,
@@ -80,13 +71,11 @@ pub fn run_block_generator2<'a>(
     program: PyBuffer<u8>,
     block_refs: &Bound<'_, PyList>,
     max_cost: Cost,
-    flags: u32,
+    flags: ConsensusFlags,
     signature: &Signature,
     bls_cache: Option<&BlsCache>,
     constants: &ConsensusConstants,
 ) -> (Option<u32>, Option<OwnedSpendBundleConditions>) {
-    let mut allocator = make_allocator(flags);
-
     let refs = block_refs
         .into_iter()
         .map(|b| {
@@ -101,16 +90,9 @@ pub fn run_block_generator2<'a>(
 
     py.detach(|| {
         match native_run_block_generator2(
-            &mut allocator,
-            program,
-            refs,
-            max_cost,
-            flags,
-            signature,
-            bls_cache,
-            constants,
+            program, refs, max_cost, flags, signature, bls_cache, constants,
         ) {
-            Ok(spend_bundle_conds) => (
+            Ok((allocator, spend_bundle_conds)) => (
                 None,
                 Some(OwnedSpendBundleConditions::from(
                     &allocator,
@@ -131,7 +113,7 @@ pub fn additions_and_removals<'a>(
     py: Python<'a>,
     program: PyBuffer<u8>,
     block_refs: &Bound<'_, PyList>,
-    flags: u32,
+    flags: ConsensusFlags,
     constants: &ConsensusConstants,
 ) -> PyResult<(Vec<(Coin, Option<Bytes>)>, Vec<(Bytes32, Coin)>)> {
     let refs = block_refs

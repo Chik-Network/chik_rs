@@ -2,11 +2,10 @@ use clap::Parser;
 
 use chik_consensus::consensus_constants::ConsensusConstants;
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::flags::DONT_VALIDATE_SIGNATURE;
+use chik_consensus::flags::ConsensusFlags;
 use chik_consensus::run_block_generator::{run_block_generator, run_block_generator2};
 use chik_protocol::{Bytes32, Coin};
 use chik_tools::iterate_blocks;
-use klvmr::Allocator;
 use rusqlite::Connection;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -90,6 +89,8 @@ const TESTNET11_CONSTANTS: ConsensusConstants = ConsensusConstants {
     sub_slot_iters_starting: 67_108_864,
     // forks activated from the beginning on testnet11
     hard_fork_height: 0,
+    soft_fork8_height: 3_755_000,
+    soft_fork9_height: 3_924_000,
     plot_filter_128_height: 6_029_568,
     plot_filter_64_height: 11_075_328,
     plot_filter_32_height: 16_121_088,
@@ -297,28 +298,24 @@ features that are validated:
         }
         let cnt = error_count.clone();
         pool.execute(move || {
-                let mut a = Allocator::new_limited(500_000_000);
-
                 let ti = block.transactions_info.as_ref().expect("transactions_info");
                 let generator = block
                     .transactions_generator
                     .as_ref()
                     .expect("transactions_generator");
 
-                // after the hard fork, we run blocks without paying for the
-                // KLVM generator ROM
+                // after the hard fork, we run blocks without paying for the KLVM generator ROM
                 let block_runner = if height >= constants.hard_fork_height {
                     run_block_generator2
                 } else {
                     run_block_generator
                 };
                 let flags = if args.skip_signature_validation {
-                        DONT_VALIDATE_SIGNATURE
+                        ConsensusFlags::DONT_VALIDATE_SIGNATURE
                     } else {
-                        0
+                        ConsensusFlags::empty()
                     };
-                let conditions = block_runner(
-                    &mut a,
+                let (_a, conditions) = block_runner(
                     generator,
                     &block_refs,
                     ti.cost,

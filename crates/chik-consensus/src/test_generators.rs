@@ -5,7 +5,7 @@ use super::run_block_generator::{
 };
 use crate::allocator::make_allocator;
 use crate::consensus_constants::TEST_CONSTANTS;
-use crate::flags::{COST_CONDITIONS, DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE, SIMPLE_GENERATOR};
+use crate::flags::{ConsensusFlags, MEMPOOL_MODE};
 use crate::run_block_generator::check_generator_node;
 use crate::validation_error::ErrorCode;
 use chik_bls::Signature;
@@ -15,6 +15,7 @@ use chik_puzzles::CHIKLISP_DESERIALISATION;
 use klvmr::Allocator;
 use klvmr::allocator::NodePtr;
 use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
+use std::fmt::Write;
 use std::iter::zip;
 use text_diff::Difference;
 use text_diff::diff;
@@ -24,20 +25,20 @@ use rstest::rstest;
 pub(crate) fn print_conditions(a: &Allocator, c: &SpendBundleConditions, a2: &Allocator) -> String {
     let mut ret = String::new();
     if c.reserve_fee > 0 {
-        ret += &format!("RESERVE_FEE: {}\n", c.reserve_fee);
+        writeln!(ret, "RESERVE_FEE: {}", c.reserve_fee).unwrap();
     }
 
     if c.height_absolute > 0 {
-        ret += &format!("ASSERT_HEIGHT_ABSOLUTE {}\n", c.height_absolute);
+        writeln!(ret, "ASSERT_HEIGHT_ABSOLUTE {}", c.height_absolute).unwrap();
     }
     if c.seconds_absolute > 0 {
-        ret += &format!("ASSERT_SECONDS_ABSOLUTE {}\n", c.seconds_absolute);
+        writeln!(ret, "ASSERT_SECONDS_ABSOLUTE {}", c.seconds_absolute).unwrap();
     }
     if let Some(val) = c.before_seconds_absolute {
-        ret += &format!("ASSERT_BEFORE_SECONDS_ABSOLUTE {val}\n");
+        writeln!(ret, "ASSERT_BEFORE_SECONDS_ABSOLUTE {val}").unwrap();
     }
     if let Some(val) = c.before_height_absolute {
-        ret += &format!("ASSERT_BEFORE_HEIGHT_ABSOLUTE {val}\n");
+        writeln!(ret, "ASSERT_BEFORE_HEIGHT_ABSOLUTE {val}").unwrap();
     }
     let mut agg_sigs = Vec::<(Bytes48, Bytes)>::new();
     for (pk, msg) in &c.agg_sig_unsafe {
@@ -45,53 +46,61 @@ pub(crate) fn print_conditions(a: &Allocator, c: &SpendBundleConditions, a2: &Al
     }
     agg_sigs.sort();
     for (pk, msg) in agg_sigs {
-        ret += &format!(
-            "AGG_SIG_UNSAFE pk: {} msg: {}\n",
+        writeln!(
+            ret,
+            "AGG_SIG_UNSAFE pk: {} msg: {}",
             hex::encode(pk),
             hex::encode(msg)
-        );
+        )
+        .unwrap();
     }
-    ret += "SPENDS:\n";
+    writeln!(ret, "SPENDS:").unwrap();
 
     let mut spends: Vec<SpendConditions> = c.spends.clone();
     spends.sort_by_key(|s| *s.coin_id);
     for s in spends {
-        ret += &format!(
-            "- coin id: {} ph: {} exe-cost: {} cond-cost: {}\n",
+        writeln!(
+            ret,
+            "- coin id: {} ph: {} exe-cost: {} cond-cost: {}",
             hex::encode(*s.coin_id),
             hex::encode(a.atom(s.puzzle_hash)),
             s.execution_cost,
             s.condition_cost,
-        );
+        )
+        .unwrap();
 
         if let Some(val) = s.height_relative {
-            ret += &format!("  ASSERT_HEIGHT_RELATIVE {val}\n");
+            writeln!(ret, "  ASSERT_HEIGHT_RELATIVE {val}").unwrap();
         }
         if let Some(val) = s.seconds_relative {
-            ret += &format!("  ASSERT_SECONDS_RELATIVE {val}\n");
+            writeln!(ret, "  ASSERT_SECONDS_RELATIVE {val}").unwrap();
         }
         if let Some(val) = s.before_height_relative {
-            ret += &format!("  ASSERT_BEFORE_HEIGHT_RELATIVE {val}\n");
+            writeln!(ret, "  ASSERT_BEFORE_HEIGHT_RELATIVE {val}").unwrap();
         }
         if let Some(val) = s.before_seconds_relative {
-            ret += &format!("  ASSERT_BEFORE_SECONDS_RELATIVE {val}\n");
+            writeln!(ret, "  ASSERT_BEFORE_SECONDS_RELATIVE {val}").unwrap();
         }
         let mut create_coin: Vec<&NewCoin> = s.create_coin.iter().collect();
         create_coin.sort_by_key(|cc| (cc.puzzle_hash, cc.amount));
         for cc in create_coin {
             if cc.hint == NodePtr::NIL {
-                ret += &format!(
-                    "  CREATE_COIN: ph: {} amount: {}\n",
+                writeln!(
+                    ret,
+                    "  CREATE_COIN: ph: {} amount: {}",
                     hex::encode(cc.puzzle_hash),
                     cc.amount
-                );
+                )
+                .unwrap();
             } else {
-                ret += &format!(
-                    "  CREATE_COIN: ph: {} amount: {} hint: {}\n",
+                writeln!(
+                    ret,
+                    "  CREATE_COIN: ph: {} amount: {} hint: {}",
                     hex::encode(cc.puzzle_hash),
                     cc.amount,
                     hex::encode(a.atom(cc.hint))
-                );
+                )
+                .unwrap();
             }
         }
 
@@ -110,24 +119,26 @@ pub(crate) fn print_conditions(a: &Allocator, c: &SpendBundleConditions, a2: &Al
             }
             agg_sigs.sort();
             for (pk, msg) in &agg_sigs {
-                ret += &format!(
-                    "  {} pk: {} msg: {}\n",
+                writeln!(
+                    ret,
+                    "  {} pk: {} msg: {}",
                     sig_conds.1,
                     hex::encode(pk),
                     hex::encode(msg)
-                );
+                )
+                .unwrap();
             }
         }
     }
 
-    ret += &format!("cost: {}\n", c.cost);
-    ret += &format!("execution-cost: {}\n", c.execution_cost);
-    ret += &format!("condition-cost: {}\n", c.condition_cost);
-    ret += &format!("removal_amount: {}\n", c.removal_amount);
-    ret += &format!("addition_amount: {}\n", c.addition_amount);
-    ret += &format!("atoms: {}\n", a2.atom_count() + a2.small_atom_count());
-    ret += &format!("pairs: {}\n", a2.pair_count());
-    ret += &format!("heap: {}\n", a2.heap_size());
+    writeln!(ret, "cost: {}", c.cost).unwrap();
+    writeln!(ret, "execution-cost: {}", c.execution_cost).unwrap();
+    writeln!(ret, "condition-cost: {}", c.condition_cost).unwrap();
+    writeln!(ret, "removal_amount: {}", c.removal_amount).unwrap();
+    writeln!(ret, "addition_amount: {}", c.addition_amount).unwrap();
+    writeln!(ret, "atoms: {}", a2.atom_count()).unwrap();
+    writeln!(ret, "pairs: {}", a2.pair_count()).unwrap();
+    writeln!(ret, "heap: {}", a2.allocated_heap_size()).unwrap();
     ret
 }
 
@@ -233,6 +244,7 @@ pub(crate) fn print_diff(output: &str, expected: &str) {
 #[case("unknown-condition")]
 #[case("duplicate-messages")]
 #[case("non-quote-0001-start")]
+#[ignore = "expensive test, only run in release mode (--include-ignored)"]
 fn run_generator(#[case] name: &str) {
     use std::fs::{read_to_string, write};
 
@@ -275,12 +287,12 @@ fn run_generator(#[case] name: &str) {
     let mut write_back = format!("{}\n", hex::encode(&generator));
     let mut last_output = String::new();
 
-    for (flags, expected) in zip(&[0, MEMPOOL_MODE], expected) {
+    for (flags, expected) in zip(&[ConsensusFlags::empty(), MEMPOOL_MODE], expected) {
         let mut flags = *flags;
         if name == "aa-million-messages" || name == "aa-million-message-spends" {
             // this test requires running after hard fork 2, where the COST_CONDITIONS
             // flag is set
-            flags |= COST_CONDITIONS;
+            flags |= ConsensusFlags::COST_CONDITIONS;
         }
 
         // These are generators that are programs, not a simple list of spends
@@ -307,13 +319,11 @@ fn run_generator(#[case] name: &str) {
         .contains(&name)
         {
             // lets test that the procedural generators are filtered with the flag
-            let mut a = make_allocator(flags);
             let test_conds = run_block_generator2(
-                &mut a,
                 &generator,
                 &block_refs, // we're not allowed to pass in block references when SIMPLE_GENERATOR is set
                 11_000_000_000,
-                flags | DONT_VALIDATE_SIGNATURE | SIMPLE_GENERATOR,
+                flags | ConsensusFlags::DONT_VALIDATE_SIGNATURE | ConsensusFlags::SIMPLE_GENERATOR,
                 &Signature::default(),
                 None,
                 &TEST_CONSTANTS,
@@ -324,21 +334,20 @@ fn run_generator(#[case] name: &str) {
             );
 
             // now lets specifically check the node generator check
+            let mut a = make_allocator(flags);
             let program = node_from_bytes_backrefs(&mut a, generator.as_ref())
                 .expect("node_from_bytes_backref");
-            let res = check_generator_node(&a, program, flags | SIMPLE_GENERATOR);
+            let res = check_generator_node(&a, program, flags | ConsensusFlags::SIMPLE_GENERATOR);
             assert_eq!(res.unwrap_err().1, ErrorCode::ComplexGeneratorReceived);
         } else {
-            flags |= SIMPLE_GENERATOR;
+            flags |= ConsensusFlags::SIMPLE_GENERATOR;
             // ensure SIMPLE_GENERATOR fails if there are any block references
             // passed in. We pass in a dummy block reference
-            let mut a = make_allocator(flags);
             let test_conds = run_block_generator2(
-                &mut a,
                 &generator,
                 &[&[0_u8, 1, 2, 3]],
                 11_000_000_000,
-                flags | DONT_VALIDATE_SIGNATURE,
+                flags | ConsensusFlags::DONT_VALIDATE_SIGNATURE,
                 &Signature::default(),
                 None,
                 &TEST_CONSTANTS,
@@ -346,27 +355,26 @@ fn run_generator(#[case] name: &str) {
             assert_eq!(test_conds.unwrap_err().1, ErrorCode::TooManyGeneratorRefs);
 
             // now lets specifically check the node generator check
+            let mut a = make_allocator(flags);
             let program = node_from_bytes_backrefs(&mut a, generator.as_ref())
                 .expect("node_from_bytes_backref");
-            let res = check_generator_node(&a, program, flags | SIMPLE_GENERATOR);
+            let res = check_generator_node(&a, program, flags | ConsensusFlags::SIMPLE_GENERATOR);
             assert!(res.is_ok());
         }
 
-        println!("flags: {flags:x}");
-        let mut a2 = make_allocator(flags);
-        let conds2 = run_block_generator2(
-            &mut a2,
+        println!("flags: {flags:?}");
+        let mut conds2 = run_block_generator2(
             &generator,
             &block_refs,
             11_000_000_000,
-            flags | DONT_VALIDATE_SIGNATURE,
+            flags | ConsensusFlags::DONT_VALIDATE_SIGNATURE,
             &Signature::default(),
             None,
             &TEST_CONSTANTS,
         );
 
-        let (expected_cost, output) = match conds2 {
-            Ok(ref conditions) => {
+        let (expected_cost, output) = match &mut conds2 {
+            Ok((a2, conditions)) => {
                 let cond_cost: u64 = conditions.spends.iter().map(|v| v.condition_cost).sum();
                 assert_eq!(cond_cost, conditions.condition_cost);
                 let exe_cost: u64 = conditions.spends.iter().map(|v| v.execution_cost).sum();
@@ -374,7 +382,7 @@ fn run_generator(#[case] name: &str) {
                 // a quote
                 assert!(exe_cost <= conditions.execution_cost);
 
-                if (flags & SIMPLE_GENERATOR) != 0 {
+                if flags.contains(ConsensusFlags::SIMPLE_GENERATOR) {
                     // when running generators with the SIMPLE_GENERATOR flag
                     // set, we don't pass in the KLVM deserializer program. This
                     // causes the atoms and pairs counters to be lower than
@@ -383,39 +391,36 @@ fn run_generator(#[case] name: &str) {
                     // order to print compatible output.
                     // these are the atoms and pairs that would have been
                     // allocated by the deserializer program
-                    let _ =
-                        node_from_bytes(&mut a2, &CHIKLISP_DESERIALISATION).expect("deserializer");
+                    let _ = node_from_bytes(a2, &CHIKLISP_DESERIALISATION).expect("deserializer");
                     a2.add_ghost_pair(2).expect("add_ghost_pair");
                 }
-                (conditions.cost, print_conditions(&a2, &conditions, &a2))
+                (conditions.cost, print_conditions(a2, conditions, a2))
             }
             Err(code) => (0, format!("FAILED: {}\n", u32::from(code.1))),
         };
 
         if UPDATE_TESTS {
-            if (flags & MEMPOOL_MODE) != 0 {
+            if flags.contains(MEMPOOL_MODE) {
                 if output != last_output {
-                    write_back.push_str(&format!("STRICT:\n{output}"));
+                    write!(write_back, "STRICT:\n{output}").unwrap();
                 }
             } else {
                 last_output = output.clone();
-                write_back.push_str(&format!("{output}"));
+                write_back.push_str(&output.clone());
             }
         }
         if run_generator_one {
-            let mut a1 = make_allocator(flags);
             let conds1 = run_block_generator(
-                &mut a1,
                 &generator,
                 &block_refs,
                 11_000_000_000,
-                flags | DONT_VALIDATE_SIGNATURE,
+                flags | ConsensusFlags::DONT_VALIDATE_SIGNATURE,
                 &Signature::default(),
                 None,
                 &TEST_CONSTANTS,
             );
             let output_pre_hard_fork = match conds1 {
-                Ok(mut conditions) => {
+                Ok((a1, mut conditions)) => {
                     // before the hard fork, the cost of running the genrator +
                     // puzzles should never be lower than after the hard-fork
                     // but it's likely higher.
@@ -423,14 +428,14 @@ fn run_generator(#[case] name: &str) {
                     // pre-hard fork, we don't have access to per-puzzle costs, so
                     // set those to whatever run_block_generator2() produced, to
                     // make the check pass
-                    if let Ok(ref conds2) = conds2 {
+                    if let Ok((_, ref conds2_conditions)) = conds2 {
                         // update the cost we print here, just to be compatible with
                         // the test cases we have. We've already ensured the cost is
                         // lower
-                        conditions.cost = conds2.cost;
-                        conditions.execution_cost = conds2.execution_cost;
-                        for s in &conds2.spends {
-                            for ms in conditions.spends.iter_mut() {
+                        conditions.cost = conds2_conditions.cost;
+                        conditions.execution_cost = conds2_conditions.execution_cost;
+                        for s in &conds2_conditions.spends {
+                            for ms in &mut conditions.spends {
                                 if ms.coin_id == s.coin_id {
                                     ms.execution_cost = s.execution_cost;
                                     break;
@@ -439,7 +444,12 @@ fn run_generator(#[case] name: &str) {
                         }
                     }
 
-                    print_conditions(&a1, &conditions, &a2)
+                    // Extract a2 from conds2 for print_conditions
+                    // If conds2 failed, this test will fail anyway, so unwrap is fine
+                    let (a2, _) = conds2
+                        .as_ref()
+                        .expect("conds2 must succeed if conds1 succeeded");
+                    print_conditions(&a1, &conditions, a2)
                 }
                 Err(code) => {
                     format!("FAILED: {}\n", u32::from(code.1))
@@ -447,6 +457,7 @@ fn run_generator(#[case] name: &str) {
             };
             if output != output_pre_hard_fork {
                 print_diff(&output, &output_pre_hard_fork);
+                #[allow(clippy::manual_assert)]
                 if !UPDATE_TESTS {
                     panic!("run_block_generator 1 and 2 produced a different result!");
                 }
@@ -455,6 +466,7 @@ fn run_generator(#[case] name: &str) {
 
         if output != expected {
             print_diff(&output, expected);
+            #[allow(clippy::manual_assert)]
             if !UPDATE_TESTS {
                 panic!("mismatching generator output");
             }
@@ -477,7 +489,7 @@ fn run_generator(#[case] name: &str) {
 
         // now lets check get_coinspends_for_trusted_block
         // but only if we trust it not to do shenanigans
-        if let Ok(ref conds) = conds2 {
+        if let Ok((ref a2, ref conds)) = conds2 {
             // if run_block_generator2 is OK then check we're equal
             let coinspends = result.expect("get_coinspends");
 
@@ -495,7 +507,7 @@ fn run_generator(#[case] name: &str) {
                             .puzzle_reveal
                             .run(
                                 &mut a,
-                                flags,
+                                flags.to_klvm_flags(),
                                 TEST_CONSTANTS.max_block_cost_klvm,
                                 &coinspends[i].solution,
                             )

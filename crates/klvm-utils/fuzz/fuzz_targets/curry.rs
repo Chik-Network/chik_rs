@@ -1,16 +1,14 @@
 #![no_main]
 use klvm_traits::{FromKlvm, ToKlvm};
-use libfuzzer_sys::{arbitrary, fuzz_target};
+use libfuzzer_sys::fuzz_target;
 
-use klvm_fuzzing::make_tree;
+use klvm_fuzzing::ArbitraryKlvmTree;
 use klvm_utils::CurriedProgram;
-use klvmr::allocator::{Allocator, NodePtr};
+use klvmr::allocator::NodePtr;
 
-fuzz_target!(|data: &[u8]| {
-    let mut a = Allocator::new();
-    let mut unstructured = arbitrary::Unstructured::new(data);
-    let (input, _) = make_tree(&mut a, &mut unstructured);
-    if let Ok(curry) = CurriedProgram::<NodePtr, NodePtr>::from_klvm(&a, input) {
+fuzz_target!(|input: ArbitraryKlvmTree| {
+    let mut a = input.allocator;
+    if let Ok(curry) = CurriedProgram::<NodePtr, NodePtr>::from_klvm(&a, input.tree) {
         curry.to_klvm(&mut a).unwrap();
     }
 });

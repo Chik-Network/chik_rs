@@ -1,9 +1,11 @@
+use crate::condition_sanitizers::parse_amount;
 use crate::run_block_generator::setup_generator_args;
 use crate::run_block_generator::subtract_cost;
 use chik_protocol::Coin;
 
 use crate::allocator::make_allocator;
 use crate::consensus_constants::ConsensusConstants;
+use crate::flags::ConsensusFlags;
 use crate::validation_error::{ErrorCode, ValidationErr, atom, first, next, rest};
 use chik_protocol::{Bytes, Bytes32};
 use klvm_traits::FromKlvm;
@@ -22,7 +24,7 @@ use klvmr::serde::node_from_bytes_backrefs;
 pub fn additions_and_removals<GenBuf: AsRef<[u8]>, I: IntoIterator<Item = GenBuf>>(
     program: &[u8],
     block_refs: I,
-    flags: u32,
+    flags: ConsensusFlags,
     constants: &ConsensusConstants,
 ) -> Result<(Vec<(Coin, Option<Bytes>)>, Vec<(Bytes32, Coin)>), ValidationErr>
 where
@@ -37,7 +39,7 @@ where
     let program = node_from_bytes_backrefs(&mut a, program)?;
 
     let args = setup_generator_args(&mut a, block_refs, flags)?;
-    let dialect = ChikDialect::new(flags);
+    let dialect = ChikDialect::new(flags.to_klvm_flags());
 
     let Reduction(klvm_cost, all_spends) = run_program(&mut a, &dialect, program, args, cost_left)?;
 
@@ -66,8 +68,9 @@ where
         iter = tail;
         // process the spend
         let (parent_id, (puzzle, (amount, (solution, _spend_level_extra)))) =
-            <(Bytes32, (NodePtr, (u64, (NodePtr, NodePtr))))>::from_klvm(&a, spend)
+            <(Bytes32, (NodePtr, (NodePtr, (NodePtr, NodePtr))))>::from_klvm(&a, spend)
                 .map_err(|_| ValidationErr(spend, ErrorCode::InvalidCondition))?;
+        let amount = parse_amount(&a, amount, ErrorCode::InvalidCoinAmount)?;
 
         let Reduction(klvm_cost, mut iter) =
             run_program(&mut a, &dialect, puzzle, solution, cost_left)?;
@@ -99,8 +102,10 @@ where
             }
             c = rest(&a, c)?;
 
-            let (puzzle_hash, (amount, hint)) = <(Bytes32, (u64, NodePtr))>::from_klvm(&a, c)
-                .map_err(|_| ValidationErr(c, ErrorCode::InvalidCondition))?;
+            let (puzzle_hash, (amount, hint)) =
+                <(Bytes32, (NodePtr, NodePtr))>::from_klvm(&a, c)
+                    .map_err(|_| ValidationErr(c, ErrorCode::InvalidCondition))?;
+            let amount = parse_amount(&a, amount, ErrorCode::InvalidCoinAmount)?;
 
             let coin = Coin {
                 parent_coin_info: spend_id,
@@ -129,7 +134,7 @@ where
 mod test {
     use super::*;
     use crate::consensus_constants::TEST_CONSTANTS;
-    use crate::flags::DONT_VALIDATE_SIGNATURE;
+    use crate::flags::ConsensusFlags;
     use crate::run_block_generator::run_block_generator2;
     use chik_bls::Signature;
     use rstest::rstest;
@@ -182,13 +187,11 @@ mod test {
         // and removals we *expect* to see
         // additions_and_removals only work on trusted blocks, so if
         // run_block_generator2() fails, we can call additions_and_removals() on it.
-        let mut a = make_allocator(0);
-        let conds = run_block_generator2(
-            &mut a,
+        let (a, conds) = run_block_generator2(
             &generator,
             &block_refs,
             11_000_000_000,
-            DONT_VALIDATE_SIGNATURE,
+            ConsensusFlags::DONT_VALIDATE_SIGNATURE,
             &Signature::default(),
             None,
             &TEST_CONSTANTS,
@@ -223,9 +226,13 @@ mod test {
         }
 
         // now run the function under test
-        let (additions, removals) =
-            additions_and_removals(&generator, &block_refs, 0, &TEST_CONSTANTS)
-                .expect("additions_and_removals()");
+        let (additions, removals) = additions_and_removals(
+            &generator,
+            &block_refs,
+            ConsensusFlags::empty(),
+            &TEST_CONSTANTS,
+        )
+        .expect("additions_and_removals()");
 
         assert_eq!(expect_additions.len(), additions.len());
         assert_eq!(expect_removals.len(), removals.len());

@@ -6,7 +6,7 @@ use chik_traits::streamable::Streamable;
 use klvm_traits::{FromKlvm, destructure_list, match_list};
 use klvmr::Allocator;
 use klvmr::allocator::NodePtr;
-use klvmr::chik_dialect::ChikDialect;
+use klvmr::chik_dialect::{ChikDialect, KlvmFlags};
 use klvmr::reduction::Reduction;
 use klvmr::run_program::run_program;
 use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
@@ -113,7 +113,7 @@ pub fn visit_spends<
     let mut args = a.new_pair(blocks, a.nil())?;
     args = a.new_pair(klvm_deserializer, args)?;
 
-    let dialect = ChikDialect::new(0);
+    let dialect = ChikDialect::new(KlvmFlags::empty());
 
     let Reduction(_, mut all_spends) = run_program(a, &dialect, program, args, max_cost)?;
 

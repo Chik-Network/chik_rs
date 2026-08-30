@@ -6,7 +6,7 @@ use chik_consensus::conditions::{MempoolVisitor, parse_spends};
 use klvmr::{Allocator, NodePtr};
 
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::flags::{NO_UNKNOWN_CONDS, STRICT_ARGS_COUNT};
+use chik_consensus::flags::ConsensusFlags;
 use klvm_fuzzing::make_list;
 
 fuzz_target!(|data: &[u8]| {
@@ -15,7 +15,11 @@ fuzz_target!(|data: &[u8]| {
     let input = make_list(&mut a, &mut unstructured);
     // spends is a list of spends
     let input = a.new_pair(input, NodePtr::NIL).unwrap();
-    for flags in &[0, STRICT_ARGS_COUNT, NO_UNKNOWN_CONDS] {
+    for flags in &[
+        ConsensusFlags::empty(),
+        ConsensusFlags::STRICT_ARGS_COUNT,
+        ConsensusFlags::NO_UNKNOWN_CONDS,
+    ] {
         let _ret = parse_spends::<MempoolVisitor>(
             &a,
             input,

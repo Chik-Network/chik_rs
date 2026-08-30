@@ -2,19 +2,15 @@
 
 use chik_protocol::Coin;
 use chik_protocol::{Bytes32, SpendBundle};
-use chik_traits::Streamable;
 use klvm_traits::FromKlvm;
 use klvmr::op_utils::{first, rest};
-use klvmr::{Allocator, NodePtr};
-use libfuzzer_sys::fuzz_target;
+use klvmr::{Allocator, KlvmFlags, NodePtr};
+use libfuzzer_sys::{Corpus, fuzz_target};
 use std::collections::HashSet;
 
-fuzz_target!(|data: &[u8]| {
-    let Ok(bundle) = SpendBundle::from_bytes(data) else {
-        return;
-    };
+fuzz_target!(|bundle: SpendBundle| -> Corpus {
     let Ok(additions) = bundle.additions() else {
-        return;
+        return Corpus::Reject;
     };
 
     let additions = additions.iter().copied().collect::<HashSet<_>>();
@@ -26,7 +22,7 @@ fuzz_target!(|data: &[u8]| {
     for cs in &bundle.coin_spends {
         let (cost, mut conds) = cs
             .puzzle_reveal
-            .run(&mut a, 0, 11_000_000_000, &cs.solution)
+            .run(&mut a, KlvmFlags::empty(), 11_000_000_000, &cs.solution)
             .expect("run");
         total_cost += cost;
 
@@ -56,4 +52,5 @@ fuzz_target!(|data: &[u8]| {
     assert!(total_cost <= 11_000_000_000);
 
     assert_eq!(additions, expected);
+    Corpus::Keep
 });

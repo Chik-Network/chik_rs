@@ -1,10 +1,10 @@
 #![no_main]
-use libfuzzer_sys::{arbitrary, fuzz_target};
+use libfuzzer_sys::fuzz_target;
 
 use klvm_utils::{TreeCache, tree_hash, tree_hash_cached};
 use klvmr::{Allocator, NodePtr};
 
-use klvm_fuzzing::make_tree;
+use klvm_fuzzing::ArbitraryKlvmTree;
 use klvmr::serde::{node_from_bytes_backrefs, node_to_bytes_backrefs};
 
 fn test_hash(a: &Allocator, node: NodePtr) {
@@ -15,13 +15,11 @@ fn test_hash(a: &Allocator, node: NodePtr) {
     assert_eq!(hash1, hash2);
 }
 
-fuzz_target!(|data: &[u8]| {
-    let mut a = Allocator::new();
-    let mut unstructured = arbitrary::Unstructured::new(data);
-    let (input, _) = make_tree(&mut a, &mut unstructured);
-    test_hash(&a, input);
+fuzz_target!(|input: ArbitraryKlvmTree| {
+    let mut a = input.allocator;
+    test_hash(&a, input.tree);
 
-    let bytes = node_to_bytes_backrefs(&a, input).expect("node_to_bytes_backrefs");
+    let bytes = node_to_bytes_backrefs(&a, input.tree).expect("node_to_bytes_backrefs");
     let input = node_from_bytes_backrefs(&mut a, &bytes).expect("node_from_bytes_backrefs");
     test_hash(&a, input);
 });

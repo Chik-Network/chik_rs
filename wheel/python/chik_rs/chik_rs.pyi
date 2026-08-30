@@ -114,6 +114,9 @@ def expected_plot_size(
     k: int
 ) -> int: ...
 
+def compute_plot_id_v1(plot_pk: G1Element, pool_pk: G1Element | None, pool_contract: bytes32 | None) -> bytes32: ...
+def compute_plot_id_v2(strength: uint8, plot_pk: G1Element, pool_pk: G1Element | None, pool_contract: bytes32 | None, plot_index: uint16, meta_group: uint8) -> bytes32: ...
+
 
 NO_UNKNOWN_CONDS: int = ...
 STRICT_ARGS_COUNT: int = ...
@@ -124,6 +127,13 @@ DONT_VALIDATE_SIGNATURE: int = ...
 COMPUTE_FINGERPRINT: int = ...
 COST_CONDITIONS: int = ...
 SIMPLE_GENERATOR: int = ...
+LIMIT_SPENDS: int = ...
+DISABLE_OP: int = ...
+CANONICAL_INTS: int = ...
+ENABLE_SHA256_TREE: int = ...
+RELAXED_BLS: int = ...
+ENABLE_SECP_OPS: int = ...
+MALACHITE: int = ...
 
 ELIGIBLE_FOR_DEDUP: int = ...
 ELIGIBLE_FOR_FF: int = ...
@@ -195,10 +205,12 @@ class PlotParam:
     @staticmethod
     def make_v1(s: int) -> PlotParam: ...
     @staticmethod
-    def make_v2(s: int) -> PlotParam: ...
+    def make_v2(plot_index: int, meta_group: int, strength: int) -> PlotParam: ...
 
     size_v1: Optional[uint8]
     strength_v2: Optional[uint8]
+    plot_index: uint16
+    meta_group: uint8
 
 @final
 class Prover:
@@ -209,6 +221,8 @@ class Prover:
     def get_strength(self) -> int: ...
     def get_filename(self) -> str: ...
     def get_memo(self) -> bytes: ...
+    def get_meta_group(self) -> int: ...
+    def get_plot_index(self) -> int: ...
     def to_bytes(self) -> bytes: ...
     @staticmethod
     def from_bytes(b: bytes) -> Prover: ...
@@ -217,12 +231,16 @@ def create_v2_plot(filename: str,
     k: int,
     strength: int,
     plot_id: bytes32,
+    plot_index: uint16,
+    meta_group: uint8,
     memo: bytes,
 ) -> None: ...
 
 def validate_proof_v2(plot_id: bytes32, size: int, challenge: bytes32, plot_strength: int, proof: bytes) -> Optional[bytes32]: ...
 
 def solve_proof(fragments: PartialProof, plot_id: bytes32, strength: int, k: int) -> bytes: ...
+
+def quality_string_from_proof(plot_id: bytes32, size: int, plot_strength: int, proof: bytes) -> Optional[bytes32]: ...
 
 
 @final
@@ -2206,16 +2224,26 @@ class ProofOfSpace:
     pool_public_key: Optional[G1Element]
     pool_contract_puzzle_hash: Optional[bytes32]
     plot_public_key: G1Element
-    version_and_size: uint8
+    version: uint8
+    plot_index: uint16
+    meta_group: uint8
+    strength: uint8
+    size: uint8
     proof: bytes
     def param(self) -> PlotParam: ...
+    def compute_plot_id(self) -> bytes32: ...
+    def quality_string(self) -> Optional[bytes32]: ...
     def __new__(
         cls,
         challenge: bytes,
         pool_public_key: Optional[G1Element],
         pool_contract_puzzle_hash: Optional[bytes32],
         plot_public_key: G1Element,
-        version_and_size: uint8,
+        version: uint8,
+        plot_index: uint16,
+        meta_group: uint8,
+        strength: uint8,
+        size: uint8,
         proof: bytes
     ) -> Self: ...
     def __hash__(self) -> int: ...
@@ -2239,7 +2267,11 @@ class ProofOfSpace:
         pool_public_key: Union[ Optional[G1Element], _Unspec] = _Unspec(),
         pool_contract_puzzle_hash: Union[ Optional[bytes32], _Unspec] = _Unspec(),
         plot_public_key: Union[ G1Element, _Unspec] = _Unspec(),
-        version_and_size: Union[ uint8, _Unspec] = _Unspec(),
+        version: Union[ uint8, _Unspec] = _Unspec(),
+        plot_index: Union[ uint16, _Unspec] = _Unspec(),
+        meta_group: Union[ uint8, _Unspec] = _Unspec(),
+        strength: Union[ uint8, _Unspec] = _Unspec(),
+        size: Union[ uint8, _Unspec] = _Unspec(),
         proof: Union[ bytes, _Unspec] = _Unspec()) -> ProofOfSpace: ...
 
 @final
@@ -4517,6 +4549,8 @@ class ConsensusConstants:
     POOL_SUB_SLOT_ITERS: uint64
     HARD_FORK_HEIGHT: uint32
     HARD_FORK2_HEIGHT: uint32
+    SOFT_FORK8_HEIGHT: uint32
+    SOFT_FORK9_HEIGHT: uint32
     PLOT_V1_PHASE_OUT_EPOCH_BITS: uint8
     PLOT_FILTER_128_HEIGHT: uint32
     PLOT_FILTER_64_HEIGHT: uint32
@@ -4572,6 +4606,8 @@ class ConsensusConstants:
         POOL_SUB_SLOT_ITERS: uint64,
         HARD_FORK_HEIGHT: uint32,
         HARD_FORK2_HEIGHT: uint32,
+        SOFT_FORK8_HEIGHT: uint32,
+        SOFT_FORK9_HEIGHT: uint32,
         PLOT_V1_PHASE_OUT_EPOCH_BITS: uint8,
         PLOT_FILTER_128_HEIGHT: uint32,
         PLOT_FILTER_64_HEIGHT: uint32,
@@ -4643,6 +4679,8 @@ class ConsensusConstants:
         POOL_SUB_SLOT_ITERS: Union[ uint64, _Unspec] = _Unspec(),
         HARD_FORK_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
         HARD_FORK2_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
+        SOFT_FORK8_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
+        SOFT_FORK9_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
         PLOT_V1_PHASE_OUT_EPOCH_BITS: Union[ uint8, _Unspec] = _Unspec(),
         PLOT_FILTER_128_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),
         PLOT_FILTER_64_HEIGHT: Union[ uint32, _Unspec] = _Unspec(),

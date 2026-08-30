@@ -235,7 +235,7 @@ def test_validate_klvm_and_sig() -> None:
 
     new_spend = SpendBundle(coin_spends, sig)
 
-    (sbc, additions, duration) = validate_klvm_and_signature(
+    sbc, additions, duration = validate_klvm_and_signature(
         new_spend,
         DEFAULT_CONSTANTS.MAX_BLOCK_COST_KLVM,
         DEFAULT_CONSTANTS,

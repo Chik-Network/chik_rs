@@ -1,8 +1,8 @@
+use crate::condition_sanitizers::parse_amount;
 use crate::validation_error::{ErrorCode, ValidationErr, atom, check_nil, first, next, rest};
 use chik_protocol::Coin;
 use klvm_utils::{TreeCache, tree_hash_cached};
 use klvmr::allocator::{Allocator, Atom, NodePtr};
-use klvmr::op_utils::u64_from_bytes;
 
 /// returns parent-coin ID, amount, puzzle-reveal and solution
 pub fn parse_coin_spend(
@@ -13,8 +13,7 @@ pub fn parse_coin_spend(
     let coin_spend = rest(a, coin_spend)?;
     let puzzle = first(a, coin_spend)?;
     let coin_spend = rest(a, coin_spend)?;
-    let amount =
-        u64_from_bytes(atom(a, first(a, coin_spend)?, ErrorCode::InvalidCoinAmount)?.as_ref());
+    let amount = parse_amount(a, first(a, coin_spend)?, ErrorCode::InvalidCoinAmount)?;
     let coin_spend = rest(a, coin_spend)?;
     let solution = first(a, coin_spend)?;
     check_nil(a, rest(a, coin_spend)?)?;
@@ -59,7 +58,7 @@ pub fn get_puzzle_and_solution_for_coin(
 mod test {
     use super::*;
     use crate::consensus_constants::TEST_CONSTANTS;
-    use crate::flags::{DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE};
+    use crate::flags::{ConsensusFlags, MEMPOOL_MODE};
     use crate::make_aggsig_final_message::u64_to_bytes;
     use crate::run_block_generator::{run_block_generator2, setup_generator_args};
     use chik_bls::Signature;
@@ -227,14 +226,12 @@ mod test {
         let generator = test_file.split_once('\n').expect("invalid test file").0;
         let generator = hex::decode(generator).expect("invalid hex encoded generator");
 
-        let mut a = Allocator::new();
         let blocks: &[&[u8]] = &[];
-        let conds = run_block_generator2(
-            &mut a,
+        let (a, conds) = run_block_generator2(
             &generator,
             blocks,
             MAX_COST,
-            MEMPOOL_MODE | DONT_VALIDATE_SIGNATURE,
+            MEMPOOL_MODE | ConsensusFlags::DONT_VALIDATE_SIGNATURE,
             &Signature::default(),
             None,
             &TEST_CONSTANTS,
@@ -251,8 +248,9 @@ mod test {
                 .map(|c| (c.puzzle_hash, c.amount))
                 .collect();
 
-            let dialect = &ChikDialect::new(MEMPOOL_MODE);
-            let args = setup_generator_args(&mut a2, blocks, 0).expect("setup_generator_args");
+            let dialect = &ChikDialect::new(MEMPOOL_MODE.to_klvm_flags());
+            let args = setup_generator_args(&mut a2, blocks, ConsensusFlags::empty())
+                .expect("setup_generator_args");
             let Reduction(_, result) =
                 run_program(&mut a2, dialect, generator_node, args, MAX_COST)
                     .expect("run_program (generator)");

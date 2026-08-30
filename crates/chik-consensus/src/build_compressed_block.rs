@@ -255,12 +255,11 @@ impl BlockBuilder {
     }
 }
 
-// this test is expensive and takes forever in debug builds
-#[cfg(not(debug_assertions))]
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::consensus_constants::TEST_CONSTANTS;
+    use crate::flags::ConsensusFlags;
     use crate::flags::MEMPOOL_MODE;
     use crate::owned_conditions::OwnedSpendBundleConditions;
     use crate::run_block_generator::run_block_generator2;
@@ -274,6 +273,7 @@ mod tests {
     use std::fs;
     use std::time::Instant;
 
+    #[ignore = "expensive test, only run in release mode (--include-ignored)"]
     #[test]
     fn test_build_block() {
         let mut all_bundles = vec![];
@@ -292,9 +292,15 @@ mod tests {
             let bundle = SpendBundle::from_bytes(buf.as_slice()).expect("parsing SpendBundle");
 
             let mut a = Allocator::new();
-            let conds = run_spendbundle(&mut a, &bundle, 11_000_000_000, 0, &TEST_CONSTANTS)
-                .expect("run_spendbundle")
-                .0;
+            let conds = run_spendbundle(
+                &mut a,
+                &bundle,
+                11_000_000_000,
+                ConsensusFlags::empty(),
+                &TEST_CONSTANTS,
+            )
+            .expect("run_spendbundle")
+            .0;
 
             if conds
                 .spends
@@ -393,7 +399,7 @@ mod tests {
                     let (bundle, cost, conds) = entry.as_ref();
                     let start_call = Instant::now();
                     let (added, result) = builder
-                        .add_spend_bundles([bundle].into_iter(), *cost, &TEST_CONSTANTS)
+                        .add_spend_bundles([bundle], *cost, &TEST_CONSTANTS)
                         .expect("add_spend_bundle");
 
                     max_call_time = f32::max(max_call_time, start_call.elapsed().as_secs_f32());
@@ -418,9 +424,7 @@ mod tests {
                 //fs::write(format!("../../{seed}.generator"), generator.as_slice())
                 //    .expect("write generator");
 
-                let mut a = Allocator::new();
-                let conds = run_block_generator2::<&[u8], _>(
-                    &mut a,
+                let (a, conds) = run_block_generator2::<&[u8], _>(
                     generator.as_slice(),
                     [],
                     TEST_CONSTANTS.max_block_cost_klvm,

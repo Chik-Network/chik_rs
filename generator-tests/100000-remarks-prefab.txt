@@ -100008,3 +100008,5 @@ addition_amount: 0
 atoms: 400284
 pairs: 3502607
 heap: 6400297
+STRICT:
+FAILED: 149

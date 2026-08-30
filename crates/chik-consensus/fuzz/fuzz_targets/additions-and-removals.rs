@@ -1,9 +1,8 @@
 #![no_main]
 use chik_bls::Signature;
 use chik_consensus::additions_and_removals::additions_and_removals;
-use chik_consensus::allocator::make_allocator;
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
-use chik_consensus::flags::DONT_VALIDATE_SIGNATURE;
+use chik_consensus::flags::ConsensusFlags;
 use chik_consensus::run_block_generator::run_block_generator2;
 use chik_protocol::{Bytes, Coin};
 use libfuzzer_sys::fuzz_target;
@@ -12,15 +11,14 @@ use std::collections::HashSet;
 fuzz_target!(|data: &[u8]| {
     // additions_and_removals only work on trusted blocks, so if
     // run_block_generator2() fails, we can't call additions_and_removals() on it.
-    let results = additions_and_removals::<&[u8], _>(data, [], 0, &TEST_CONSTANTS);
+    let results =
+        additions_and_removals::<&[u8], _>(data, [], ConsensusFlags::empty(), &TEST_CONSTANTS);
 
-    let mut a1 = make_allocator(0);
-    let Ok(r1) = run_block_generator2::<&[u8], _>(
-        &mut a1,
+    let Ok((a1, r1)) = run_block_generator2::<&[u8], _>(
         data,
         [],
         110_000_000,
-        DONT_VALIDATE_SIGNATURE,
+        ConsensusFlags::DONT_VALIDATE_SIGNATURE,
         &Signature::default(),
         None,
         &TEST_CONSTANTS,

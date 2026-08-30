@@ -1,4 +1,5 @@
 use chik_consensus::conditions::Condition;
+use chik_consensus::flags::ConsensusFlags;
 use chik_puzzle_types::Proof;
 use chik_puzzle_types::cat::{CatArgs, CatSolution};
 use chik_puzzle_types::did::{DidArgs, DidSolution};
@@ -266,6 +267,7 @@ fn main() {
     use chik_consensus::opcodes::parse_opcode;
     use chik_consensus::validation_error::{first, rest};
     use chik_protocol::CoinSpend;
+    use klvmr::chik_dialect::KlvmFlags;
     use klvmr::reduction::Reduction;
     use klvmr::{ChikDialect, run_program};
     use std::fs::read;
@@ -287,7 +289,7 @@ fn main() {
 
     println!("Spending {:?}", &spend.coin);
     println!("   coin-id: {}\n", hex::encode(spend.coin.coin_id()));
-    let dialect = ChikDialect::new(0);
+    let dialect = ChikDialect::new(KlvmFlags::empty());
     let Reduction(_klvm_cost, conditions) =
         match run_program(&mut a, &dialect, puzzle, solution, 11_000_000_000) {
             Ok(r) => r,
@@ -303,14 +305,15 @@ fn main() {
     while let Some((mut c, next)) = a.next(iter) {
         iter = next;
         let op_ptr = first(&a, c).expect("parsing conditions");
-        let Some(op) = parse_opcode(&a, op_ptr, 0) else {
+        let Some(op) = parse_opcode(&a, op_ptr, ConsensusFlags::empty()) else {
             println!("  UNKNOWN CONDITION [{}]", &hex::encode(a.atom(op_ptr)));
             continue;
         };
 
         c = rest(&a, c).expect("parsing conditions");
 
-        let condition = parse_args(&a, c, op, 0).expect("parse condition args");
+        let condition =
+            parse_args(&a, c, op, ConsensusFlags::empty()).expect("parse condition args");
         println!("  [{op:?}] {}", condition.debug_print(&a));
     }
 

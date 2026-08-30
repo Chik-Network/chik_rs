@@ -1,5 +1,6 @@
 use crate::error::{map_pyerr, map_pyerr_w_ptr};
 use chik_consensus::allocator::make_allocator;
+use chik_consensus::flags::ConsensusFlags;
 use chik_protocol::LazyNode;
 use klvmr::chik_dialect::ChikDialect;
 use klvmr::cost::Cost;
@@ -37,9 +38,10 @@ pub fn run_chik_program(
     program: &[u8],
     args: &[u8],
     max_cost: Cost,
-    flags: u32,
+    flags: ConsensusFlags,
 ) -> PyResult<(Cost, LazyNode)> {
     let mut allocator = make_allocator(flags);
+    let flags = flags.to_klvm_flags();
 
     let reduction = (|| -> PyResult<Response> {
         let program = node_from_bytes_backrefs(&mut allocator, program)

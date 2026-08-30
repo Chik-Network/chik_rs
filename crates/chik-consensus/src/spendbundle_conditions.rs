@@ -1,12 +1,13 @@
 use crate::conditions::{
-    ELIGIBLE_FOR_DEDUP, MempoolVisitor, ParseState, SpendBundleConditions, process_single_spend,
-    validate_conditions,
+    ELIGIBLE_FOR_DEDUP, MAX_SPENDS_PER_BLOCK, MempoolVisitor, ParseState, SpendBundleConditions,
+    process_single_spend, validate_conditions,
 };
 use crate::consensus_constants::ConsensusConstants;
-use crate::flags::{COMPUTE_FINGERPRINT, DONT_VALIDATE_SIGNATURE, MEMPOOL_MODE};
+use crate::flags::{ConsensusFlags, MEMPOOL_MODE};
 use crate::puzzle_fingerprint::compute_puzzle_fingerprint;
 use crate::run_block_generator::subtract_cost;
 use crate::solution_generator::calculate_generator_length;
+use crate::spend_visitor::SpendVisitor;
 use crate::spendbundle_validation::get_flags_for_height_and_constants;
 use crate::validation_error::ErrorCode;
 use crate::validation_error::ValidationErr;
@@ -34,7 +35,7 @@ pub fn get_conditions_from_spendbundle(
         a,
         spend_bundle,
         max_cost,
-        flags | MEMPOOL_MODE | DONT_VALIDATE_SIGNATURE,
+        flags | MEMPOOL_MODE | ConsensusFlags::DONT_VALIDATE_SIGNATURE,
         constants,
     )?
     .0)
@@ -47,13 +48,13 @@ pub fn run_spendbundle(
     a: &mut Allocator,
     spend_bundle: &SpendBundle,
     max_cost: u64,
-    flags: u32,
+    flags: ConsensusFlags,
     constants: &ConsensusConstants,
 ) -> Result<(SpendBundleConditions, Vec<(PublicKey, Bytes)>), ValidationErr> {
     // below is an adapted version of the code from run_block_generators::run_block_generator2()
     // it assumes no block references are passed in
     let mut cost_left = max_cost;
-    let dialect = ChikDialect::new(flags);
+    let dialect = ChikDialect::new(flags.to_klvm_flags());
     let mut ret = SpendBundleConditions::default();
     let mut state = ParseState::default();
     // We don't pay the size cost (nor execution cost) of being wrapped by a
@@ -63,6 +64,12 @@ pub fn run_spendbundle(
 
     let byte_cost = generator_length_without_quote as u64 * constants.cost_per_byte;
     subtract_cost(a, &mut cost_left, byte_cost)?;
+
+    if flags.contains(ConsensusFlags::LIMIT_SPENDS)
+        && spend_bundle.coin_spends.len() > MAX_SPENDS_PER_BLOCK
+    {
+        return Err(ValidationErr(a.nil(), ErrorCode::TooManySpends));
+    }
 
     for coin_spend in &spend_bundle.coin_spends {
         // process the spend
@@ -94,11 +101,14 @@ pub fn run_spendbundle(
             constants,
         )?;
 
-        if (spend.flags & ELIGIBLE_FOR_DEDUP) != 0 && (flags & COMPUTE_FINGERPRINT) != 0 {
+        if (spend.flags & ELIGIBLE_FOR_DEDUP) != 0
+            && flags.contains(ConsensusFlags::COMPUTE_FINGERPRINT)
+        {
             spend.fingerprint = compute_puzzle_fingerprint(a, conditions)?;
         }
     }
 
+    MempoolVisitor::post_process(a, &state, &mut ret)?;
     validate_conditions(a, &ret, &state, a.nil(), flags)?;
 
     assert!(max_cost >= cost_left);
@@ -118,12 +128,86 @@ mod tests {
     use chik_bls::Signature;
     use chik_protocol::CoinSpend;
     use chik_traits::Streamable;
-    use klvmr::chik_dialect::LIMIT_HEAP;
     use rstest::rstest;
     use std::fs::read;
 
     const QUOTE_EXECUTION_COST: u64 = 20;
     const QUOTE_BYTES_COST: u64 = QUOTE_BYTES as u64 * TEST_CONSTANTS.cost_per_byte;
+
+    fn assert_run_spendbundle_matches_parse_spends(spend_bundle: &SpendBundle) {
+        use crate::conditions::parse_spends;
+
+        let flags = MEMPOOL_MODE | ConsensusFlags::DONT_VALIDATE_SIGNATURE;
+
+        let mut a1 = make_allocator(ConsensusFlags::LIMIT_HEAP);
+        let (sb_conds, _) = run_spendbundle(
+            &mut a1,
+            spend_bundle,
+            11_000_000_000,
+            flags,
+            &TEST_CONSTANTS,
+        )
+        .expect("run_spendbundle");
+
+        let mut a2 = make_allocator(ConsensusFlags::LIMIT_HEAP);
+        let dialect = ChikDialect::new(flags.to_klvm_flags());
+
+        let mut spend_list = a2.nil();
+        for coin_spend in spend_bundle.coin_spends.iter().rev() {
+            let puz = node_from_bytes(&mut a2, coin_spend.puzzle_reveal.as_slice()).unwrap();
+            let sol = node_from_bytes(&mut a2, coin_spend.solution.as_slice()).unwrap();
+            let Reduction(_, conditions) =
+                run_program(&mut a2, &dialect, puz, sol, 11_000_000_000).unwrap();
+
+            let parent = a2
+                .new_atom(coin_spend.coin.parent_coin_info.as_slice())
+                .unwrap();
+            let ph_bytes = tree_hash(&a2, puz);
+            let puzzle_hash = a2.new_atom(&ph_bytes).unwrap();
+            let amount = a2.new_number(coin_spend.coin.amount.into()).unwrap();
+
+            let nil = a2.nil();
+            let tuple = a2.new_pair(conditions, nil).unwrap();
+            let tuple = a2.new_pair(amount, tuple).unwrap();
+            let tuple = a2.new_pair(puzzle_hash, tuple).unwrap();
+            let tuple = a2.new_pair(parent, tuple).unwrap();
+
+            spend_list = a2.new_pair(tuple, spend_list).unwrap();
+        }
+
+        let nil = a2.nil();
+        let spends_node = a2.new_pair(spend_list, nil).unwrap();
+
+        let ps_conds = parse_spends::<MempoolVisitor>(
+            &a2,
+            spends_node,
+            11_000_000_000,
+            0,
+            flags,
+            &Signature::default(),
+            None,
+            &TEST_CONSTANTS,
+        )
+        .expect("parse_spends");
+
+        assert_eq!(
+            sb_conds.spends.len(),
+            ps_conds.spends.len(),
+            "number of spends differ"
+        );
+        for (i, (s1, s2)) in sb_conds
+            .spends
+            .iter()
+            .zip(ps_conds.spends.iter())
+            .enumerate()
+        {
+            assert_eq!(
+                s1.flags, s2.flags,
+                "spend {i} flags differ: run_spendbundle={:#x}, parse_spends={:#x}",
+                s1.flags, s2.flags
+            );
+        }
+    }
 
     #[rstest]
     #[case("3000253", 8, 2, 51_216_870)]
@@ -140,7 +224,7 @@ mod tests {
         )
         .expect("parse bundle");
 
-        let mut a = make_allocator(LIMIT_HEAP);
+        let mut a = make_allocator(ConsensusFlags::LIMIT_HEAP);
         let conditions =
             get_conditions_from_spendbundle(&mut a, &bundle, cost, prev_tx_height, &TEST_CONSTANTS)
                 .expect("get_conditions_from_spendbundle");
@@ -162,12 +246,11 @@ mod tests {
         });
         let program = solution_generator(program_spends).expect("solution_generator failed");
         let blocks: &[&[u8]] = &[];
-        let block_conds = run_block_generator2(
-            &mut a,
+        let (_, block_conds) = run_block_generator2(
             program.as_slice(),
             blocks,
             11_000_000_000,
-            MEMPOOL_MODE | DONT_VALIDATE_SIGNATURE,
+            MEMPOOL_MODE | ConsensusFlags::DONT_VALIDATE_SIGNATURE,
             &Signature::default(),
             None,
             &TEST_CONSTANTS,
@@ -185,6 +268,8 @@ mod tests {
             block_conds.execution_cost - QUOTE_EXECUTION_COST
         );
         assert_eq!(conditions.condition_cost, block_conds.condition_cost);
+
+        assert_run_spendbundle_matches_parse_spends(&bundle);
     }
 
     #[rstest]
@@ -202,7 +287,7 @@ mod tests {
 
         let bundle = SpendBundle::new(vec![spend], Signature::default());
 
-        let mut a = make_allocator(LIMIT_HEAP);
+        let mut a = make_allocator(ConsensusFlags::LIMIT_HEAP);
         let conditions =
             get_conditions_from_spendbundle(&mut a, &bundle, cost, prev_tx_height, &TEST_CONSTANTS)
                 .expect("get_conditions_from_spendbundle");
@@ -211,12 +296,165 @@ mod tests {
         let spend = &conditions.spends[0];
         assert_eq!(spend.flags, ELIGIBLE_FOR_FF | ELIGIBLE_FOR_DEDUP);
         assert_eq!(conditions.cost, cost);
+
+        assert_run_spendbundle_matches_parse_spends(&bundle);
+    }
+
+    fn make_list(a: &mut Allocator, items: &[klvmr::NodePtr]) -> klvmr::NodePtr {
+        let mut result = a.nil();
+        for &item in items.iter().rev() {
+            result = a.new_pair(item, result).unwrap();
+        }
+        result
+    }
+
+    fn condition_node(
+        a: &mut Allocator,
+        opcode: crate::opcodes::ConditionOpcode,
+        args: &[klvmr::NodePtr],
+    ) -> klvmr::NodePtr {
+        let op = a.new_number(opcode.into()).unwrap();
+        let mut items = vec![op];
+        items.extend_from_slice(args);
+        make_list(a, &items)
+    }
+
+    // The identity puzzle (KLVM atom 1): returns its solution as output.
+    const IDENTITY_PUZZLE: &[u8] = &[1];
+
+    fn identity_puzzle_hash() -> [u8; 32] {
+        use klvm_utils::tree_hash_atom;
+        tree_hash_atom(&[1]).to_bytes()
+    }
+
+    fn make_coin_spend(parent: [u8; 32], amount: u64, extra_conditions: &[&[u8]]) -> CoinSpend {
+        use crate::opcodes::{ASSERT_MY_AMOUNT, CREATE_COIN};
+        use chik_protocol::{Coin, Program};
+        use klvmr::serde::{node_from_bytes, node_to_bytes};
+
+        let mut a = Allocator::new();
+        let puzzle_hash = identity_puzzle_hash();
+
+        let ph_node = a.new_atom(&puzzle_hash).unwrap();
+        let amt_node = a.new_number(amount.into()).unwrap();
+        let create_coin = condition_node(&mut a, CREATE_COIN, &[ph_node, amt_node]);
+
+        let amt_node2 = a.new_number(amount.into()).unwrap();
+        let assert_my_amount = condition_node(&mut a, ASSERT_MY_AMOUNT, &[amt_node2]);
+
+        let mut all = vec![create_coin, assert_my_amount];
+        for extra in extra_conditions {
+            all.push(node_from_bytes(&mut a, extra).unwrap());
+        }
+        let conditions = make_list(&mut a, &all);
+        let solution = node_to_bytes(&a, conditions).unwrap();
+
+        CoinSpend::new(
+            Coin::new(parent.into(), puzzle_hash.into(), amount),
+            Program::from(IDENTITY_PUZZLE.to_vec()),
+            Program::from(solution),
+        )
+    }
+
+    fn serialize_condition(
+        opcode: crate::opcodes::ConditionOpcode,
+        args: &[klvmr::NodePtr],
+        a: &Allocator,
+    ) -> Vec<u8> {
+        use klvmr::serde::node_to_bytes;
+        let mut a2 = Allocator::new();
+        let op = a2.new_number(opcode.into()).unwrap();
+        let mut items = vec![op];
+        for &arg in args {
+            let bytes = node_to_bytes(a, arg).unwrap();
+            items.push(node_from_bytes(&mut a2, &bytes).unwrap());
+        }
+        let list = make_list(&mut a2, &items);
+        node_to_bytes(&a2, list).unwrap()
+    }
+
+    #[test]
+    fn test_post_process_single_ff_eligible_spend() {
+        let spend_a = make_coin_spend([1u8; 32], 123, &[]);
+
+        let bundle = SpendBundle::new(vec![spend_a], Signature::default());
+        let mut alloc = make_allocator(ConsensusFlags::LIMIT_HEAP);
+        let flags = MEMPOOL_MODE | ConsensusFlags::DONT_VALIDATE_SIGNATURE;
+        let (conds, _) =
+            run_spendbundle(&mut alloc, &bundle, 11_000_000_000, flags, &TEST_CONSTANTS)
+                .expect("run_spendbundle");
+
+        assert_eq!(conds.spends.len(), 1);
+        assert_ne!(conds.spends[0].flags & ELIGIBLE_FOR_FF, 0);
+        assert_ne!(conds.spends[0].flags & ELIGIBLE_FOR_DEDUP, 0);
+
+        assert_run_spendbundle_matches_parse_spends(&bundle);
+    }
+
+    #[test]
+    fn test_post_process_assert_concurrent_spend_clears_ff() {
+        use chik_protocol::Coin;
+
+        let puzzle_hash = identity_puzzle_hash();
+        let spend_a = make_coin_spend([1u8; 32], 123, &[]);
+        let coin_a_id = Coin::new([1u8; 32].into(), puzzle_hash.into(), 123).coin_id();
+
+        let mut a = Allocator::new();
+        let coin_id_node = a.new_atom(coin_a_id.as_slice()).unwrap();
+        let assert_concurrent =
+            serialize_condition(crate::opcodes::ASSERT_CONCURRENT_SPEND, &[coin_id_node], &a);
+        let spend_b = make_coin_spend([2u8; 32], 123, &[&assert_concurrent]);
+
+        let bundle = SpendBundle::new(vec![spend_a, spend_b], Signature::default());
+        let mut alloc = make_allocator(ConsensusFlags::LIMIT_HEAP);
+        let flags = MEMPOOL_MODE | ConsensusFlags::DONT_VALIDATE_SIGNATURE;
+        let (conds, _) =
+            run_spendbundle(&mut alloc, &bundle, 11_000_000_000, flags, &TEST_CONSTANTS)
+                .expect("run_spendbundle");
+
+        assert_eq!(conds.spends.len(), 2);
+        assert_eq!(conds.spends[0].flags & ELIGIBLE_FOR_FF, 0);
+        assert_ne!(conds.spends[0].flags & ELIGIBLE_FOR_DEDUP, 0);
+
+        assert_run_spendbundle_matches_parse_spends(&bundle);
+    }
+
+    #[test]
+    fn test_post_process_ephemeral_output_clears_ff() {
+        use chik_protocol::{Coin, Program};
+
+        let puzzle_hash = identity_puzzle_hash();
+        let spend_a = make_coin_spend([1u8; 32], 123, &[]);
+
+        let coin_a_id = Coin::new([1u8; 32].into(), puzzle_hash.into(), 123).coin_id();
+        let ephemeral_coin = Coin::new(coin_a_id, puzzle_hash.into(), 123);
+
+        let a = Allocator::new();
+        let nil = a.nil();
+        let empty_solution = klvmr::serde::node_to_bytes(&a, nil).unwrap();
+
+        let spend_b = CoinSpend::new(
+            ephemeral_coin,
+            Program::from(IDENTITY_PUZZLE.to_vec()),
+            Program::from(empty_solution),
+        );
+
+        let bundle = SpendBundle::new(vec![spend_a, spend_b], Signature::default());
+        let mut alloc = make_allocator(ConsensusFlags::LIMIT_HEAP);
+        let flags = MEMPOOL_MODE | ConsensusFlags::DONT_VALIDATE_SIGNATURE;
+        let (conds, _) =
+            run_spendbundle(&mut alloc, &bundle, 11_000_000_000, flags, &TEST_CONSTANTS)
+                .expect("run_spendbundle");
+
+        assert_eq!(conds.spends.len(), 2);
+        assert_eq!(conds.spends[0].flags & ELIGIBLE_FOR_FF, 0);
+
+        assert_run_spendbundle_matches_parse_spends(&bundle);
     }
 
     // given a block generator and block-refs, convert run the generator to
     // produce the SpendBundle for the block without runningi, or validating,
     // the puzzles.
-    #[cfg(not(debug_assertions))]
     fn convert_block_to_bundle(generator: &[u8], block_refs: &[Vec<u8>]) -> SpendBundle {
         use crate::run_block_generator::setup_generator_args;
         use chik_protocol::Bytes32;
@@ -231,8 +469,9 @@ mod tests {
         let mut a = make_allocator(MEMPOOL_MODE);
 
         let generator = node_from_bytes_backrefs(&mut a, generator).expect("node_from_bytes");
-        let args = setup_generator_args(&mut a, block_refs, 0).expect("setup_generator_args");
-        let dialect = ChikDialect::new(MEMPOOL_MODE);
+        let args = setup_generator_args(&mut a, block_refs, ConsensusFlags::empty())
+            .expect("setup_generator_args");
+        let dialect = ChikDialect::new(MEMPOOL_MODE.to_klvm_flags());
         let Reduction(_, mut all_spends) =
             run_program(&mut a, &dialect, generator, args, 11_000_000_000).expect("run_program");
 
@@ -251,7 +490,7 @@ mod tests {
                     .expect("parsing KLVM");
             spends.push(CoinSpend::new(
                 Coin::new(
-                    parent_id.try_into().expect("parent_id"),
+                    parent_id,
                     tree_hash_from_bytes(puzzle.as_ref()).expect("hash").into(),
                     amount,
                 ),
@@ -262,7 +501,6 @@ mod tests {
         SpendBundle::new(spends, Signature::default())
     }
 
-    #[cfg(not(debug_assertions))]
     #[rstest]
     // this test requires running after hard fork 2, where the COST_CONDITIONS
     // flag is set
@@ -317,6 +555,7 @@ mod tests {
     //#[case("recursion-pairs")]
     #[case("unknown-condition")]
     #[case("duplicate-messages")]
+    #[ignore = "expensive test, only run in release mode (--include-ignored)"]
     fn run_generator(#[case] name: &str) {
         use crate::test_generators::{print_conditions, print_diff};
         use std::fs::read_to_string;
@@ -345,27 +584,31 @@ mod tests {
         // run the whole block through run_block_generator2() to ensure the
         // output conditions match and update the cost. The cost
         // of just the spend bundle will be lower
-        let mut a2 = make_allocator(MEMPOOL_MODE);
-        let (execution_cost, block_cost, block_output) = {
+        let (execution_cost, block_cost, block_output, block_conds) = {
             let block_conds = run_block_generator2(
-                &mut a2,
                 &generator_buffer,
                 &block_refs,
                 11_000_000_000,
-                MEMPOOL_MODE | DONT_VALIDATE_SIGNATURE,
+                MEMPOOL_MODE | ConsensusFlags::DONT_VALIDATE_SIGNATURE,
                 &Signature::default(),
                 None,
                 &TEST_CONSTANTS,
             );
-            match block_conds {
-                Ok(ref conditions) => (
+            match &block_conds {
+                Ok((a2, conditions)) => (
                     conditions.execution_cost,
                     conditions.cost,
-                    print_conditions(&a2, &conditions, &a2),
+                    print_conditions(a2, conditions, a2),
+                    block_conds,
                 ),
                 Err(code) => {
                     println!("error: {code:?}");
-                    (0, 0, format!("FAILED: {}\n", u32::from(code.1)))
+                    (
+                        0,
+                        0,
+                        format!("FAILED: {}\n", u32::from(code.1)),
+                        block_conds,
+                    )
                 }
             }
         };
@@ -418,7 +661,8 @@ mod tests {
                 // lower
                 conditions.cost = block_cost;
                 conditions.execution_cost = execution_cost;
-                print_conditions(&a1, &conditions, &a2)
+                let (a2, _) = block_conds.as_ref().unwrap();
+                print_conditions(&a1, &conditions, a2)
             }
             Err(code) => {
                 println!("error: {code:?}");
@@ -436,6 +680,54 @@ mod tests {
         if output != expected {
             print_diff(&output, expected);
             panic!("mismatching condition output");
+        }
+    }
+
+    fn make_bare_coin_spend(parent: [u8; 32], amount: u64) -> CoinSpend {
+        use chik_protocol::{Coin, Program};
+
+        let puzzle_hash = identity_puzzle_hash();
+        let a = Allocator::new();
+        let nil = a.nil();
+        let solution = klvmr::serde::node_to_bytes(&a, nil).unwrap();
+
+        CoinSpend::new(
+            Coin::new(parent.into(), puzzle_hash.into(), amount),
+            Program::from(IDENTITY_PUZZLE.to_vec()),
+            Program::from(solution),
+        )
+    }
+
+    #[rstest]
+    #[case(MAX_SPENDS_PER_BLOCK, ConsensusFlags::LIMIT_SPENDS, None)]
+    #[case(MAX_SPENDS_PER_BLOCK + 1, ConsensusFlags::LIMIT_SPENDS, Some(ErrorCode::TooManySpends))]
+    #[case(MAX_SPENDS_PER_BLOCK + 1, ConsensusFlags::empty(), None)]
+    fn test_limit_spends_run_spendbundle(
+        #[case] num_spends: usize,
+        #[case] extra_flags: ConsensusFlags,
+        #[case] expected_err: Option<ErrorCode>,
+    ) {
+        let coin_spends: Vec<CoinSpend> = (0..num_spends)
+            .map(|i| {
+                let mut parent = [0u8; 32];
+                parent[0..4].copy_from_slice(&(i as u32).to_be_bytes());
+                make_bare_coin_spend(parent, 0)
+            })
+            .collect();
+        let bundle = SpendBundle::new(coin_spends, Signature::default());
+        let mut alloc = make_allocator(ConsensusFlags::LIMIT_HEAP);
+        let flags = ConsensusFlags::DONT_VALIDATE_SIGNATURE | extra_flags;
+        let result = run_spendbundle(&mut alloc, &bundle, u64::MAX, flags, &TEST_CONSTANTS);
+        match (expected_err, result) {
+            (Some(err), Err(e)) => {
+                assert_eq!(e.1, err);
+            }
+            (None, Ok((conds, _))) => {
+                assert_eq!(conds.spends.len(), num_spends);
+            }
+            _ => {
+                panic!("mismatch");
+            }
         }
     }
 }

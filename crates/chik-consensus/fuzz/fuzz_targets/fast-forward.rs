@@ -5,45 +5,38 @@ use chik_consensus::conditions::{
 };
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::fast_forward::fast_forward_singleton;
+use chik_consensus::flags::ConsensusFlags;
 use chik_consensus::spend_visitor::SpendVisitor;
 use chik_consensus::validation_error::{ErrorCode, ValidationErr};
 use chik_protocol::Bytes32;
 use chik_protocol::Coin;
 use chik_protocol::CoinSpend;
-use chik_traits::streamable::Streamable;
-use hex_literal::hex;
 use klvm_traits::ToKlvm;
 use klvm_utils::tree_hash;
 use klvmr::serde::{node_from_bytes, node_to_bytes};
 use klvmr::{Allocator, NodePtr};
-use libfuzzer_sys::fuzz_target;
-use std::io::Cursor;
+use libfuzzer_sys::{Corpus, fuzz_target};
 
-use klvmr::chik_dialect::ChikDialect;
+use klvmr::chik_dialect::{ChikDialect, KlvmFlags};
 use klvmr::reduction::Reduction;
 use klvmr::run_program::run_program;
 use std::sync::Arc;
 
-fuzz_target!(|data: &[u8]| {
-    let Ok(spend) = CoinSpend::parse::<false>(&mut Cursor::new(data)) else {
-        return;
-    };
-    let new_parents_parent =
-        hex!("abababababababababababababababababababababababababababababababab");
-
+fuzz_target!(|args: (CoinSpend, Bytes32)| -> Corpus {
+    let (spend, new_parents_parent) = args;
     let mut a = Allocator::new_limited(500_000_000);
     let Ok(puzzle) = spend.puzzle_reveal.to_klvm(&mut a) else {
-        return;
+        return Corpus::Reject;
     };
     let Ok(solution) = spend.solution.to_klvm(&mut a) else {
-        return;
+        return Corpus::Reject;
     };
     let puzzle_hash = Bytes32::from(tree_hash(&a, puzzle));
 
     for new_amount in [0, 2, 3] {
         for new_parent_amount in [0, 2, 3] {
             let new_parent_coin = Coin {
-                parent_coin_info: new_parents_parent.into(),
+                parent_coin_info: new_parents_parent,
                 puzzle_hash,
                 amount: if new_parent_amount == 0 {
                     spend.coin.amount
@@ -72,6 +65,7 @@ fuzz_target!(|data: &[u8]| {
             );
         }
     }
+    Corpus::Keep
 });
 
 fn run_puzzle(
@@ -84,7 +78,7 @@ fn run_puzzle(
     let puzzle = node_from_bytes(a, puzzle)?;
     let solution = node_from_bytes(a, solution)?;
 
-    let dialect = ChikDialect::new(0);
+    let dialect = ChikDialect::new(KlvmFlags::empty());
     let max_cost = 11_000_000_000;
     let Reduction(klvm_cost, conditions) = run_program(a, &dialect, puzzle, solution, max_cost)?;
 
@@ -121,7 +115,7 @@ fn run_puzzle(
         &mut state,
         spend,
         conditions,
-        0,
+        ConsensusFlags::empty(),
         &mut cost_left,
         &TEST_CONSTANTS,
         &mut visitor,

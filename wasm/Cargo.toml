@@ -1,6 +1,6 @@
 [package]
 name = "chik_wasm"
-version = "0.36.1"
+version.workspace = true
 authors = ["Richard Kiss <him@richardkiss.com>"]
 edition = "2024"
 license = "Apache-2.0"

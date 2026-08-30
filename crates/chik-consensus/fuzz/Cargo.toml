@@ -1,6 +1,6 @@
 [package]
 name = "chik-consensus-fuzz"
-version = "0.36.1"
+version.workspace = true
 authors = ["Automatically generated"]
 publish = false
 edition = "2024"
@@ -16,7 +16,7 @@ libfuzzer-sys = { workspace = true }
 klvmr = { workspace = true }
 klvm-utils = { workspace = true }
 klvm-traits = { workspace = true }
-chik-protocol = { workspace = true }
+chik-protocol = { workspace = true, features = ["arbitrary"] }
 chik-sha2 = { workspace = true }
 chik-traits = { workspace = true }
 chik-consensus = { workspace = true }

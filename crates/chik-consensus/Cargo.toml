@@ -1,6 +1,6 @@
 [package]
 name = "chik-consensus"
-version = "0.36.1"
+version.workspace = true
 edition = "2024"
 license = "Apache-2.0"
 description = "Utility functions and types used by the Chik blockchain full node"
@@ -20,6 +20,7 @@ py-bindings = [
 ]
 
 [dependencies]
+bitflags = { workspace = true }
 klvmr = { workspace = true }
 hex = { workspace = true }
 pyo3 = { workspace = true, optional = true }
