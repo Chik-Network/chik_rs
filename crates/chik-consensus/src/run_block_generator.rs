@@ -299,11 +299,15 @@ where
         let [parent_id, puzzle, amount, solution, _spend_level_extra] =
             extract_n::<5>(&a, spend, ErrorCode::InvalidCondition)?;
 
+        let atoms_before = a.atom_count();
+        let pairs_before = a.pair_count();
         let Reduction(klvm_cost, conditions) =
             run_program(&mut a, &dialect, puzzle, solution, cost_left)?;
 
         subtract_cost(&mut cost_left, klvm_cost)?;
         ret.execution_cost += klvm_cost;
+        let atom_count = (a.atom_count() - atoms_before) as u64;
+        let pair_count = (a.pair_count() - pairs_before) as u64;
 
         let buf = tree_hash_cached(&a, puzzle, &mut cache);
         let puzzle_hash = a.new_atom(&buf)?;
@@ -319,6 +323,8 @@ where
             flags,
             &mut cost_left,
             klvm_cost,
+            atom_count,
+            pair_count,
             constants,
         )?;
     }
