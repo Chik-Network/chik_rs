@@ -21,7 +21,7 @@ bitflags! {
         const NO_UNKNOWN_OPS = 0x0002;
         const LIMIT_HEAP = 0x0004;
         const RELAXED_BLS = 0x0008;
-        const LIMITS = 0x0010;
+        const LIMIT_SOFTFORK = 0x0010;
         const ENABLE_GC = 0x0020;
         const ENABLE_KECCAK_OPS_OUTSIDE_GUARD = 0x0100;
         const DISABLE_OP = 0x0200;
@@ -77,8 +77,8 @@ impl ConsensusFlags {
         if klvm.contains(KlvmFlags::RELAXED_BLS) {
             out = out.union(ConsensusFlags::RELAXED_BLS);
         }
-        if klvm.contains(KlvmFlags::LIMITS) {
-            out = out.union(ConsensusFlags::LIMITS);
+        if klvm.contains(KlvmFlags::LIMIT_SOFTFORK) {
+            out = out.union(ConsensusFlags::LIMIT_SOFTFORK);
         }
         if klvm.contains(KlvmFlags::ENABLE_GC) {
             out = out.union(ConsensusFlags::ENABLE_GC);
@@ -118,8 +118,8 @@ impl ConsensusFlags {
         if self.contains(ConsensusFlags::RELAXED_BLS) {
             out.insert(KlvmFlags::RELAXED_BLS);
         }
-        if self.contains(ConsensusFlags::LIMITS) {
-            out.insert(KlvmFlags::LIMITS);
+        if self.contains(ConsensusFlags::LIMIT_SOFTFORK) {
+            out.insert(KlvmFlags::LIMIT_SOFTFORK);
         }
         if self.contains(ConsensusFlags::ENABLE_GC) {
             out.insert(KlvmFlags::ENABLE_GC);
