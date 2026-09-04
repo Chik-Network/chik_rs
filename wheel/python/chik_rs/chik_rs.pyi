@@ -58,7 +58,7 @@ def confirm_not_included_already_hashed(
     proof: bytes,
 ) -> bool: ...
 
-def validate_klvm_and_signature(
+def validate_clvk_and_signature(
     new_spend: SpendBundle,
     max_cost: int,
     constants: ConsensusConstants,
@@ -951,10 +951,10 @@ class EndOfSubSlotBundle:
 
 @final
 class FeeRate:
-    mojos_per_klvm_cost: uint64
+    mojos_per_clvk_cost: uint64
     def __new__(
         cls,
-        mojos_per_klvm_cost: uint64
+        mojos_per_clvk_cost: uint64
     ) -> Self: ...
     def __hash__(self) -> int: ...
     def __repr__(self) -> str: ...
@@ -973,7 +973,7 @@ class FeeRate:
     def to_json_dict(self) -> dict[str, Any]: ...
     @classmethod
     def from_json_dict(cls, json_dict: dict[str, Any]) -> Self: ...
-    def replace(self, *, mojos_per_klvm_cost: Union[ uint64, _Unspec] = _Unspec()) -> FeeRate: ...
+    def replace(self, *, mojos_per_clvk_cost: Union[ uint64, _Unspec] = _Unspec()) -> FeeRate: ...
     def truncate(self, field: str, length: int) -> None: ...
 
 @final
@@ -4698,7 +4698,7 @@ class ConsensusConstants:
     MAX_VDF_WITNESS_SIZE: uint8
     MEMPOOL_BLOCK_BUFFER: uint8
     MAX_COIN_AMOUNT: uint64
-    MAX_BLOCK_COST_KLVM: uint64
+    MAX_BLOCK_COST_CLVK: uint64
     COST_PER_BYTE: uint64
     WEIGHT_PROOF_THRESHOLD: uint8
     WEIGHT_PROOF_RECENT_BLOCKS: uint32
@@ -4756,7 +4756,7 @@ class ConsensusConstants:
         MAX_VDF_WITNESS_SIZE: uint8,
         MEMPOOL_BLOCK_BUFFER: uint8,
         MAX_COIN_AMOUNT: uint64,
-        MAX_BLOCK_COST_KLVM: uint64,
+        MAX_BLOCK_COST_CLVK: uint64,
         COST_PER_BYTE: uint64,
         WEIGHT_PROOF_THRESHOLD: uint8,
         WEIGHT_PROOF_RECENT_BLOCKS: uint32,
@@ -4830,7 +4830,7 @@ class ConsensusConstants:
         MAX_VDF_WITNESS_SIZE: Union[ uint8, _Unspec] = _Unspec(),
         MEMPOOL_BLOCK_BUFFER: Union[ uint8, _Unspec] = _Unspec(),
         MAX_COIN_AMOUNT: Union[ uint64, _Unspec] = _Unspec(),
-        MAX_BLOCK_COST_KLVM: Union[ uint64, _Unspec] = _Unspec(),
+        MAX_BLOCK_COST_CLVK: Union[ uint64, _Unspec] = _Unspec(),
         COST_PER_BYTE: Union[ uint64, _Unspec] = _Unspec(),
         WEIGHT_PROOF_THRESHOLD: Union[ uint8, _Unspec] = _Unspec(),
         WEIGHT_PROOF_RECENT_BLOCKS: Union[ uint32, _Unspec] = _Unspec(),

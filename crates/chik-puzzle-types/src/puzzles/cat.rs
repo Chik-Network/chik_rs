@@ -1,14 +1,14 @@
 use chik_bls::PublicKey;
 use chik_protocol::{Bytes32, Coin};
 use chik_puzzles::{CAT_PUZZLE_HASH, EVERYTHING_WITH_SIGNATURE_HASH, GENESIS_BY_COIN_ID_HASH};
-use klvm_traits::{FromKlvm, ToKlvm};
-use klvm_utils::{CurriedProgram, ToTreeHash, TreeHash};
+use clvk_traits::{FromClvk, ToClvk};
+use clvk_utils::{CurriedProgram, ToTreeHash, TreeHash};
 
 use crate::{CoinProof, LineageProof};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(curry)]
+#[clvk(curry)]
 pub struct CatArgs<I> {
     pub mod_hash: Bytes32,
     pub asset_id: Bytes32,
@@ -39,9 +39,9 @@ impl CatArgs<TreeHash> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(curry)]
+#[clvk(curry)]
 pub struct EverythingWithSignatureTailArgs {
     pub public_key: PublicKey,
 }
@@ -60,9 +60,9 @@ impl EverythingWithSignatureTailArgs {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(curry)]
+#[clvk(curry)]
 pub struct GenesisByCoinIdTailArgs {
     pub genesis_coin_id: Bytes32,
 }
@@ -81,9 +81,9 @@ impl GenesisByCoinIdTailArgs {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(list)]
+#[clvk(list)]
 pub struct CatSolution<I> {
     pub inner_puzzle_solution: I,
     pub lineage_proof: Option<LineageProof>,
@@ -100,9 +100,9 @@ mod tests {
         CAT_PUZZLE, EVERYTHING_WITH_SIGNATURE, GENESIS_BY_COIN_ID,
         P2_DELEGATED_PUZZLE_OR_HIDDEN_PUZZLE,
     };
-    use klvm_traits::ToKlvm;
-    use klvm_utils::tree_hash;
-    use klvmr::{Allocator, serde::node_from_bytes};
+    use clvk_traits::ToClvk;
+    use clvk_utils::tree_hash;
+    use clvkr::{Allocator, serde::node_from_bytes};
 
     use super::*;
 
@@ -127,7 +127,7 @@ mod tests {
                 },
             ),
         }
-        .to_klvm(&mut a)
+        .to_clvk(&mut a)
         .unwrap();
 
         let allocated_tree_hash = hex::encode(tree_hash(&a, curried_ptr));
@@ -149,7 +149,7 @@ mod tests {
             program: mod_ptr,
             args: EverythingWithSignatureTailArgs::new(public_key),
         }
-        .to_klvm(&mut a)
+        .to_clvk(&mut a)
         .unwrap();
 
         let allocated_tree_hash = hex::encode(tree_hash(&a, curried_ptr));
@@ -170,7 +170,7 @@ mod tests {
             program: mod_ptr,
             args: GenesisByCoinIdTailArgs::new(genesis_coin_id),
         }
-        .to_klvm(&mut a)
+        .to_clvk(&mut a)
         .unwrap();
 
         let allocated_tree_hash = hex::encode(tree_hash(&a, curried_ptr));

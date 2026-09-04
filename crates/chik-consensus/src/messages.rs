@@ -2,7 +2,7 @@ use crate::condition_sanitizers::sanitize_hash;
 use crate::sanitize_int::{SanitizedUint, sanitize_uint};
 use crate::validation_error::{ErrorCode, ValidationErr, first, rest};
 use chik_protocol::Bytes32;
-use klvmr::{Allocator, NodePtr};
+use clvkr::{Allocator, NodePtr};
 use std::sync::Arc;
 
 // these are mode flags used as the first argument to SEND_MESSAGE and

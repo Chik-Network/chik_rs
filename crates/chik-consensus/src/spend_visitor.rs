@@ -1,6 +1,6 @@
 use crate::conditions::{Condition, ParseState, SpendBundleConditions, SpendConditions};
 use crate::validation_error::ValidationErr;
-use klvmr::allocator::Allocator;
+use clvkr::allocator::Allocator;
 
 /// These are customization points for the condition parsing and validation. The
 /// mempool wants to record additional information than plain consensus

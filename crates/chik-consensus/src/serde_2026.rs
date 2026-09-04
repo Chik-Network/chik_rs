@@ -1,14 +1,14 @@
-//! Consensus-tuned wrappers around the `klvm_rs::serde_2026` deserializer.
+//! Consensus-tuned wrappers around the `clvk_rs::serde_2026` deserializer.
 //!
-//! `klvm_rs` deliberately makes the caller pick `max_atom_len` and `strict`,
-//! since those are policy and klvm_rs has no consensus opinion. This module
+//! `clvk_rs` deliberately makes the caller pick `max_atom_len` and `strict`,
+//! since those are policy and clvk_rs has no consensus opinion. This module
 //! supplies the values chik consensus expects and exposes the
 //! "sniff the magic prefix and dispatch" convenience that callers used to get
-//! from `klvm_rs::serde::node_from_bytes_auto`.
+//! from `clvk_rs::serde::node_from_bytes_auto`.
 
-use klvmr::allocator::{Allocator, NodePtr};
-use klvmr::error::{EvalErr, Result};
-use klvmr::serde::{SERDE_2026_MAGIC_PREFIX, deserialize_2026, node_from_bytes_backrefs};
+use clvkr::allocator::{Allocator, NodePtr};
+use clvkr::error::{EvalErr, Result};
+use clvkr::serde::{SERDE_2026_MAGIC_PREFIX, deserialize_2026, node_from_bytes_backrefs};
 
 /// Deserialize a generator on the consensus path: the blob must be a
 /// magic-prefixed serde_2026 encoding, with no fallback to classic/backrefs
@@ -26,12 +26,12 @@ pub fn node_from_bytes_2026(
     deserialize_2026(allocator, bytes, max_blob_size, false)
 }
 
-/// Compression level passed to [`klvmr::serde::serialize_2026`] when chik
+/// Compression level passed to [`clvkr::serde::serialize_2026`] when chik
 /// produces serde_2026 blobs.
 ///
 /// The level only affects the serializer's effort/output size; every level
 /// produces blobs that the one deserializer accepts (like zlib levels).
-/// klvmr keeps its `Compression` enum private and takes a bare `u32`,
+/// clvkr keeps its `Compression` enum private and takes a bare `u32`,
 /// saturating values above the highest implemented level. Level 0 is the
 /// fast/left-first encoding (currently the only one implemented).
 pub const SERDE_2026_COMPRESSION_LEVEL: u32 = 0;
@@ -92,7 +92,7 @@ pub fn max_canonical_blob_size(max_cost: u64, cost_per_byte: u64) -> usize {
     ((max_cost / cost_per_byte) as usize).saturating_add(5 + SERDE_2026_MAGIC_PREFIX.len())
 }
 
-/// Deserialize KLVM bytes, auto-detecting classic / backrefs / serde_2026.
+/// Deserialize CLVK bytes, auto-detecting classic / backrefs / serde_2026.
 ///
 /// Sniffs `SERDE_2026_MAGIC_PREFIX` at the head of `bytes`; if present,
 /// dispatches to [`deserialize_2026`]. Otherwise falls back to
@@ -135,7 +135,7 @@ pub fn node_from_bytes_auto(
 mod tests {
     use super::*;
     use crate::generator_cost::interned_vbytes;
-    use klvmr::serde::{intern_tree, node_to_bytes, node_to_bytes_backrefs, serialize_2026};
+    use clvkr::serde::{intern_tree, node_to_bytes, node_to_bytes_backrefs, serialize_2026};
     use rstest::rstest;
 
     /// Build a small tree with a repeated subtree (so the backrefs and
@@ -287,7 +287,7 @@ mod tests {
     fn mainnet_cap() -> usize {
         use crate::consensus_constants::TEST_CONSTANTS;
         max_canonical_blob_size(
-            TEST_CONSTANTS.max_block_cost_klvm,
+            TEST_CONSTANTS.max_block_cost_clvk,
             TEST_CONSTANTS.cost_per_byte,
         )
     }

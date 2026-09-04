@@ -12,24 +12,24 @@ use chik_consensus::validation_error::ValidationErr;
 use chik_protocol::Bytes32;
 use chik_protocol::Coin;
 use chik_protocol::CoinSpend;
-use klvm_traits::ToKlvm;
-use klvm_utils::tree_hash;
-use klvmr::serde::{node_from_bytes, node_to_bytes};
-use klvmr::{Allocator, NodePtr};
+use clvk_traits::ToClvk;
+use clvk_utils::tree_hash;
+use clvkr::serde::{node_from_bytes, node_to_bytes};
+use clvkr::{Allocator, NodePtr};
 use libfuzzer_sys::{Corpus, fuzz_target};
 
-use klvmr::chik_dialect::{ChikDialect, KlvmFlags};
-use klvmr::reduction::Reduction;
-use klvmr::run_program::run_program;
+use clvkr::chik_dialect::{ChikDialect, ClvkFlags};
+use clvkr::reduction::Reduction;
+use clvkr::run_program::run_program;
 use std::sync::Arc;
 
 fuzz_target!(|args: (CoinSpend, Bytes32)| -> Corpus {
     let (spend, new_parents_parent) = args;
     let mut a = Allocator::new_limited(500_000_000);
-    let Ok(puzzle) = spend.puzzle_reveal.to_klvm(&mut a) else {
+    let Ok(puzzle) = spend.puzzle_reveal.to_clvk(&mut a) else {
         return Corpus::Reject;
     };
-    let Ok(solution) = spend.solution.to_klvm(&mut a) else {
+    let Ok(solution) = spend.solution.to_clvk(&mut a) else {
         return Corpus::Reject;
     };
     let puzzle_hash = Bytes32::from(tree_hash(&a, puzzle));
@@ -79,11 +79,11 @@ fn run_puzzle(
     let puzzle = node_from_bytes(a, puzzle)?;
     let solution = node_from_bytes(a, solution)?;
 
-    let dialect = ChikDialect::new(KlvmFlags::empty());
+    let dialect = ChikDialect::new(ClvkFlags::empty());
     let max_cost = 11_000_000_000;
     let atoms_before = a.atom_count();
     let pairs_before = a.pair_count();
-    let Reduction(klvm_cost, conditions) = run_program(a, &dialect, puzzle, solution, max_cost)?;
+    let Reduction(clvk_cost, conditions) = run_program(a, &dialect, puzzle, solution, max_cost)?;
     let atom_count = (a.atom_count() - atoms_before) as u64;
     let pair_count = (a.pair_count() - pairs_before) as u64;
 
@@ -108,14 +108,14 @@ fn run_puzzle(
         amount,
         a.new_atom(&puzzle_hash)?,
         coin_id,
-        klvm_cost,
+        clvk_cost,
         atom_count,
         pair_count,
     );
 
     let mut visitor = MempoolVisitor::new_spend(&mut spend);
 
-    let mut cost_left = max_cost - klvm_cost;
+    let mut cost_left = max_cost - clvk_cost;
     parse_conditions(
         a,
         &mut ret,

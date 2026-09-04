@@ -1,14 +1,14 @@
-use klvm_traits::{FromKlvm, ToKlvm};
-use klvmr::NodePtr;
+use clvk_traits::{FromClvk, ToClvk};
+use clvkr::NodePtr;
 
 /// The purpose of this type is to be an optional field at the end of a create coin condition
 /// or payment in the notarized payment list. It can either be nil (no memos specified) or an
 /// extra field that is typically a list of memos (although can technically be any structure).
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(untagged, list)]
+#[clvk(untagged, list)]
 pub enum Memos<T = NodePtr> {
-    /// An arbitrary KLVM structure that represents the memos
+    /// An arbitrary CLVK structure that represents the memos
     Some(T),
     /// No memos specified
     #[default]
@@ -18,7 +18,7 @@ pub enum Memos<T = NodePtr> {
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use klvmr::Allocator;
+    use clvkr::Allocator;
     use rstest::rstest;
 
     use super::*;
@@ -29,8 +29,8 @@ mod tests {
     ) -> Result<()> {
         let mut allocator = Allocator::new();
 
-        let ptr = expected.to_klvm(&mut allocator)?;
-        let memos = Memos::<u64>::from_klvm(&allocator, ptr)?;
+        let ptr = expected.to_clvk(&mut allocator)?;
+        let memos = Memos::<u64>::from_clvk(&allocator, ptr)?;
 
         assert_eq!(memos, expected);
 

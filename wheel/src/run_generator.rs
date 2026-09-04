@@ -8,9 +8,9 @@ use chik_consensus::run_block_generator::run_block_generator as native_run_block
 use chik_consensus::run_block_generator::run_block_generator2 as native_run_block_generator2;
 use chik_protocol::{Bytes, Bytes32, Coin};
 
-use klvmr::allocator::Allocator;
-use klvmr::cost::Cost;
-use klvmr::serde::{intern_tree_limited, node_from_bytes_backrefs};
+use clvkr::allocator::Allocator;
+use clvkr::cost::Cost;
+use clvkr::serde::{intern_tree_limited, node_from_bytes_backrefs};
 
 use pyo3::PyResult;
 use pyo3::buffer::PyBuffer;

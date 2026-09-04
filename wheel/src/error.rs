@@ -1,4 +1,4 @@
-use klvmr::error::EvalErr;
+use clvkr::error::EvalErr;
 use pyo3::PyErr;
 use pyo3::exceptions::PyValueError;
 

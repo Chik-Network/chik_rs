@@ -12,9 +12,9 @@ use chik_bls::Signature;
 use chik_protocol::Program;
 use chik_protocol::{Bytes, Bytes48};
 use chik_puzzles::CHIKLISP_DESERIALISATION;
-use klvmr::Allocator;
-use klvmr::allocator::NodePtr;
-use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
+use clvkr::Allocator;
+use clvkr::allocator::NodePtr;
+use clvkr::serde::{node_from_bytes, node_from_bytes_backrefs};
 use std::fmt::Write;
 use std::iter::zip;
 use text_diff::Difference;
@@ -184,7 +184,7 @@ pub(crate) fn print_diff(output: &str, expected: &str) {
 }
 
 #[rstest]
-// in CI we run with the klvmr/debug-allocator feature enabled, which makes this
+// in CI we run with the clvkr/debug-allocator feature enabled, which makes this
 // test use too much RAM (about 6.8 GB)
 //#[case("aa-million-messages")]
 #[case("single-coin-only-garbage")]
@@ -392,7 +392,7 @@ fn run_generator(#[case] name: &str) {
 
                 if flags.contains(ConsensusFlags::SIMPLE_GENERATOR) {
                     // when running generators with the SIMPLE_GENERATOR flag
-                    // set, we don't pass in the KLVM deserializer program. This
+                    // set, we don't pass in the CLVK deserializer program. This
                     // causes the atoms and pairs counters to be lower than
                     // before (when the test cases were created). In order to
                     // match the test cases, we increment those counters in
@@ -520,8 +520,8 @@ fn run_generator(#[case] name: &str) {
                             .puzzle_reveal
                             .run(
                                 &mut a,
-                                flags.to_klvm_flags(),
-                                TEST_CONSTANTS.max_block_cost_klvm,
+                                flags.to_clvk_flags(),
+                                TEST_CONSTANTS.max_block_cost_clvk,
                                 &coinspends[i].solution,
                             )
                             .is_ok()

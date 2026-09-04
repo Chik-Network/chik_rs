@@ -16,7 +16,7 @@ repository = "https://github.com/Chik-Network/chik_rs"
 members = ["crates/*", "crates/*/fuzz", "wasm", "wheel"]
 
 [workspace.package]
-version = "0.48.1"
+version = "0.48.2"
 
 [workspace.lints.rust]
 rust_2018_idioms = { level = "deny", priority = -1 }
@@ -68,14 +68,14 @@ chik-serde = { workspace = true, optional = true }
 chik-traits = { workspace = true, optional = true }
 chik-puzzle-types = { workspace = true, optional = true }
 chik-sha2 = { workspace = true, optional = true }
-klvm-traits = { workspace = true, optional = true }
-klvm-utils = { workspace = true, optional = true }
-klvmr = { workspace = true }
+clvk-traits = { workspace = true, optional = true }
+clvk-utils = { workspace = true, optional = true }
+clvkr = { workspace = true }
 
-# This is required since klvmr is only added here to provide the openssl feature conditionally.
+# This is required since clvkr is only added here to provide the openssl feature conditionally.
 # In the future we could pass the openssl feature to each of the relevant workspace crates instead.
 [package.metadata.cargo-machete]
-ignored = ["klvmr"]
+ignored = ["clvkr"]
 
 [features]
 default = [
@@ -90,12 +90,12 @@ default = [
     "traits",
     "puzzle-types",
     "sha2",
-    "klvm-traits",
-    "klvm-utils"
+    "clvk-traits",
+    "clvk-utils"
 ]
 
-bls = ["dep:chik-bls", "klvm-traits/chik-bls"]
-secp = ["dep:chik-secp", "klvm-traits/chik-secp"]
+bls = ["dep:chik-bls", "clvk-traits/chik-bls"]
+secp = ["dep:chik-secp", "clvk-traits/chik-secp"]
 client = ["dep:chik-client"]
 consensus = ["dep:chik-consensus"]
 datalayer = ["dep:chik-datalayer"]
@@ -105,10 +105,10 @@ serde = ["dep:chik-serde", "chik-protocol/serde", "chik-bls/serde"]
 traits = ["dep:chik-traits"]
 puzzle-types = ["dep:chik-puzzle-types"]
 sha2 = ["dep:chik-sha2"]
-klvm-traits = ["dep:klvm-traits"]
-klvm-utils = ["dep:klvm-utils"]
+clvk-traits = ["dep:clvk-traits"]
+clvk-utils = ["dep:clvk-utils"]
 
-openssl = ["chik-sha2/openssl", "klvmr/openssl"]
+openssl = ["chik-sha2/openssl", "clvkr/openssl"]
 
 [profile.release]
 lto = "thin"
@@ -117,34 +117,34 @@ lto = "thin"
 bench = false
 
 [workspace.dependencies]
-chik_py_streamable_macro = { path = "./crates/chik_py_streamable_macro", version = "0.48.1" }
-chik_streamable_macro = { path = "./crates/chik_streamable_macro", version = "0.48.1" }
-chik-bls = { path = "./crates/chik-bls", version = "0.48.1" }
-chik-client = { path = "./crates/chik-client", version = "0.48.1" }
-chik-consensus = { path = "./crates/chik-consensus", version = "0.48.1" }
-chik-datalayer = { path = "./crates/chik-datalayer", version = "0.48.1" }
-chik-datalayer-macro = { path = "./crates/chik-datalayer/macro", version = "0.48.1" }
-chik-protocol = { path = "./crates/chik-protocol", version = "0.48.1" }
-chik-secp = { path = "./crates/chik-secp", version = "0.48.1" }
-chik-ssl = { path = "./crates/chik-ssl", version = "0.48.1" }
-chik-traits = { path = "./crates/chik-traits", version = "0.48.1" }
-chik-puzzle-types = { path = "./crates/chik-puzzle-types", version = "0.48.1" }
-chik-sha2 = { path = "./crates/chik-sha2", version = "0.48.1" }
-chik-serde = { path = "./crates/chik-serde", version = "0.48.1" }
-klvm-traits = { path = "./crates/klvm-traits", version = "0.48.1" }
-klvm-utils = { path = "./crates/klvm-utils", version = "0.48.1" }
-klvm-derive = { path = "./crates/klvm-derive", version = "0.48.1" }
+chik_py_streamable_macro = { path = "./crates/chik_py_streamable_macro", version = "0.48.2" }
+chik_streamable_macro = { path = "./crates/chik_streamable_macro", version = "0.48.2" }
+chik-bls = { path = "./crates/chik-bls", version = "0.48.2" }
+chik-client = { path = "./crates/chik-client", version = "0.48.2" }
+chik-consensus = { path = "./crates/chik-consensus", version = "0.48.2" }
+chik-datalayer = { path = "./crates/chik-datalayer", version = "0.48.2" }
+chik-datalayer-macro = { path = "./crates/chik-datalayer/macro", version = "0.48.2" }
+chik-protocol = { path = "./crates/chik-protocol", version = "0.48.2" }
+chik-secp = { path = "./crates/chik-secp", version = "0.48.2" }
+chik-ssl = { path = "./crates/chik-ssl", version = "0.48.2" }
+chik-traits = { path = "./crates/chik-traits", version = "0.48.2" }
+chik-puzzle-types = { path = "./crates/chik-puzzle-types", version = "0.48.2" }
+chik-sha2 = { path = "./crates/chik-sha2", version = "0.48.2" }
+chik-serde = { path = "./crates/chik-serde", version = "0.48.2" }
+clvk-traits = { path = "./crates/clvk-traits", version = "0.48.2" }
+clvk-utils = { path = "./crates/clvk-utils", version = "0.48.2" }
+clvk-derive = { path = "./crates/clvk-derive", version = "0.48.2" }
 chik-pos2 = "0.6.0"
-chik-consensus-fuzz = { path = "./crates/chik-consensus/fuzz", version = "0.48.1" }
-chik-bls-fuzz = { path = "./crates/chik-bls/fuzz", version = "0.48.1" }
-chik-datalayer-fuzz = { path = "./crates/chik-datalayer/fuzz", version = "0.48.1" }
-chik-protocol-fuzz = { path = "./crates/chik-protocol/fuzz", version = "0.48.1" }
-chik-puzzle-types-fuzz = { path = "./crates/chik-puzzle-types/fuzz", version = "0.48.1" }
-klvm-traits-fuzz = { path = "./crates/klvm-traits/fuzz", version = "0.48.1" }
-klvm-utils-fuzz = { path = "./crates/klvm-utils/fuzz", version = "0.48.1" }
+chik-consensus-fuzz = { path = "./crates/chik-consensus/fuzz", version = "0.48.2" }
+chik-bls-fuzz = { path = "./crates/chik-bls/fuzz", version = "0.48.2" }
+chik-datalayer-fuzz = { path = "./crates/chik-datalayer/fuzz", version = "0.48.2" }
+chik-protocol-fuzz = { path = "./crates/chik-protocol/fuzz", version = "0.48.2" }
+chik-puzzle-types-fuzz = { path = "./crates/chik-puzzle-types/fuzz", version = "0.48.2" }
+clvk-traits-fuzz = { path = "./crates/clvk-traits/fuzz", version = "0.48.2" }
+clvk-utils-fuzz = { path = "./crates/clvk-utils/fuzz", version = "0.48.2" }
 blst = { version = "0.3.16", features = ["portable"] }
-klvmr = "0.19.0"
-klvm-fuzzing = "0.19.0"
+clvkr = "0.19.0"
+clvk-fuzzing = "0.19.0"
 syn = "2.0.101"
 quote = "1.0.40"
 proc-macro2 = "1.0.95"

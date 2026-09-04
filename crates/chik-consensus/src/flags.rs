@@ -1,21 +1,21 @@
 use bitflags::bitflags;
-use klvmr::MEMPOOL_MODE as KLVM_MEMPOOL_MODE;
+use clvkr::MEMPOOL_MODE as CLVK_MEMPOOL_MODE;
 
 #[cfg(feature = "py-bindings")]
 use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python, types::PyInt};
 
 bitflags! {
-    /// Full flag set for KLVM execution and consensus (condition parsing, validation, generator mode).
-    /// Combines flags from klvmr (lower bytes) and consensus (upper bytes).
+    /// Full flag set for CLVK execution and consensus (condition parsing, validation, generator mode).
+    /// Combines flags from clvkr (lower bytes) and consensus (upper bytes).
     /// The end goal should be to make these flags independent, but we still
     /// have at least one quirk in chik-protocol's Program::run_rust() where it
     /// would be ideal to take Consensusflags, but it can't depend on
-    /// chik-consensus, so it has to take KlvmFlags instead. those aren't exposed
+    /// chik-consensus, so it has to take ClvkFlags instead. those aren't exposed
     /// to python, so it relies on these flags matching.
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct ConsensusFlags: u32 {
-        // Flags from klvmr (chik_dialect)
-        // we still rely on these bits matching exactly the flags in klvm_rs
+        // Flags from clvkr (chik_dialect)
+        // we still rely on these bits matching exactly the flags in clvk_rs
         // via the python binding, which "launders" the type of the flags
         const CANONICAL_INTS = 0x0001;
         const NO_UNKNOWN_OPS = 0x0002;
@@ -61,104 +61,104 @@ bitflags! {
 }
 
 impl ConsensusFlags {
-    /// Convert klvmr's KlvmFlags to the corresponding ConsensusFlags (shared flags only).
-    /// For each klvmr flag we check whether it is set (using contains()), then set our corresponding flag.
+    /// Convert clvkr's ClvkFlags to the corresponding ConsensusFlags (shared flags only).
+    /// For each clvkr flag we check whether it is set (using contains()), then set our corresponding flag.
     #[must_use]
-    const fn from_klvm_flags(klvm: klvmr::chik_dialect::KlvmFlags) -> Self {
-        use klvmr::chik_dialect::KlvmFlags;
+    const fn from_clvk_flags(clvk: clvkr::chik_dialect::ClvkFlags) -> Self {
+        use clvkr::chik_dialect::ClvkFlags;
         let mut out = ConsensusFlags::empty();
-        if klvm.contains(KlvmFlags::CANONICAL_INTS) {
+        if clvk.contains(ClvkFlags::CANONICAL_INTS) {
             out = out.union(ConsensusFlags::CANONICAL_INTS);
         }
-        if klvm.contains(KlvmFlags::NO_UNKNOWN_OPS) {
+        if clvk.contains(ClvkFlags::NO_UNKNOWN_OPS) {
             out = out.union(ConsensusFlags::NO_UNKNOWN_OPS);
         }
-        if klvm.contains(KlvmFlags::LIMIT_HEAP) {
+        if clvk.contains(ClvkFlags::LIMIT_HEAP) {
             out = out.union(ConsensusFlags::LIMIT_HEAP);
         }
-        if klvm.contains(KlvmFlags::RELAXED_BLS) {
+        if clvk.contains(ClvkFlags::RELAXED_BLS) {
             out = out.union(ConsensusFlags::RELAXED_BLS);
         }
-        if klvm.contains(KlvmFlags::LIMIT_SOFTFORK) {
+        if clvk.contains(ClvkFlags::LIMIT_SOFTFORK) {
             out = out.union(ConsensusFlags::LIMIT_SOFTFORK);
         }
-        if klvm.contains(KlvmFlags::ENABLE_GC) {
+        if clvk.contains(ClvkFlags::ENABLE_GC) {
             out = out.union(ConsensusFlags::ENABLE_GC);
         }
-        if klvm.contains(KlvmFlags::ENABLE_KECCAK_OPS_OUTSIDE_GUARD) {
+        if clvk.contains(ClvkFlags::ENABLE_KECCAK_OPS_OUTSIDE_GUARD) {
             out = out.union(ConsensusFlags::ENABLE_KECCAK_OPS_OUTSIDE_GUARD);
         }
-        if klvm.contains(KlvmFlags::DISABLE_OP) {
+        if clvk.contains(ClvkFlags::DISABLE_OP) {
             out = out.union(ConsensusFlags::DISABLE_OP);
         }
-        if klvm.contains(KlvmFlags::ENABLE_SHA256_TREE) {
+        if clvk.contains(ClvkFlags::ENABLE_SHA256_TREE) {
             out = out.union(ConsensusFlags::ENABLE_SHA256_TREE);
         }
-        if klvm.contains(KlvmFlags::ENABLE_SECP_OPS) {
+        if clvk.contains(ClvkFlags::ENABLE_SECP_OPS) {
             out = out.union(ConsensusFlags::ENABLE_SECP_OPS);
         }
-        if klvm.contains(KlvmFlags::MALACHITE) {
+        if clvk.contains(ClvkFlags::MALACHITE) {
             out = out.union(ConsensusFlags::MALACHITE);
         }
-        if klvm.contains(KlvmFlags::NEW_COST_MODEL) {
+        if clvk.contains(ClvkFlags::NEW_COST_MODEL) {
             out = out.union(ConsensusFlags::NEW_COST_MODEL);
         }
-        if klvm.contains(KlvmFlags::LIMITS) {
+        if clvk.contains(ClvkFlags::LIMITS) {
             out = out.union(ConsensusFlags::LIMITS);
         }
         out
     }
 
-    /// Convert to klvmr's KlvmFlags by mapping each shared flag to its KlvmFlags counterpart.
+    /// Convert to clvkr's ClvkFlags by mapping each shared flag to its ClvkFlags counterpart.
     /// Does not rely on underlying bits being the same; consensus-only flags are ignored.
-    pub fn to_klvm_flags(self) -> klvmr::chik_dialect::KlvmFlags {
-        use klvmr::chik_dialect::KlvmFlags;
-        let mut out = KlvmFlags::empty();
+    pub fn to_clvk_flags(self) -> clvkr::chik_dialect::ClvkFlags {
+        use clvkr::chik_dialect::ClvkFlags;
+        let mut out = ClvkFlags::empty();
         if self.contains(ConsensusFlags::CANONICAL_INTS) {
-            out.insert(KlvmFlags::CANONICAL_INTS);
+            out.insert(ClvkFlags::CANONICAL_INTS);
         }
         if self.contains(ConsensusFlags::NO_UNKNOWN_OPS) {
-            out.insert(KlvmFlags::NO_UNKNOWN_OPS);
+            out.insert(ClvkFlags::NO_UNKNOWN_OPS);
         }
         if self.contains(ConsensusFlags::LIMIT_HEAP) {
-            out.insert(KlvmFlags::LIMIT_HEAP);
+            out.insert(ClvkFlags::LIMIT_HEAP);
         }
         if self.contains(ConsensusFlags::RELAXED_BLS) {
-            out.insert(KlvmFlags::RELAXED_BLS);
+            out.insert(ClvkFlags::RELAXED_BLS);
         }
         if self.contains(ConsensusFlags::LIMIT_SOFTFORK) {
-            out.insert(KlvmFlags::LIMIT_SOFTFORK);
+            out.insert(ClvkFlags::LIMIT_SOFTFORK);
         }
         if self.contains(ConsensusFlags::ENABLE_GC) {
-            out.insert(KlvmFlags::ENABLE_GC);
+            out.insert(ClvkFlags::ENABLE_GC);
         }
         if self.contains(ConsensusFlags::ENABLE_KECCAK_OPS_OUTSIDE_GUARD) {
-            out.insert(KlvmFlags::ENABLE_KECCAK_OPS_OUTSIDE_GUARD);
+            out.insert(ClvkFlags::ENABLE_KECCAK_OPS_OUTSIDE_GUARD);
         }
         if self.contains(ConsensusFlags::DISABLE_OP) {
-            out.insert(KlvmFlags::DISABLE_OP);
+            out.insert(ClvkFlags::DISABLE_OP);
         }
         if self.contains(ConsensusFlags::ENABLE_SHA256_TREE) {
-            out.insert(KlvmFlags::ENABLE_SHA256_TREE);
+            out.insert(ClvkFlags::ENABLE_SHA256_TREE);
         }
         if self.contains(ConsensusFlags::ENABLE_SECP_OPS) {
-            out.insert(KlvmFlags::ENABLE_SECP_OPS);
+            out.insert(ClvkFlags::ENABLE_SECP_OPS);
         }
         if self.contains(ConsensusFlags::MALACHITE) {
-            out.insert(KlvmFlags::MALACHITE);
+            out.insert(ClvkFlags::MALACHITE);
         }
         if self.contains(ConsensusFlags::NEW_COST_MODEL) {
-            out.insert(KlvmFlags::NEW_COST_MODEL);
+            out.insert(ClvkFlags::NEW_COST_MODEL);
         }
         if self.contains(ConsensusFlags::LIMITS) {
-            out.insert(KlvmFlags::LIMITS);
+            out.insert(ClvkFlags::LIMITS);
         }
         out
     }
 }
 
-/// Mempool-mode: klvmr MEMPOOL_MODE plus consensus stricter checking.
-pub const MEMPOOL_MODE: ConsensusFlags = ConsensusFlags::from_klvm_flags(KLVM_MEMPOOL_MODE)
+/// Mempool-mode: clvkr MEMPOOL_MODE plus consensus stricter checking.
+pub const MEMPOOL_MODE: ConsensusFlags = ConsensusFlags::from_clvk_flags(CLVK_MEMPOOL_MODE)
     .union(ConsensusFlags::NO_UNKNOWN_CONDS)
     .union(ConsensusFlags::STRICT_ARGS_COUNT)
     .union(ConsensusFlags::LIMIT_SPENDS);
@@ -194,7 +194,7 @@ impl<'py> IntoPyObject<'py> for ConsensusFlags {
 mod tests {
     use super::ConsensusFlags;
     use bitflags::Flags;
-    use klvmr::chik_dialect::KlvmFlags;
+    use clvkr::chik_dialect::ClvkFlags;
 
     /// No two flags may share any bit
     #[test]
@@ -215,65 +215,65 @@ mod tests {
         }
     }
 
-    /// Every KlvmFlags flag must exist in ConsensusFlags and have the exact same bits.
+    /// Every ClvkFlags flag must exist in ConsensusFlags and have the exact same bits.
     /// We rely on this for the python binding (Program::run_rust) which launders flags as u32.
     #[test]
-    fn klvm_flags_bits_match_consensus_flags() {
-        let klvm_flags = KlvmFlags::FLAGS;
-        for flag in klvm_flags {
+    fn clvk_flags_bits_match_consensus_flags() {
+        let clvk_flags = ClvkFlags::FLAGS;
+        for flag in clvk_flags {
             assert!(flag.is_named());
             let name = flag.name();
-            let klvm_bits = flag.value().bits();
+            let clvk_bits = flag.value().bits();
             let Some(consensus) = ConsensusFlags::from_name(name) else {
                 panic!(
-                    "KlvmFlags flag {name} has no corresponding ConsensusFlags; \
-                     every KlvmFlags flag must exist in ConsensusFlags"
+                    "ClvkFlags flag {name} has no corresponding ConsensusFlags; \
+                     every ClvkFlags flag must exist in ConsensusFlags"
                 )
             };
             assert_eq!(
-                klvm_bits,
+                clvk_bits,
                 consensus.bits(),
-                "KlvmFlags and ConsensusFlags must have the same bits for flag {:?} (name = {name}); \
+                "ClvkFlags and ConsensusFlags must have the same bits for flag {:?} (name = {name}); \
                  we rely on exact bit compatibility",
                 flag.value(),
             );
         }
     }
 
-    /// Every shared flag round-trips through from_klvm_flags / to_klvm_flags,
-    /// and consensus-only flags never leak into KlvmFlags.
+    /// Every shared flag round-trips through from_clvk_flags / to_clvk_flags,
+    /// and consensus-only flags never leak into ClvkFlags.
     #[test]
     fn shared_flags_round_trip_through_conversion() {
-        for flag in KlvmFlags::FLAGS {
+        for flag in ClvkFlags::FLAGS {
             assert!(flag.is_named());
-            let klvm = *flag.value();
+            let clvk = *flag.value();
             let name = flag.name();
 
-            let consensus = ConsensusFlags::from_klvm_flags(klvm);
+            let consensus = ConsensusFlags::from_clvk_flags(clvk);
             let expected = ConsensusFlags::from_name(name).unwrap();
             assert_eq!(
                 consensus, expected,
-                "from_klvm_flags did not convert KlvmFlags::{name} correctly"
+                "from_clvk_flags did not convert ClvkFlags::{name} correctly"
             );
 
-            let back = expected.to_klvm_flags();
+            let back = expected.to_clvk_flags();
             assert_eq!(
-                back, klvm,
-                "to_klvm_flags did not convert ConsensusFlags::{name} back to KlvmFlags::{name}"
+                back, clvk,
+                "to_clvk_flags did not convert ConsensusFlags::{name} back to ClvkFlags::{name}"
             );
         }
 
         // ConsensusFlags is a strict superset: consensus-only flags exist
-        // and must not leak into KlvmFlags via to_klvm_flags.
+        // and must not leak into ClvkFlags via to_clvk_flags.
         let consensus_only =
-            ConsensusFlags::all().difference(ConsensusFlags::from_klvm_flags(KlvmFlags::all()));
+            ConsensusFlags::all().difference(ConsensusFlags::from_clvk_flags(ClvkFlags::all()));
         assert!(
             !consensus_only.is_empty(),
-            "ConsensusFlags should be a strict superset of KlvmFlags"
+            "ConsensusFlags should be a strict superset of ClvkFlags"
         );
         assert!(
-            consensus_only.to_klvm_flags().is_empty(),
-            "consensus-only flags must not appear in to_klvm_flags output"
+            consensus_only.to_clvk_flags().is_empty(),
+            "consensus-only flags must not appear in to_clvk_flags output"
         );
     }
 }

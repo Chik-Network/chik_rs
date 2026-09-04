@@ -110,8 +110,8 @@ pub struct ConsensusConstants {
     /// Max coin amount uint(1 << 64). This allows coin amounts to fit in 64 bits. This is around 18M chik.
     max_coin_amount: u64,
 
-    /// Max block cost in klvm cost units.
-    max_block_cost_klvm: u64,
+    /// Max block cost in clvk cost units.
+    max_block_cost_clvk: u64,
 
     /// Cost per byte of generator program.
     cost_per_byte: u64,
@@ -236,7 +236,7 @@ pub const TEST_CONSTANTS: ConsensusConstants = ConsensusConstants {
     max_vdf_witness_size: 64,
     mempool_block_buffer: 10,
     max_coin_amount: u64::MAX,
-    max_block_cost_klvm: 11_000_000_000,
+    max_block_cost_clvk: 11_000_000_000,
     cost_per_byte: 12000,
     weight_proof_threshold: 2,
     blocks_cache_size: 4608 + (128 * 4),

@@ -21,7 +21,7 @@ use chik_consensus::solution_generator::solution_generator_2026 as native_soluti
 use chik_consensus::solution_generator::solution_generator_backrefs as native_solution_generator_backrefs;
 use chik_consensus::spendbundle_conditions::get_conditions_from_spendbundle;
 use chik_consensus::spendbundle_validation::{
-    get_flags_for_height_and_constants, validate_klvm_and_signature,
+    get_flags_for_height_and_constants, validate_clvk_and_signature,
 };
 use chik_protocol::{
     BlockRecord, Bytes32, ChallengeBlockInfo, ChallengeChainSubSlot, ClassgroupElement, Coin,
@@ -57,7 +57,7 @@ use chik_protocol::{
 };
 use chik_sha2::Sha256;
 use chik_traits::ChikToPython;
-use klvm_utils::tree_hash_from_bytes;
+use clvk_utils::tree_hash_from_bytes;
 use pyo3::buffer::PyBuffer;
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
@@ -76,14 +76,14 @@ use crate::run_program::{run_chik_program, serialized_length, serialized_length_
 use chik_consensus::fast_forward::fast_forward_singleton as native_ff;
 use chik_consensus::get_puzzle_and_solution::get_puzzle_and_solution_for_coin as parse_puzzle_solution;
 use chik_consensus::validation_error::ValidationErr;
-use klvmr::ChikDialect;
-use klvmr::allocator::NodePtr;
-use klvmr::cost::Cost;
-use klvmr::error::EvalErr;
-use klvmr::reduction::Reduction;
-use klvmr::run_program;
-use klvmr::serde::is_canonical_serialization;
-use klvmr::serde::{
+use clvkr::ChikDialect;
+use clvkr::allocator::NodePtr;
+use clvkr::cost::Cost;
+use clvkr::error::EvalErr;
+use clvkr::reduction::Reduction;
+use clvkr::run_program;
+use clvkr::serde::is_canonical_serialization;
+use clvkr::serde::{
     SERDE_2026_MAGIC_PREFIX, node_from_bytes, node_from_bytes_backrefs, node_to_bytes,
 };
 
@@ -198,7 +198,7 @@ pub fn get_puzzle_and_solution_for_coin<'a>(
 
     let program = node_from_bytes_backrefs(&mut allocator, program).map_err(map_pyerr)?;
     let args = node_from_bytes_backrefs(&mut allocator, args).map_err(map_pyerr)?;
-    let dialect = &ChikDialect::new(flags.to_klvm_flags());
+    let dialect = &ChikDialect::new(flags.to_clvk_flags());
 
     let (puzzle, solution) = py
         .detach(|| -> Result<(NodePtr, NodePtr), EvalErr> {
@@ -253,7 +253,7 @@ pub fn get_puzzle_and_solution_for_coin2<'a>(
     let generator =
         node_from_bytes_backrefs(&mut allocator, generator.as_ref()).map_err(map_pyerr)?;
     let args = setup_generator_args(&mut allocator, refs, flags)?;
-    let dialect = &ChikDialect::new(flags.to_klvm_flags());
+    let dialect = &ChikDialect::new(flags.to_clvk_flags());
 
     let (puzzle, solution) = py
         .detach(|| -> Result<(NodePtr, NodePtr), EvalErr> {
@@ -465,9 +465,9 @@ fn fast_forward_singleton<'p>(
 }
 
 #[pyfunction]
-#[pyo3(name = "validate_klvm_and_signature")]
+#[pyo3(name = "validate_clvk_and_signature")]
 #[allow(clippy::type_complexity)]
-pub fn py_validate_klvm_and_signature(
+pub fn py_validate_clvk_and_signature(
     py: Python<'_>,
     new_spend: &SpendBundle,
     max_cost: u64,
@@ -476,7 +476,7 @@ pub fn py_validate_klvm_and_signature(
 ) -> PyResult<(OwnedSpendBundleConditions, Vec<([u8; 32], GTElement)>, f64)> {
     let start_time = Instant::now();
     let (owned_conditions, additions) =
-        py.detach(|| validate_klvm_and_signature(new_spend, max_cost, constants, flags))?;
+        py.detach(|| validate_clvk_and_signature(new_spend, max_cost, constants, flags))?;
     let duration = start_time.elapsed();
     Ok((owned_conditions, additions, duration.as_secs_f64()))
 }
@@ -835,7 +835,7 @@ pub fn chik_rs(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // check time lock
     m.add_function(wrap_pyfunction!(py_check_time_locks, m)?)?;
 
-    // KLVM validation
+    // CLVK validation
     m.add_function(wrap_pyfunction!(py_is_canonical_serialization, m)?)?;
 
     // constants
@@ -847,7 +847,7 @@ pub fn chik_rs(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(confirm_not_included_already_hashed, m)?)?;
 
     // spendbundle validation
-    m.add_function(wrap_pyfunction!(py_validate_klvm_and_signature, m)?)?;
+    m.add_function(wrap_pyfunction!(py_validate_clvk_and_signature, m)?)?;
     m.add_function(wrap_pyfunction!(py_get_conditions_from_spendbundle, m)?)?;
     m.add_function(wrap_pyfunction!(py_get_flags_for_height_and_constants, m)?)?;
 
@@ -885,7 +885,7 @@ pub fn chik_rs(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         PyBytes::new(py, &SERDE_2026_MAGIC_PREFIX),
     )?;
 
-    // flags from klvm_rs, affecting execution
+    // flags from clvk_rs, affecting execution
     m.add_function(wrap_pyfunction!(run_chik_program, m)?)?;
     m.add("CANONICAL_INTS", ConsensusFlags::CANONICAL_INTS.bits())?;
     m.add("NO_UNKNOWN_OPS", ConsensusFlags::NO_UNKNOWN_OPS.bits())?;

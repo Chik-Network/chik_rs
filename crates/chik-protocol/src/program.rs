@@ -4,17 +4,17 @@ use crate::bytes::Bytes;
 use chik_sha2::Sha256;
 use chik_traits::Streamable;
 use chik_traits::chik_error::{Error, Result};
-use klvm_traits::{FromKlvm, FromKlvmError, ToKlvm, ToKlvmError};
+use clvk_traits::{FromClvk, FromClvkError, ToClvk, ToClvkError};
 #[cfg(feature = "py-bindings")]
-use klvmr::SExp;
-use klvmr::cost::Cost;
-use klvmr::error::EvalErr;
-use klvmr::run_program;
-use klvmr::serde::{
+use clvkr::SExp;
+use clvkr::cost::Cost;
+use clvkr::error::EvalErr;
+use clvkr::run_program;
+use clvkr::serde::{
     node_from_bytes, node_from_bytes_backrefs, node_to_bytes, serialized_length_from_bytes,
     serialized_length_from_bytes_trusted,
 };
-use klvmr::{Allocator, ChikDialect, KlvmFlags, NodePtr};
+use clvkr::{Allocator, ChikDialect, ClvkFlags, NodePtr};
 #[cfg(feature = "py-bindings")]
 use pyo3::prelude::*;
 #[cfg(feature = "py-bindings")]
@@ -25,7 +25,7 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 #[cfg(feature = "py-bindings")]
-use klvm_utils::CurriedProgram;
+use clvk_utils::CurriedProgram;
 
 #[cfg_attr(
     feature = "py-bindings",
@@ -71,17 +71,17 @@ impl Program {
         self.0.into_inner()
     }
 
-    pub fn run<A: ToKlvm<Allocator>>(
+    pub fn run<A: ToClvk<Allocator>>(
         &self,
         a: &mut Allocator,
-        flags: KlvmFlags,
+        flags: ClvkFlags,
         max_cost: Cost,
         arg: &A,
     ) -> std::result::Result<(Cost, NodePtr), EvalErr> {
-        let arg = arg.to_klvm(a).map_err(|_| {
+        let arg = arg.to_clvk(a).map_err(|_| {
             EvalErr::InvalidAllocArg(
                 a.nil(),
-                "failed to convert argument to KLVM objects".to_string(),
+                "failed to convert argument to CLVK objects".to_string(),
             )
         })?;
         let program =
@@ -139,7 +139,7 @@ impl Deref for Program {
 #[cfg(feature = "arbitrary")]
 impl<'a> arbitrary::Arbitrary<'a> for Program {
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-        // generate an arbitrary KLVM structure. Not likely a valid program.
+        // generate an arbitrary CLVK structure. Not likely a valid program.
         let mut items_left = 1;
         let mut total_items = 0;
         let mut buf = Vec::<u8>::with_capacity(200);
@@ -178,12 +178,12 @@ fn map_pyerr(err: EvalErr) -> PyErr {
 }
 
 // TODO: this conversion function should probably be converted to a type holding
-// the PyAny object implementing the ToKlvm trait. That way, the Program::to()
+// the PyAny object implementing the ToClvk trait. That way, the Program::to()
 // function could turn a python structure directly into bytes, without taking
-// the detour via Allocator. propagating python errors through ToKlvmError is a
+// the detour via Allocator. propagating python errors through ToClvkError is a
 // bit tricky though
 #[cfg(feature = "py-bindings")]
-fn klvm_convert(a: &mut Allocator, o: &Bound<'_, PyAny>) -> PyResult<NodePtr> {
+fn clvk_convert(a: &mut Allocator, o: &Bound<'_, PyAny>) -> PyResult<NodePtr> {
     // None
     if o.is_none() {
         Ok(a.nil())
@@ -196,14 +196,14 @@ fn klvm_convert(a: &mut Allocator, o: &Bound<'_, PyAny>) -> PyResult<NodePtr> {
         a.new_atom(text.as_bytes())
             .map_err(|e| PyMemoryError::new_err(e.to_string()))
     // int
-    } else if let Ok(val) = o.extract::<klvmr::number::Number>() {
+    } else if let Ok(val) = o.extract::<clvkr::number::Number>() {
         a.new_number(val)
             .map_err(|e| PyMemoryError::new_err(e.to_string()))
     // Tuple (SExp-like)
     } else if let Ok(pair) = o.cast::<PyTuple>() {
         if pair.len() == 2 {
-            let left = klvm_convert(a, &pair.get_item(0)?)?;
-            let right = klvm_convert(a, &pair.get_item(1)?)?;
+            let left = clvk_convert(a, &pair.get_item(0)?)?;
+            let right = clvk_convert(a, &pair.get_item(1)?)?;
             a.new_pair(left, right)
                 .map_err(|e| PyMemoryError::new_err(e.to_string()))
         } else {
@@ -220,21 +220,21 @@ fn klvm_convert(a: &mut Allocator, o: &Bound<'_, PyAny>) -> PyResult<NodePtr> {
         }
         let mut ret = a.nil();
         for py_item in rev.into_iter().rev() {
-            let item = klvm_convert(a, &py_item)?;
+            let item = clvk_convert(a, &py_item)?;
             ret = a
                 .new_pair(item, ret)
                 .map_err(|e| PyMemoryError::new_err(e.to_string()))?;
         }
         Ok(ret)
-    // SExp (such as klvm.SExp)
+    // SExp (such as clvk.SExp)
     } else if let (Ok(atom), Ok(pair)) = (o.getattr("atom"), o.getattr("pair")) {
         if atom.is_none() {
             if pair.is_none() {
                 Err(PyTypeError::new_err(format!("invalid SExp item {o}")))
             } else {
                 let pair = pair.cast::<PyTuple>()?;
-                let left = klvm_convert(a, &pair.get_item(0)?)?;
-                let right = klvm_convert(a, &pair.get_item(1)?)?;
+                let left = clvk_convert(a, &pair.get_item(0)?)?;
+                let right = clvk_convert(a, &pair.get_item(1)?)?;
                 a.new_pair(left, right)
                     .map_err(|e| PyMemoryError::new_err(e.to_string()))
             }
@@ -262,10 +262,10 @@ fn klvm_convert(a: &mut Allocator, o: &Bound<'_, PyAny>) -> PyResult<NodePtr> {
 }
 
 #[cfg(feature = "py-bindings")]
-fn klvm_serialize(a: &mut Allocator, o: &Bound<'_, PyAny>) -> PyResult<NodePtr> {
+fn clvk_serialize(a: &mut Allocator, o: &Bound<'_, PyAny>) -> PyResult<NodePtr> {
     /*
     When passing arguments to run(), there's some special treatment, before falling
-    back on the regular python -> KLVM conversion (implemented by klvm_convert
+    back on the regular python -> CLVK conversion (implemented by clvk_convert
     above). This function mimics the _serialize() function in python:
 
        def _serialize(node: object) -> bytes:
@@ -293,7 +293,7 @@ fn klvm_serialize(a: &mut Allocator, o: &Bound<'_, PyAny>) -> PyResult<NodePtr> 
         }
         let mut ret = a.nil();
         for py_item in rev.into_iter().rev() {
-            let item = klvm_serialize(a, &py_item)?;
+            let item = clvk_serialize(a, &py_item)?;
             ret = a
                 .new_pair(item, ret)
                 .map_err(|e| PyMemoryError::new_err(e.to_string()))?;
@@ -303,7 +303,7 @@ fn klvm_serialize(a: &mut Allocator, o: &Bound<'_, PyAny>) -> PyResult<NodePtr> 
     } else if let Ok(prg) = o.extract::<Program>() {
         node_from_bytes_backrefs(a, prg.0.as_slice()).map_err(map_pyerr)
     } else {
-        klvm_convert(a, o)
+        clvk_convert(a, o)
     }
 }
 
@@ -321,13 +321,13 @@ impl Program {
     #[pyo3(name = "to")]
     fn py_to(args: &Bound<'_, PyAny>) -> PyResult<Program> {
         let mut a = Allocator::new_limited(500_000_000);
-        let klvm = klvm_convert(&mut a, args)?;
-        Program::from_klvm(&a, klvm)
+        let clvk = clvk_convert(&mut a, args)?;
+        Program::from_clvk(&a, clvk)
             .map_err(|error| PyErr::new::<PyTypeError, _>(error.to_string()))
     }
 
     fn get_tree_hash(&self) -> crate::Bytes32 {
-        klvm_utils::tree_hash_from_bytes(self.0.as_ref())
+        clvk_utils::tree_hash_from_bytes(self.0.as_ref())
             .unwrap()
             .into()
     }
@@ -342,7 +342,7 @@ impl Program {
         Self::from_bytes(hex::decode(s).map_err(|_| Error::InvalidString)?.as_slice())
     }
 
-    // This function takes KlvmFlags, not ConsensusFlags. chik-consensus depends
+    // This function takes ClvkFlags, not ConsensusFlags. chik-consensus depends
     // on chik-protocol, so chik-protocol can't depend on chik-consensus. The
     // ideal solution to this would probably be to remove the *member funtion*
     // run(), and replace it with a free function run_chik_program().
@@ -356,25 +356,25 @@ impl Program {
         flags: u32,
         args: &Bound<'_, PyAny>,
     ) -> PyResult<(u64, LazyNode)> {
-        use klvmr::reduction::Response;
+        use clvkr::reduction::Response;
 
         let mut a = Allocator::new_limited(500_000_000);
         // The python behavior here is a bit messy, and is best not emulated
         // on the rust side. We must be able to pass a Program as an argument,
-        // and it being treated as the KLVM structure it represents. In python's
+        // and it being treated as the CLVK structure it represents. In python's
         // SerializedProgram, we have a hack where we interpret the first
         // "layer" of SerializedProgram, or lists of SerializedProgram this way.
-        // But if we encounter an Option or tuple, we defer to the klvm
+        // But if we encounter an Option or tuple, we defer to the clvk
         // wheel's conversion function to SExp. This level does not have any
         // special treatment for SerializedProgram (as that would cause a
         // circular dependency).
-        let klvm_args = klvm_serialize(&mut a, args)?;
+        let clvk_args = clvk_serialize(&mut a, args)?;
 
         let r: Response = (|| -> PyResult<Response> {
             let program = node_from_bytes_backrefs(&mut a, self.0.as_ref()).map_err(map_pyerr)?;
-            let dialect = ChikDialect::new(KlvmFlags::from_bits_truncate(flags));
+            let dialect = ChikDialect::new(ClvkFlags::from_bits_truncate(flags));
 
-            Ok(py.detach(|| run_program(&mut a, &dialect, program, klvm_args, max_cost)))
+            Ok(py.detach(|| run_program(&mut a, &dialect, program, clvk_args, max_cost)))
         })()?;
         match r {
             Ok(reduction) => {
@@ -391,7 +391,7 @@ impl Program {
     fn uncurry_rust(&self) -> PyResult<(LazyNode, LazyNode)> {
         let mut a = Allocator::new_limited(500_000_000);
         let prg = node_from_bytes_backrefs(&mut a, self.0.as_ref()).map_err(map_pyerr)?;
-        let Ok(uncurried) = CurriedProgram::<NodePtr, NodePtr>::from_klvm(&a, prg) else {
+        let Ok(uncurried) = CurriedProgram::<NodePtr, NodePtr>::from_clvk(&a, prg) else {
             let a = Rc::new(a);
             let prg = LazyNode::new(a.clone(), prg);
             let ret = a.nil();
@@ -409,9 +409,9 @@ impl Program {
             // (c . ((q . <arg1>) . (<rest> . ())))
             let (_, ((_, arg), (rest, ()))) =
                 <(
-                    klvm_traits::MatchByte<4>,
-                    (klvm_traits::match_quote!(NodePtr), (NodePtr, ())),
-                ) as FromKlvm<Allocator>>::from_klvm(&a, args)
+                    clvk_traits::MatchByte<4>,
+                    (clvk_traits::match_quote!(NodePtr), (NodePtr, ())),
+                ) as FromClvk<Allocator>>::from_clvk(&a, args)
                 .map_err(|error| PyErr::new::<PyTypeError, _>(error.to_string()))?;
             curried_args.push(arg);
             args = rest;
@@ -480,28 +480,28 @@ impl FromJsonDict for Program {
         let len =
             serialized_length_from_bytes(bytes.as_slice()).map_err(|_e| Error::EndOfBuffer)?;
         if len as usize != bytes.len() {
-            // If the bytes in the JSON string is not a valid KLVM
+            // If the bytes in the JSON string is not a valid CLVK
             // serialization, or if it has garbage at the end of the string,
             // reject it
-            Err(Error::InvalidKlvm)?;
+            Err(Error::InvalidClvk)?;
         }
         Ok(Self(bytes))
     }
 }
 
-impl FromKlvm<Allocator> for Program {
-    fn from_klvm(a: &Allocator, node: NodePtr) -> std::result::Result<Self, FromKlvmError> {
+impl FromClvk<Allocator> for Program {
+    fn from_clvk(a: &Allocator, node: NodePtr) -> std::result::Result<Self, FromClvkError> {
         Ok(Self(
             node_to_bytes(a, node)
-                .map_err(|error| FromKlvmError::Custom(error.to_string()))?
+                .map_err(|error| FromClvkError::Custom(error.to_string()))?
                 .into(),
         ))
     }
 }
 
-impl ToKlvm<Allocator> for Program {
-    fn to_klvm(&self, a: &mut Allocator) -> std::result::Result<NodePtr, ToKlvmError> {
-        node_from_bytes(a, self.0.as_ref()).map_err(|error| ToKlvmError::Custom(error.to_string()))
+impl ToClvk<Allocator> for Program {
+    fn to_clvk(&self, a: &mut Allocator) -> std::result::Result<NodePtr, ToClvkError> {
+        node_from_bytes(a, self.0.as_ref()).map_err(|error| ToClvkError::Custom(error.to_string()))
     }
 }
 
@@ -516,9 +516,9 @@ mod tests {
         let expected_bytes = hex::decode(expected).unwrap();
 
         let ptr = node_from_bytes(a, &expected_bytes).unwrap();
-        let program = Program::from_klvm(a, ptr).unwrap();
+        let program = Program::from_clvk(a, ptr).unwrap();
 
-        let round_trip = program.to_klvm(a).unwrap();
+        let round_trip = program.to_clvk(a).unwrap();
         assert_eq!(expected, hex::encode(node_to_bytes(a, round_trip).unwrap()));
     }
 
@@ -530,7 +530,7 @@ mod tests {
         let prg = Program::from_bytes(&hex::decode("ff10ff02ff0580").expect("hex::decode"))
             .expect("from_bytes");
         let (cost, result) = prg
-            .run(a, KlvmFlags::empty(), 1000, &[1300, 37])
+            .run(a, ClvkFlags::empty(), 1000, &[1300, 37])
             .expect("run");
         assert_eq!(cost, 869);
         assert_eq!(a.number(result), 1337.into());

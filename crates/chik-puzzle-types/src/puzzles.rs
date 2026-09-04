@@ -9,9 +9,9 @@ pub mod standard;
 #[macro_export]
 macro_rules! assert_puzzle_hash {
     ($puzzle:ident => $puzzle_hash:ident) => {
-        let mut a = klvmr::Allocator::new();
-        let ptr = klvmr::serde::node_from_bytes(&mut a, &$puzzle).unwrap();
-        let hash = klvm_utils::tree_hash(&mut a, ptr);
+        let mut a = clvkr::Allocator::new();
+        let ptr = clvkr::serde::node_from_bytes(&mut a, &$puzzle).unwrap();
+        let hash = clvk_utils::tree_hash(&mut a, ptr);
         assert_eq!($puzzle_hash, hash);
     };
 }

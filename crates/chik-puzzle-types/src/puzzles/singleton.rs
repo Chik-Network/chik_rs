@@ -1,13 +1,13 @@
 use chik_protocol::Bytes32;
 use chik_puzzles::{SINGLETON_LAUNCHER_HASH, SINGLETON_TOP_LAYER_V1_1_HASH};
-use klvm_traits::{FromKlvm, ToKlvm};
-use klvm_utils::{CurriedProgram, ToTreeHash, TreeHash};
+use clvk_traits::{FromClvk, ToClvk};
+use clvk_utils::{CurriedProgram, ToTreeHash, TreeHash};
 
 use crate::Proof;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(curry)]
+#[clvk(curry)]
 pub struct SingletonArgs<I> {
     pub singleton_struct: SingletonStruct,
     pub inner_puzzle: I,
@@ -32,13 +32,13 @@ impl SingletonArgs<TreeHash> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(list)]
+#[clvk(list)]
 pub struct SingletonStruct {
     pub mod_hash: Bytes32,
     pub launcher_id: Bytes32,
-    #[klvm(rest)]
+    #[clvk(rest)]
     pub launcher_puzzle_hash: Bytes32,
 }
 
@@ -52,18 +52,18 @@ impl SingletonStruct {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(list)]
+#[clvk(list)]
 pub struct SingletonSolution<I> {
     pub lineage_proof: Proof,
     pub amount: u64,
     pub inner_solution: I,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(list)]
+#[clvk(list)]
 pub struct LauncherSolution<T> {
     pub singleton_puzzle_hash: Bytes32,
     pub amount: u64,

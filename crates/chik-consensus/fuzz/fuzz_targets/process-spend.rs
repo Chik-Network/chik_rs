@@ -4,10 +4,10 @@ use chik_consensus::conditions::{
 };
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::flags::ConsensusFlags;
-use klvm_fuzzing::ArbitraryKlvmTree;
+use clvk_fuzzing::ArbitraryClvkTree;
 use libfuzzer_sys::fuzz_target;
 
-fuzz_target!(|args: (ArbitraryKlvmTree, [u8; 32], [u8; 32], u64)| {
+fuzz_target!(|args: (ArbitraryClvkTree, [u8; 32], [u8; 32], u64)| {
     let (conds, parent_id, puzzle_hash, amount) = args;
     let mut a = conds.allocator;
     let mut ret = SpendBundleConditions::default();
@@ -33,7 +33,7 @@ fuzz_target!(|args: (ArbitraryKlvmTree, [u8; 32], [u8; 32], u64)| {
             conds.tree,
             *flags,
             &mut cost_left,
-            0, // klvm_cost
+            0, // clvk_cost
             0, // atom_count
             0, // pair_count
             &TEST_CONSTANTS,

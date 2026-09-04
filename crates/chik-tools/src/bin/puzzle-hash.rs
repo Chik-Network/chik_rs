@@ -1,8 +1,8 @@
 use chik_protocol::SpendBundle;
 use chik_traits::streamable::Streamable;
 use clap::Parser;
-use klvmr::allocator::{Allocator, NodeVisitor};
-use klvmr::serde::node_from_bytes_backrefs;
+use clvkr::allocator::{Allocator, NodeVisitor};
+use clvkr::serde::node_from_bytes_backrefs;
 use std::collections::HashMap;
 use std::fs::read;
 

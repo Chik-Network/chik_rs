@@ -13,16 +13,16 @@ workspace = true
 
 [dependencies]
 libfuzzer-sys = { workspace = true }
-klvmr = { workspace = true }
-klvm-utils = { workspace = true }
-klvm-traits = { workspace = true }
+clvkr = { workspace = true }
+clvk-utils = { workspace = true }
+clvk-traits = { workspace = true }
 chik-protocol = { workspace = true, features = ["arbitrary"] }
 chik-sha2 = { workspace = true }
 chik-traits = { workspace = true }
 chik-consensus = { workspace = true }
 chik-bls = { workspace = true }
 hex-literal = { workspace = true }
-klvm-fuzzing = { workspace = true }
+clvk-fuzzing = { workspace = true }
 
 [[bin]]
 name = "puzzle-coin-solution"

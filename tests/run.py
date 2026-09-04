@@ -4,7 +4,7 @@ from typing import Optional
 from chik_rs import run_chik_program, LazyNode
 
 
-def run_klvm(fn: str, env: Optional[str] = None) -> tuple[int, LazyNode]:
+def run_clvk(fn: str, env: Optional[str] = None) -> tuple[int, LazyNode]:
 
     program_data = bytes.fromhex(open(fn, "r").read())
     if env is not None:
@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     try:
         start = time()
-        cost, result = run_klvm(sys.argv[1], sys.argv[2])
+        cost, result = run_clvk(sys.argv[1], sys.argv[2])
         duration = time() - start
         print(f"cost: {cost}")
         print(f"execution time: {duration:.2f}s")

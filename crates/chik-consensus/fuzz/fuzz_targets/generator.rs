@@ -6,7 +6,7 @@ use chik_consensus::{
     run_block_generator::get_coinspends_for_trusted_block,
 };
 use chik_protocol::{CoinSpend, Program, SpendBundle};
-use klvmr::{
+use clvkr::{
     Allocator,
     serde::{node_from_bytes_backrefs, node_to_bytes},
 };

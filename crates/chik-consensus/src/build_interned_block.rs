@@ -4,8 +4,8 @@ use crate::generator_cost::interned_vbytes;
 use crate::serde_2026::SERDE_2026_COMPRESSION_LEVEL;
 use chik_bls::Signature;
 use chik_protocol::SpendBundle;
-use klvmr::allocator::{Allocator, NodePtr};
-use klvmr::serde::{intern_tree, node_from_bytes_backrefs, serialize_2026};
+use clvkr::allocator::{Allocator, NodePtr};
+use clvkr::serde::{intern_tree, node_from_bytes_backrefs, serialize_2026};
 use std::borrow::Borrow;
 
 #[cfg(feature = "py-bindings")]
@@ -99,7 +99,7 @@ impl InternedBlockBuilder {
         // Its format is as follows:
         // (q . ( ( ( parent-id puzzle-reveal amount solution ) ... ) ) )
 
-        Self::new_with(constants.cost_per_byte, constants.max_block_cost_klvm)
+        Self::new_with(constants.cost_per_byte, constants.max_block_cost_clvk)
     }
 
     /// Compute the interned vbyte cost of a single spend in isolation.
@@ -127,7 +127,7 @@ impl InternedBlockBuilder {
     }
 
     /// add a batch of spend bundles to the generator. The cost for each bundle
-    /// must be *only* the KLVM execution cost + the cost of the conditions.
+    /// must be *only* the CLVK execution cost + the cost of the conditions.
     /// It must not include the byte cost of the bundle. The byte cost is
     /// unpredictible as the generator is being
     /// built. The true byte cost is computed by this function.
@@ -467,7 +467,7 @@ mod tests {
                 let (a, conds) = run_block_generator2::<&[u8], _>(
                     generator.as_slice(),
                     [],
-                    TEST_CONSTANTS.max_block_cost_klvm,
+                    TEST_CONSTANTS.max_block_cost_clvk,
                     MEMPOOL_MODE | ConsensusFlags::INTERNED_GENERATOR,
                     &signature,
                     None,

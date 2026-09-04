@@ -2,8 +2,8 @@
 use libfuzzer_sys::{arbitrary, fuzz_target};
 
 use chik_consensus::messages::SpendId;
-use klvm_fuzzing::make_list;
-use klvmr::allocator::Allocator;
+use clvk_fuzzing::make_list;
+use clvkr::allocator::Allocator;
 
 fuzz_target!(|data: &[u8]| {
     let mut a = Allocator::new();

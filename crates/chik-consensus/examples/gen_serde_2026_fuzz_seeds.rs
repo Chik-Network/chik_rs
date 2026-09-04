@@ -20,9 +20,9 @@
 
 use chik_consensus::generator_cost::interned_vbytes;
 use chik_consensus::serde_2026::SERDE_2026_COMPRESSION_LEVEL;
-use klvm_fuzzing::make_tree;
-use klvmr::Allocator;
-use klvmr::serde::{SERDE_2026_MAGIC_PREFIX, intern_tree, serialize_2026};
+use clvk_fuzzing::make_tree;
+use clvkr::Allocator;
+use clvkr::serde::{SERDE_2026_MAGIC_PREFIX, intern_tree, serialize_2026};
 use rand::rngs::SmallRng;
 use rand::{Rng, RngCore, SeedableRng};
 use std::fs;

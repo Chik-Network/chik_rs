@@ -9,5 +9,5 @@ pub use chik_serde as serde;
 pub use chik_sha2 as sha2;
 pub use chik_ssl as ssl;
 pub use chik_traits as traits;
-pub use klvm_traits;
-pub use klvm_utils;
+pub use clvk_traits;
+pub use clvk_utils;

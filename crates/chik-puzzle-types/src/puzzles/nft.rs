@@ -4,14 +4,14 @@ use chik_puzzles::{
     NFT_OWNERSHIP_TRANSFER_PROGRAM_ONE_WAY_CLAIM_WITH_ROYALTIES_HASH, NFT_STATE_LAYER_HASH,
     SINGLETON_LAUNCHER_HASH,
 };
-use klvm_traits::{FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder, Raw, ToKlvm, ToKlvmError};
-use klvm_utils::{CurriedProgram, ToTreeHash, TreeHash};
+use clvk_traits::{ClvkDecoder, ClvkEncoder, FromClvk, FromClvkError, Raw, ToClvk, ToClvkError};
+use clvk_utils::{CurriedProgram, ToTreeHash, TreeHash};
 
 use crate::singleton::SingletonStruct;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(curry)]
+#[clvk(curry)]
 pub struct NftIntermediateLauncherArgs {
     pub launcher_puzzle_hash: Bytes32,
     pub mint_number: usize,
@@ -40,9 +40,9 @@ impl NftIntermediateLauncherArgs {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(curry)]
+#[clvk(curry)]
 pub struct NftStateLayerArgs<I, M> {
     pub mod_hash: Bytes32,
     pub metadata: M,
@@ -76,16 +76,16 @@ impl NftStateLayerArgs<TreeHash, TreeHash> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(list)]
+#[clvk(list)]
 pub struct NftStateLayerSolution<I> {
     pub inner_solution: I,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(curry)]
+#[clvk(curry)]
 pub struct NftOwnershipLayerArgs<I, P> {
     pub mod_hash: Bytes32,
     pub current_owner: Option<Bytes32>,
@@ -123,16 +123,16 @@ impl NftOwnershipLayerArgs<TreeHash, TreeHash> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(list)]
+#[clvk(list)]
 pub struct NftOwnershipLayerSolution<I> {
     pub inner_solution: I,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(curry)]
+#[clvk(curry)]
 pub struct NftRoyaltyTransferPuzzleArgs {
     pub singleton_struct: SingletonStruct,
     pub royalty_puzzle_hash: Bytes32,
@@ -201,43 +201,43 @@ impl Default for NftMetadata {
     }
 }
 
-impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for NftMetadata {
-    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
-        let items: Vec<(String, Raw<N>)> = FromKlvm::from_klvm(decoder, node)?;
+impl<N, D: ClvkDecoder<Node = N>> FromClvk<D> for NftMetadata {
+    fn from_clvk(decoder: &D, node: N) -> Result<Self, FromClvkError> {
+        let items: Vec<(String, Raw<N>)> = FromClvk::from_clvk(decoder, node)?;
         let mut metadata = Self::default();
 
         for (key, value_ptr) in items {
             match key.as_str() {
                 "sn" => {
                     metadata.edition_number =
-                        FromKlvm::from_klvm(decoder, value_ptr.0).unwrap_or(1);
+                        FromClvk::from_clvk(decoder, value_ptr.0).unwrap_or(1);
                 }
                 "st" => {
-                    metadata.edition_total = FromKlvm::from_klvm(decoder, value_ptr.0).unwrap_or(1);
+                    metadata.edition_total = FromClvk::from_clvk(decoder, value_ptr.0).unwrap_or(1);
                 }
                 "u" => {
                     metadata.data_uris =
-                        FromKlvm::from_klvm(decoder, value_ptr.0).unwrap_or_default();
+                        FromClvk::from_clvk(decoder, value_ptr.0).unwrap_or_default();
                 }
                 "h" => {
                     metadata.data_hash =
-                        FromKlvm::from_klvm(decoder, value_ptr.0).unwrap_or_default();
+                        FromClvk::from_clvk(decoder, value_ptr.0).unwrap_or_default();
                 }
                 "mu" => {
                     metadata.metadata_uris =
-                        FromKlvm::from_klvm(decoder, value_ptr.0).unwrap_or_default();
+                        FromClvk::from_clvk(decoder, value_ptr.0).unwrap_or_default();
                 }
                 "mh" => {
                     metadata.metadata_hash =
-                        FromKlvm::from_klvm(decoder, value_ptr.0).unwrap_or_default();
+                        FromClvk::from_clvk(decoder, value_ptr.0).unwrap_or_default();
                 }
                 "lu" => {
                     metadata.license_uris =
-                        FromKlvm::from_klvm(decoder, value_ptr.0).unwrap_or_default();
+                        FromClvk::from_clvk(decoder, value_ptr.0).unwrap_or_default();
                 }
                 "lh" => {
                     metadata.license_hash =
-                        FromKlvm::from_klvm(decoder, value_ptr.0).unwrap_or_default();
+                        FromClvk::from_clvk(decoder, value_ptr.0).unwrap_or_default();
                 }
                 _ => (),
             }
@@ -247,47 +247,47 @@ impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for NftMetadata {
     }
 }
 
-impl<N, E: KlvmEncoder<Node = N>> ToKlvm<E> for NftMetadata {
-    fn to_klvm(&self, encoder: &mut E) -> Result<N, ToKlvmError> {
+impl<N, E: ClvkEncoder<Node = N>> ToClvk<E> for NftMetadata {
+    fn to_clvk(&self, encoder: &mut E) -> Result<N, ToClvkError> {
         let mut items: Vec<(&str, Raw<N>)> = Vec::new();
 
         if !self.data_uris.is_empty() {
-            items.push(("u", Raw(self.data_uris.to_klvm(encoder)?)));
+            items.push(("u", Raw(self.data_uris.to_clvk(encoder)?)));
         }
 
         if let Some(hash) = self.data_hash {
-            items.push(("h", Raw(hash.to_klvm(encoder)?)));
+            items.push(("h", Raw(hash.to_clvk(encoder)?)));
         }
 
         if !self.metadata_uris.is_empty() {
-            items.push(("mu", Raw(self.metadata_uris.to_klvm(encoder)?)));
+            items.push(("mu", Raw(self.metadata_uris.to_clvk(encoder)?)));
         }
 
         if let Some(hash) = self.metadata_hash {
-            items.push(("mh", Raw(hash.to_klvm(encoder)?)));
+            items.push(("mh", Raw(hash.to_clvk(encoder)?)));
         }
 
         if !self.license_uris.is_empty() {
-            items.push(("lu", Raw(self.license_uris.to_klvm(encoder)?)));
+            items.push(("lu", Raw(self.license_uris.to_clvk(encoder)?)));
         }
 
         if let Some(hash) = self.license_hash {
-            items.push(("lh", Raw(hash.to_klvm(encoder)?)));
+            items.push(("lh", Raw(hash.to_clvk(encoder)?)));
         }
 
         items.extend(vec![
-            ("sn", Raw(self.edition_number.to_klvm(encoder)?)),
-            ("st", Raw(self.edition_total.to_klvm(encoder)?)),
+            ("sn", Raw(self.edition_number.to_clvk(encoder)?)),
+            ("st", Raw(self.edition_total.to_clvk(encoder)?)),
         ]);
 
-        items.to_klvm(encoder)
+        items.to_clvk(encoder)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use klvm_traits::klvm_list;
-    use klvmr::Allocator;
+    use clvk_traits::clvk_list;
+    use clvkr::Allocator;
 
     use super::*;
 
@@ -306,8 +306,8 @@ mod tests {
             license_hash: Some(Bytes32::default()),
         };
 
-        let encoded = metadata.to_klvm(&mut allocator).unwrap();
-        let decoded = NftMetadata::from_klvm(&allocator, encoded).unwrap();
+        let encoded = metadata.to_clvk(&mut allocator).unwrap();
+        let decoded = NftMetadata::from_clvk(&allocator, encoded).unwrap();
         assert_eq!(metadata, decoded);
     }
 
@@ -315,7 +315,7 @@ mod tests {
     fn test_malformed_nft_metadata() {
         let mut allocator = Allocator::new();
 
-        let metadata = klvm_list!(
+        let metadata = clvk_list!(
             ("sn", (1, 2)),
             ("st", (1, 2)),
             ("u", 1),
@@ -326,8 +326,8 @@ mod tests {
             ("lh", 6),
         );
 
-        let encoded = metadata.to_klvm(&mut allocator).unwrap();
-        let decoded = NftMetadata::from_klvm(&allocator, encoded).unwrap();
+        let encoded = metadata.to_clvk(&mut allocator).unwrap();
+        let decoded = NftMetadata::from_clvk(&allocator, encoded).unwrap();
         assert_eq!(NftMetadata::default(), decoded);
     }
 }

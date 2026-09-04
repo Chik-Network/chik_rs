@@ -16,16 +16,16 @@ use crate::validation_error::{ErrorCode, ValidationErr, first};
 use chik_bls::{BlsCache, Signature};
 use chik_protocol::{BytesImpl, Coin, CoinSpend, Program};
 use chik_puzzles::{CHIKLISP_DESERIALISATION, ROM_BOOTSTRAP_GENERATOR};
-use klvm_traits::FromKlvm;
-use klvm_traits::MatchByte;
-use klvm_utils::{TreeCache, tree_hash_cached};
-use klvmr::SExp;
-use klvmr::allocator::{Allocator, NodePtr};
-use klvmr::chik_dialect::ChikDialect;
-use klvmr::cost::Cost;
-use klvmr::reduction::Reduction;
-use klvmr::run_program::run_program;
-use klvmr::serde::{InternedTree, intern_tree_limited, node_from_bytes, node_from_bytes_backrefs};
+use clvk_traits::FromClvk;
+use clvk_traits::MatchByte;
+use clvk_utils::{TreeCache, tree_hash_cached};
+use clvkr::SExp;
+use clvkr::allocator::{Allocator, NodePtr};
+use clvkr::chik_dialect::ChikDialect;
+use clvkr::cost::Cost;
+use clvkr::reduction::Reduction;
+use clvkr::run_program::run_program;
+use clvkr::serde::{InternedTree, intern_tree_limited, node_from_bytes, node_from_bytes_backrefs};
 
 pub fn subtract_cost(cost_left: &mut Cost, subtract: Cost) -> Result<(), ValidationErr> {
     if subtract > *cost_left {
@@ -54,7 +54,7 @@ where
         }
         return Ok(a.nil());
     }
-    let klvm_deserializer = node_from_bytes(a, &CHIKLISP_DESERIALISATION)?;
+    let clvk_deserializer = node_from_bytes(a, &CHIKLISP_DESERIALISATION)?;
 
     // iterate in reverse order since we're building a linked list from
     // the tail
@@ -67,7 +67,7 @@ where
     // the first argument to the generator is the serializer, followed by a list
     // of the blocks it requested.
     let args = a.new_pair(blocks, NodePtr::NIL)?;
-    Ok(a.new_pair(klvm_deserializer, args)?)
+    Ok(a.new_pair(clvk_deserializer, args)?)
 }
 
 /// Runs the generator ROM and passes in the program (transactions generator).
@@ -122,11 +122,11 @@ where
     let args = a.new_pair(args, a.nil())?;
     let args = a.new_pair(program, args)?;
 
-    let dialect = ChikDialect::new(flags.to_klvm_flags());
-    let Reduction(klvm_cost, generator_output) =
+    let dialect = ChikDialect::new(flags.to_clvk_flags());
+    let Reduction(clvk_cost, generator_output) =
         run_program(&mut a, &dialect, rom_generator, args, cost_left)?;
 
-    subtract_cost(&mut cost_left, klvm_cost)?;
+    subtract_cost(&mut cost_left, clvk_cost)?;
 
     // we pass in what's left of max_cost here, to fail early in case the
     // cost of a condition brings us over the cost limit
@@ -134,14 +134,14 @@ where
         &a,
         generator_output,
         cost_left,
-        0, // klvm_cost is not known per puzzle pre-hard fork
+        0, // clvk_cost is not known per puzzle pre-hard fork
         flags,
         signature,
         bls_cache,
         constants,
     )?;
     result.cost += max_cost - cost_left;
-    result.execution_cost = klvm_cost;
+    result.execution_cost = clvk_cost;
     Ok((a, result))
 }
 
@@ -198,15 +198,15 @@ pub fn check_generator_node(
         return Ok(());
     }
     // this expects an atom with a single byte value of 1 as the first value in the list
-    match <(MatchByte<1>, NodePtr)>::from_klvm(a, program) {
+    match <(MatchByte<1>, NodePtr)>::from_clvk(a, program) {
         Err(..) => Err(ValidationErr::Err(ErrorCode::ComplexGeneratorReceived)),
         _ => Ok(()),
     }
 }
 
 /// This has the same behavior as run_block_generator() but implements the
-/// generator ROM in rust instead of using the KLVM implementation.
-/// it is not backwards compatible in the KLVM cost computation (in this version
+/// generator ROM in rust instead of using the CLVK implementation.
+/// it is not backwards compatible in the CLVK cost computation (in this version
 /// you only pay cost for the generator, the puzzles and the conditions).
 /// it also does not apply the stack depth or object allocation limits the same,
 /// as each puzzle run in its own environment.
@@ -254,16 +254,16 @@ where
     check_generator_node(&a, program, flags)?;
 
     let args = setup_generator_args(&mut a, block_refs, flags)?;
-    let dialect = ChikDialect::new(flags.to_klvm_flags());
+    let dialect = ChikDialect::new(flags.to_clvk_flags());
 
-    let Reduction(klvm_cost, all_spends) = run_program(&mut a, &dialect, program, args, cost_left)?;
+    let Reduction(clvk_cost, all_spends) = run_program(&mut a, &dialect, program, args, cost_left)?;
 
-    subtract_cost(&mut cost_left, klvm_cost)?;
+    subtract_cost(&mut cost_left, clvk_cost)?;
 
     let mut ret = SpendBundleConditions::default();
 
     let all_spends = first(&a, all_spends)?;
-    ret.execution_cost += klvm_cost;
+    ret.execution_cost += clvk_cost;
 
     // at this point all_spends is a list of:
     // (parent-coin-id puzzle-reveal amount solution . extra)
@@ -301,11 +301,11 @@ where
 
         let atoms_before = a.atom_count();
         let pairs_before = a.pair_count();
-        let Reduction(klvm_cost, conditions) =
+        let Reduction(clvk_cost, conditions) =
             run_program(&mut a, &dialect, puzzle, solution, cost_left)?;
 
-        subtract_cost(&mut cost_left, klvm_cost)?;
-        ret.execution_cost += klvm_cost;
+        subtract_cost(&mut cost_left, clvk_cost)?;
+        ret.execution_cost += clvk_cost;
         let atom_count = (a.atom_count() - atoms_before) as u64;
         let pair_count = (a.pair_count() - pairs_before) as u64;
 
@@ -322,7 +322,7 @@ where
             conditions,
             flags,
             &mut cost_left,
-            klvm_cost,
+            clvk_cost,
             atom_count,
             pair_count,
             constants,
@@ -357,21 +357,21 @@ where
 
     let program = if flags.contains(ConsensusFlags::INTERNED_GENERATOR) {
         let max_blob_size =
-            max_canonical_blob_size(constants.max_block_cost_klvm, constants.cost_per_byte);
+            max_canonical_blob_size(constants.max_block_cost_clvk, constants.cost_per_byte);
         node_from_bytes_2026(&mut a, generator, max_blob_size)?
     } else {
         node_from_bytes_backrefs(&mut a, generator)?
     };
     check_generator_node(&a, program, flags)?;
     let args = setup_generator_args(&mut a, refs, flags)?;
-    let dialect = ChikDialect::new(flags.to_klvm_flags());
+    let dialect = ChikDialect::new(flags.to_clvk_flags());
 
-    let Reduction(_klvm_cost, res) = run_program(
+    let Reduction(_clvk_cost, res) = run_program(
         &mut a,
         &dialect,
         program,
         args,
-        constants.max_block_cost_klvm,
+        constants.max_block_cost_clvk,
     )?;
 
     let (first, _rest) = a
@@ -395,7 +395,7 @@ where
             continue; // if we fail at this step then maybe the generator was malicious - try other spends
         };
         let puzhash = tree_hash_cached(&a, puzzle, &mut cache);
-        let parent_id = BytesImpl::<32>::from_klvm(&a, parent_id)
+        let parent_id = BytesImpl::<32>::from_clvk(&a, parent_id)
             .map_err(|_| ValidationErr::Err(ErrorCode::InvalidParentId))?;
         let coin = Coin::new(
             parent_id,
@@ -403,11 +403,11 @@ where
             parse_amount(&a, amount, ErrorCode::InvalidCoinAmount)?,
         );
         // This may fail for malicious generators, where the puzzle reveal or
-        // solution reuses KLVM subtrees such that a plain serialization becomes
-        // very large. from_klvm() fails if the resulting buffer is greater than
+        // solution reuses CLVK subtrees such that a plain serialization becomes
+        // very large. from_clvk() fails if the resulting buffer is greater than
         // 2 MB
-        let puzzle_program = Program::from_klvm(&a, puzzle).unwrap_or_default();
-        let solution_program = Program::from_klvm(&a, solution).unwrap_or_default();
+        let puzzle_program = Program::from_clvk(&a, puzzle).unwrap_or_default();
+        let solution_program = Program::from_clvk(&a, solution).unwrap_or_default();
         let coinspend = CoinSpend::new(coin, puzzle_program, solution_program);
         output.push(coinspend);
     }
@@ -462,21 +462,21 @@ where
 
     let program = if flags.contains(ConsensusFlags::INTERNED_GENERATOR) {
         let max_blob_size =
-            max_canonical_blob_size(constants.max_block_cost_klvm, constants.cost_per_byte);
+            max_canonical_blob_size(constants.max_block_cost_clvk, constants.cost_per_byte);
         node_from_bytes_2026(&mut a, generator, max_blob_size)?
     } else {
         node_from_bytes_backrefs(&mut a, generator)?
     };
     check_generator_node(&a, program, flags)?;
     let args = setup_generator_args(&mut a, refs, flags)?;
-    let dialect = ChikDialect::new(flags.to_klvm_flags());
+    let dialect = ChikDialect::new(flags.to_clvk_flags());
 
-    let Reduction(_klvm_cost, res) = run_program(
+    let Reduction(_clvk_cost, res) = run_program(
         &mut a,
         &dialect,
         program,
         args,
-        constants.max_block_cost_klvm,
+        constants.max_block_cost_clvk,
     )
     .map_err(|_| ValidationErr::Err(ErrorCode::GeneratorRuntimeError))?;
 
@@ -500,22 +500,22 @@ where
             continue; // if we fail at this step then maybe the generator was malicious - try other spends
         };
         let puzhash = tree_hash_cached(&a, puzzle, &mut cache);
-        let parent_id = BytesImpl::<32>::from_klvm(&a, parent_id)
+        let parent_id = BytesImpl::<32>::from_clvk(&a, parent_id)
             .map_err(|_| ValidationErr::Err(ErrorCode::InvalidParentId))?;
         let coin = Coin::new(
             parent_id,
             puzhash.into(),
             parse_amount(&a, amount, ErrorCode::InvalidCoinAmount)?,
         );
-        let puzzle_program = Program::from_klvm(&a, puzzle).unwrap_or_default();
-        let solution_program = Program::from_klvm(&a, solution).unwrap_or_default();
+        let puzzle_program = Program::from_clvk(&a, puzzle).unwrap_or_default();
+        let solution_program = Program::from_clvk(&a, solution).unwrap_or_default();
 
-        let Reduction(_klvm_cost, res) = run_program(
+        let Reduction(_clvk_cost, res) = run_program(
             &mut a,
             &dialect,
             puzzle,
             solution,
-            constants.max_block_cost_klvm,
+            constants.max_block_cost_clvk,
         )
         .map_err(|_| ValidationErr::Err(ErrorCode::GeneratorRuntimeError))?;
         // conditions_list is the full returned output of puzzle ran with solution
@@ -576,9 +576,9 @@ mod tests {
     use crate::opcodes::{CREATE_COIN, CREATE_COIN_COST, NEW_CREATE_COIN_COST, SPEND_COST};
     use crate::solution_generator::solution_generator;
     use chik_protocol::Bytes32;
-    use klvm_traits::ToKlvm;
-    use klvm_utils::tree_hash_atom;
-    use klvmr::serde::{SERDE_2026_MAGIC_PREFIX, node_to_bytes};
+    use clvk_traits::ToClvk;
+    use clvk_utils::tree_hash_atom;
+    use clvkr::serde::{SERDE_2026_MAGIC_PREFIX, node_to_bytes};
     use rstest::rstest;
 
     const IDENTITY_PUZZLE: &[u8] = &[1];
@@ -607,7 +607,7 @@ mod tests {
         let mut conds = a.nil();
         for i in 0..coins_per_spend {
             let cond = (CREATE_COIN, (puzzle_hash, (i as u64, 0)))
-                .to_klvm(&mut a)
+                .to_clvk(&mut a)
                 .unwrap();
             conds = a.new_pair(cond, conds).unwrap();
         }
@@ -723,7 +723,7 @@ mod tests {
     fn test_serde_2026_blob_rejected_without_interned_flag() {
         // Without INTERNED_GENERATOR, a serde_2026-prefixed blob must fail the
         // same way as on deployed nodes: the magic prefix starts with 0xfd,
-        // which is an invalid header byte in classic KLVM serialization, so
+        // which is an invalid header byte in classic CLVK serialization, so
         // node_from_bytes_backrefs() fails and maps to GeneratorRuntimeError.
         let mut blob = SERDE_2026_MAGIC_PREFIX.to_vec();
         blob.push(0x80);
@@ -785,7 +785,7 @@ mod tests {
     #[test]
     fn test_serde_2026_quote_enforcement_end_to_end() {
         use crate::solution_generator::solution_generator_2026;
-        use klvmr::serde::serialize_2026;
+        use clvkr::serde::serialize_2026;
 
         let flags = ConsensusFlags::DONT_VALIDATE_SIGNATURE
             | ConsensusFlags::SIMPLE_GENERATOR
@@ -867,7 +867,7 @@ mod tests {
         );
         assert_eq!(
             result.unwrap_err(),
-            ValidationErr::Eval(klvmr::error::EvalErr::SerializationError),
+            ValidationErr::Eval(clvkr::error::EvalErr::SerializationError),
         );
     }
 }

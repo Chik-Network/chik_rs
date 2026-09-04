@@ -74,7 +74,7 @@ fn main() {
             }
             let output = output.clone();
             pool.execute(move || {
-                // after the hard fork, we run blocks without paying for the KLVM generator ROM
+                // after the hard fork, we run blocks without paying for the CLVK generator ROM
                 let block_runner = if height >= TEST_CONSTANTS.hard_fork_height {
                     run_block_generator2
                 } else {

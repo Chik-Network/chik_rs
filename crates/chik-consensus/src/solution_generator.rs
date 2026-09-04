@@ -2,8 +2,8 @@ use crate::error::Result;
 use crate::serde_2026::SERDE_2026_COMPRESSION_LEVEL;
 use chik_protocol::Coin;
 use chik_protocol::CoinSpend;
-use klvmr::allocator::{Allocator, NodePtr};
-use klvmr::serde::{
+use clvkr::allocator::{Allocator, NodePtr};
+use clvkr::serde::{
     node_from_bytes_backrefs, node_to_bytes, node_to_bytes_backrefs, serialize_2026,
 };
 
@@ -44,8 +44,8 @@ where
 }
 
 /// this function returns the number of bytes the specified
-/// number is serialized to, in KLVM serialized form
-fn klvm_bytes_len(val: u64) -> usize {
+/// number is serialized to, in CLVK serialized form
+fn clvk_bytes_len(val: u64) -> usize {
     if val < 0x80 {
         1
     } else if val < 0x8000 {
@@ -81,8 +81,8 @@ where
         // ( parent-id puzzle-reveal amount solution )
         // parent-id is always 32 bytes + 1 byte length prefix = 33
         // + 6 bytes for list extension
-        // coin amount is already prepended correctly in klvm_bytes_len()
-        size += 39 + puzzle.len() + klvm_bytes_len(s.coin.amount) + solution.len();
+        // coin amount is already prepended correctly in clvk_bytes_len()
+        size += 39 + puzzle.len() + clvk_bytes_len(s.coin.amount) + solution.len();
     }
 
     size
@@ -124,9 +124,9 @@ mod tests {
     use super::*;
     use chik_protocol::Program;
     use chik_traits::Streamable;
+    use clvkr::chik_dialect::ClvkFlags;
+    use clvkr::{ChikDialect, run_program};
     use hex_literal::hex;
-    use klvmr::chik_dialect::KlvmFlags;
-    use klvmr::{ChikDialect, run_program};
     use rstest::rstest;
 
     const PUZZLE1: [u8; 291] = hex!(
@@ -160,7 +160,7 @@ mod tests {
     const SOLUTION2: [u8; 1] = hex!("80");
 
     fn run_generator(program: &[u8]) -> Vec<u8> {
-        let dialect = ChikDialect::new(KlvmFlags::empty());
+        let dialect = ChikDialect::new(ClvkFlags::empty());
         let mut a = Allocator::new();
         let program = node_from_bytes_backrefs(&mut a, program).expect("node_from_bytes");
         let env = a.nil();
@@ -461,7 +461,7 @@ mod tests {
     fn test_solution_generator_2026() {
         use crate::consensus_constants::TEST_CONSTANTS;
         use crate::serde_2026::{max_canonical_blob_size, node_from_bytes_auto};
-        use klvmr::serde::SERDE_2026_MAGIC_PREFIX;
+        use clvkr::serde::SERDE_2026_MAGIC_PREFIX;
 
         let coin1: Coin = Coin::new(
             hex!("ccd5bb71183532bff220ba46c268991a00000000000000000000000000036840").into(),
@@ -484,7 +484,7 @@ mod tests {
         // Round-trip through the consensus auto-deserializer and confirm the
         // tree is identical to the one behind the classic encoding.
         let cap = max_canonical_blob_size(
-            TEST_CONSTANTS.max_block_cost_klvm,
+            TEST_CONSTANTS.max_block_cost_clvk,
             TEST_CONSTANTS.cost_per_byte,
         );
         let mut a = Allocator::new();
@@ -544,8 +544,8 @@ mod tests {
     #[case(0x7ff_ffff_ffff_ffff)]
     #[case(0x800_0000_0000_0000)]
     #[case(0xfff_ffff_ffff_ffff)]
-    fn test_klvm_bytes_len(#[case] n: u64) {
-        let len = klvm_bytes_len(n);
+    fn test_clvk_bytes_len(#[case] n: u64) {
+        let len = clvk_bytes_len(n);
         let mut a = Allocator::new();
         let atom = a.new_number(n.into()).expect("new_number");
         let bytes = node_to_bytes(&a, atom).expect("node_to_bytes");

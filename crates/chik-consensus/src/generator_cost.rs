@@ -9,7 +9,7 @@
 //! by the size component (worst-case ratio <= 3.33, ~37ms SHA CPU on a 2012
 //! Celeron). See PR #1371 for the alternative split model (6000/4500).
 
-use klvmr::serde::InternedTree;
+use clvkr::serde::InternedTree;
 
 /// Return the byte-weight-equivalent of an interned tree:
 /// `atom_bytes + 2*atom_count + 3*pair_count`.
@@ -32,8 +32,8 @@ pub fn interned_vbytes(tree: &InternedTree) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use klvmr::allocator::Allocator;
-    use klvmr::serde::intern_tree;
+    use clvkr::allocator::Allocator;
+    use clvkr::serde::intern_tree;
 
     #[test]
     fn test_interned_vbytes_nil() {

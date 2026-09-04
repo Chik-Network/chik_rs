@@ -781,7 +781,7 @@ def test_program() -> None:
         Program.from_json_dict("0xff80")
 
     # garbage at the end of the serialization
-    with pytest.raises(ValueError, match="invalid KLVM serialization"):
+    with pytest.raises(ValueError, match="invalid CLVK serialization"):
         Program.from_json_dict("0xff808080")
 
 

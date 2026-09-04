@@ -3,7 +3,7 @@ name = "chik-puzzle-types"
 version.workspace = true
 edition = "2024"
 license = "Apache-2.0"
-description = "KLVM types for standard Chik puzzles."
+description = "CLVK types for standard Chik puzzles."
 authors = ["Brandon Haggstrom <b.haggstrom@chiknetwork.com>"]
 homepage = "https://github.com/Chik-Network/chik_rs"
 repository = "https://github.com/Chik-Network/chik_rs"
@@ -15,11 +15,11 @@ workspace = true
 arbitrary = ["dep:arbitrary", "chik-protocol/arbitrary"]
 
 [dependencies]
-klvmr = { workspace = true }
+clvkr = { workspace = true }
 num-bigint = { workspace = true }
 hex-literal = { workspace = true }
-klvm-utils = { workspace = true }
-klvm-traits = { workspace = true, features = ["chik-bls"] }
+clvk-utils = { workspace = true }
+clvk-traits = { workspace = true, features = ["chik-bls"] }
 chik-sha2 = { workspace = true }
 chik-bls = { workspace = true }
 chik-protocol = { workspace = true }

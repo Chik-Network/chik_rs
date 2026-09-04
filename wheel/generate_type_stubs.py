@@ -368,7 +368,7 @@ def confirm_not_included_already_hashed(
     proof: bytes,
 ) -> bool: ...
 
-def validate_klvm_and_signature(
+def validate_clvk_and_signature(
     new_spend: SpendBundle,
     max_cost: int,
     constants: ConsensusConstants,

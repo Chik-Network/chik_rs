@@ -5,7 +5,7 @@ use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::flags::{ConsensusFlags, MEMPOOL_MODE};
 use chik_consensus::run_block_generator::{get_coinspends_for_trusted_block, run_block_generator2};
 use chik_protocol::{CoinSpend, Program, SpendBundle};
-use klvmr::{
+use clvkr::{
     Allocator,
     chik_dialect::ChikDialect,
     reduction::Reduction,
@@ -14,12 +14,12 @@ use klvmr::{
 };
 use libfuzzer_sys::{Corpus, fuzz_target};
 
-/// KLVM execution cost for each spend's puzzle+solution, matching what
+/// CLVK execution cost for each spend's puzzle+solution, matching what
 /// `run_block_generator2` charges (without requiring a valid coin puzzle hash).
 fn puzzle_execution_cost(spends: &[CoinSpend]) -> Result<u64, ()> {
     let mut a = Allocator::new();
-    let dialect = ChikDialect::new(MEMPOOL_MODE.to_klvm_flags());
-    let mut cost_left = TEST_CONSTANTS.max_block_cost_klvm;
+    let dialect = ChikDialect::new(MEMPOOL_MODE.to_clvk_flags());
+    let mut cost_left = TEST_CONSTANTS.max_block_cost_clvk;
     let mut total = 0u64;
     for spend in spends {
         let puzzle =
@@ -78,7 +78,7 @@ fuzz_target!(|spends: Vec<CoinSpend>| -> Corpus {
     let Ok((_, conds)) = run_block_generator2::<&[u8], _>(
         generator.as_slice(),
         [],
-        TEST_CONSTANTS.max_block_cost_klvm,
+        TEST_CONSTANTS.max_block_cost_clvk,
         MEMPOOL_MODE | ConsensusFlags::INTERNED_GENERATOR,
         &signature,
         None,

@@ -35,7 +35,7 @@ zstd = { workspace = true }
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 
 [dev-dependencies]
-klvm-utils = { workspace = true }
+clvk-utils = { workspace = true }
 expect-test = { workspace = true }
 hex = { workspace = true }
 open = { workspace = true }

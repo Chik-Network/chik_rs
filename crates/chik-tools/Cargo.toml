@@ -12,19 +12,19 @@ repository = "https://github.com/Chik-Network/chik_rs"
 workspace = true
 
 [features]
-openssl = ["klvmr/openssl", "chik-sha2/openssl"]
+openssl = ["clvkr/openssl", "chik-sha2/openssl"]
 
 [dependencies]
 chik-protocol = { workspace = true }
 chik-traits = { workspace = true }
 chik-puzzles = { workspace = true }
-klvm-utils = { workspace = true }
-klvm-traits = { workspace = true }
+clvk-utils = { workspace = true }
+clvk-traits = { workspace = true }
 chik-puzzle-types = { workspace = true }
 bitflags = { workspace = true }
 chik-bls = { workspace = true }
 chik-consensus = { workspace = true }
-klvmr = { workspace = true, features = ["counters"] }
+clvkr = { workspace = true, features = ["counters"] }
 rusqlite = { workspace = true, features = ["bundled"] }
 clap = { workspace = true, features = ["derive"] }
 zstd = { workspace = true }
@@ -48,7 +48,7 @@ test = false
 bench = false
 
 [[bin]]
-name = "compress-klvm"
+name = "compress-clvk"
 test = false
 bench = false
 

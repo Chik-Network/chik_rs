@@ -21,15 +21,15 @@ py-bindings = [
 
 [dependencies]
 bitflags = { workspace = true }
-klvmr = { workspace = true }
+clvkr = { workspace = true }
 hex = { workspace = true }
 pyo3 = { workspace = true, optional = true }
 chik_streamable_macro = { workspace = true }
 chik_py_streamable_macro = { workspace = true, optional = true }
-klvm-utils = { workspace = true }
+clvk-utils = { workspace = true }
 chik-sha2 = { workspace = true }
 chik-traits = { workspace = true }
-klvm-traits = { workspace = true }
+clvk-traits = { workspace = true }
 chik-protocol = { workspace = true }
 chik-puzzle-types = { workspace = true }
 chik-puzzles = { workspace = true }
@@ -44,7 +44,7 @@ text-diff = { workspace = true }
 criterion = { workspace = true }
 rand = { workspace = true, features = [ "small_rng" ] }
 blocking-threadpool = { workspace = true }
-klvm-fuzzing = { workspace = true }
+clvk-fuzzing = { workspace = true }
 arbitrary = { workspace = true }
 
 [lib]

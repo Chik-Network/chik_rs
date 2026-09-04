@@ -2,7 +2,7 @@ use crate::conditions::ELIGIBLE_FOR_DEDUP;
 use chik_bls::PublicKey;
 use chik_protocol::{Bytes, Bytes32};
 use chik_streamable_macro::Streamable;
-use klvmr::{Allocator, NodePtr};
+use clvkr::{Allocator, NodePtr};
 
 use super::conditions::{SpendBundleConditions, SpendConditions};
 

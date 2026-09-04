@@ -50,7 +50,7 @@ jobs:
         env:
           CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS: true
           CARGO_PROFILE_RELEASE_OVERFLOW_CHECKS: true
-        run: cargo test --workspace --all-features --release --features=klvmr/allocator-debug -- --include-ignored
+        run: cargo test --workspace --all-features --release --features=clvkr/allocator-debug -- --include-ignored
 
       - name: Build (release)
         run: cargo build --workspace --all-features --release
@@ -93,10 +93,10 @@ jobs:
               # EXAMPLE_ as an example and to appease actionlint
               EXAMPLE_LSAN_OPTIONS: detect_leaks=0
           - name: chik-bls
-          - name: klvm-utils
+          - name: clvk-utils
           - name: chik-protocol
           - name: chik-puzzle-types
-          - name: klvm-traits
+          - name: clvk-traits
           - name: chik-datalayer
         toolchain:
           - nightly-2026-01-12

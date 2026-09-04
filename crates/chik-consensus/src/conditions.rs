@@ -26,8 +26,8 @@ use crate::validation_error::check_nil;
 use chik_bls::{BlsCache, PublicKey, Signature, aggregate_verify};
 use chik_protocol::{Bytes, Bytes32, Coin};
 use chik_sha2::Sha256;
-use klvmr::allocator::{Allocator, NodePtr, SExp};
-use klvmr::cost::Cost;
+use clvkr::allocator::{Allocator, NodePtr, SExp};
+use clvkr::cost::Cost;
 use std::cmp::{max, min};
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
@@ -845,7 +845,7 @@ impl SpendConditions {
         coin_amount: u64,
         puzzle_hash: NodePtr,
         coin_id: Arc<Bytes32>,
-        klvm_cost: Cost,
+        clvk_cost: Cost,
         atom_count: u64,
         pair_count: u64,
     ) -> SpendConditions {
@@ -869,7 +869,7 @@ impl SpendConditions {
             agg_sig_parent_amount: Vec::new(),
             agg_sig_parent_puzzle: Vec::new(),
             flags: 0,
-            execution_cost: klvm_cost,
+            execution_cost: clvk_cost,
             condition_cost: 0,
             atom_count,
             pair_count,
@@ -904,7 +904,7 @@ pub struct SpendBundleConditions {
     pub before_seconds_absolute: Option<u64>,
 
     // the cost of conditions (when returned by parse_spends())
-    // run_block_generator() will include KLVM cost and byte cost (making this
+    // run_block_generator() will include CLVK cost and byte cost (making this
     // the total cost)
     pub cost: u64,
 
@@ -1014,7 +1014,7 @@ pub fn process_single_spend<'a, V: SpendVisitor>(
     conditions: NodePtr,
     flags: ConsensusFlags,
     max_cost: &mut Cost,
-    klvm_cost: Cost,
+    clvk_cost: Cost,
     atom_count: u64,
     pair_count: u64,
     constants: &ConsensusConstants,
@@ -1050,7 +1050,7 @@ pub fn process_single_spend<'a, V: SpendVisitor>(
         my_amount,
         puzzle_hash,
         coin_id,
-        klvm_cost,
+        clvk_cost,
         atom_count,
         pair_count,
     );
@@ -1568,7 +1568,7 @@ pub fn parse_spends<V: SpendVisitor>(
     a: &Allocator,
     spends: NodePtr,
     max_cost: Cost,
-    klvm_cost: Cost,
+    clvk_cost: Cost,
     flags: ConsensusFlags,
     aggregate_signature: &Signature,
     bls_cache: Option<&BlsCache>,
@@ -1609,7 +1609,7 @@ pub fn parse_spends<V: SpendVisitor>(
             conds,
             flags,
             &mut cost_left,
-            klvm_cost,
+            clvk_cost,
             0, // atom_count
             0, // pair_count
             constants,
@@ -1804,13 +1804,13 @@ use crate::flags::MEMPOOL_MODE;
 #[cfg(test)]
 use chik_protocol::Bytes48;
 #[cfg(test)]
+use clvkr::number::Number;
+#[cfg(test)]
+use clvkr::serde::node_to_bytes;
+#[cfg(test)]
 use hex::FromHex;
 #[cfg(test)]
 use hex_literal::hex;
-#[cfg(test)]
-use klvmr::number::Number;
-#[cfg(test)]
-use klvmr::serde::node_to_bytes;
 #[cfg(test)]
 use num_traits::Num;
 #[cfg(test)]
@@ -1962,7 +1962,7 @@ fn parse_list_impl(
 #[cfg(test)]
 fn parse_list(a: &mut Allocator, input: &str, callback: &Callback) -> NodePtr {
     // all substitutions are allocated up-front in order to have them all use
-    // the same atom in the KLVM structure. This is to cover cases where
+    // the same atom in the CLVK structure. This is to cover cases where
     // conditions may be deduplicated based on the NodePtr value, when they
     // shouldn't be. The AggSig conditions are stored with NodePtr values, but
     // should never be deduplicated.
@@ -2053,7 +2053,7 @@ fn cond_test_cb(
         &a,
         n,
         11_000_000_000, // max_cost
-        0,              // klvm_cost
+        0,              // clvk_cost
         flags,
         signature,
         bls_cache,
@@ -2070,7 +2070,7 @@ fn cond_test_cb(
 }
 
 #[cfg(test)]
-use klvm_traits::ToKlvm;
+use clvk_traits::ToClvk;
 
 #[cfg(test)]
 fn cond_test(input: &str) -> Result<(Allocator, SpendBundleConditions), ValidationErr> {
@@ -3360,7 +3360,7 @@ fn test_create_coin_exceed_cost() {
                 for i in 0..6500 {
                     // this builds one CREATE_COIN condition
                     let coin = (CREATE_COIN, (Bytes32::from(H2), (i, 0)))
-                        .to_klvm(a)
+                        .to_clvk(a)
                         .unwrap();
 
                     // add the CREATE_COIN condition to the list (called rest)
@@ -3595,7 +3595,7 @@ fn test_agg_sig_exceed_cost(#[case] condition: ConditionOpcode) {
                         condition,
                         (Bytes48::from(PUBKEY), (Bytes::from(MSG1.as_slice()), 0)),
                     )
-                        .to_klvm(a)
+                        .to_clvk(a)
                         .unwrap();
 
                     // add the condition to the list (called rest)
@@ -3817,7 +3817,7 @@ fn final_message(
         amount,
         a.new_atom(puzzle.as_slice()).expect("test should pass"),
         Arc::new(Bytes32::try_from(coin.coin_id()).expect("test should pass")),
-        0, // klvm_cost
+        0, // clvk_cost
         0, // atom_count
         0, // pair_count
     );
@@ -3904,7 +3904,7 @@ fn test_agg_sig_unsafe_exceed_cost() {
                         AGG_SIG_UNSAFE,
                         (Bytes48::from(PUBKEY), (Bytes::from(MSG1.as_slice()), 0)),
                     )
-                        .to_klvm(a)
+                        .to_clvk(a)
                         .unwrap();
 
                     // add the AGG_SIG_UNSAFE condition to the list (called rest)
@@ -4293,7 +4293,7 @@ fn test_cost_all_conds(#[case] count: usize) {
             for _ in 0..count {
                 // this builds one condition
                 let ann = (ASSERT_MY_COIN_ID, (test_coin_id(H1, H2, 123), 0))
-                    .to_klvm(a)
+                    .to_clvk(a)
                     .unwrap();
 
                 // add the condition to the list
@@ -4328,7 +4328,7 @@ fn test_cost_create_coins_conds(#[case] count: usize) {
             for i in 0..count {
                 // this builds one condition
                 let ann = (CREATE_COIN, (Bytes32::from(H1), (i, 0)))
-                    .to_klvm(a)
+                    .to_clvk(a)
                     .unwrap();
 
                 // add the condition to the list
@@ -4372,7 +4372,7 @@ fn test_cost_aggsig_conds(#[case] count: usize) {
             for _ in 0..count {
                 // this builds one condition
                 let ann = (AGG_SIG_UNSAFE, (&pk, (Bytes::from(H1.as_slice()), 0)))
-                    .to_klvm(a)
+                    .to_clvk(a)
                     .unwrap();
 
                 // add the condition to the list
@@ -5145,7 +5145,7 @@ fn test_limit_announcements(
             // generate a lot of announcements
             for _ in 0..count {
                 // this builds one condition
-                let ann = (cond, (Bytes32::from(H2), 0)).to_klvm(a).unwrap();
+                let ann = (cond, (Bytes32::from(H2), 0)).to_clvk(a).unwrap();
 
                 // add the condition to the list
                 rest = a.new_pair(ann, rest).unwrap();
@@ -5664,7 +5664,7 @@ fn test_limit_messages(
                     (Bytes::from(MSG1.as_slice()), (test_coin_id(H1, H1, 123), 0)),
                 ),
             )
-                .to_klvm(a)
+                .to_clvk(a)
                 .unwrap();
 
             // (67 0x3f {msg1} {coin12})
@@ -5675,7 +5675,7 @@ fn test_limit_messages(
                     (Bytes::from(MSG1.as_slice()), (test_coin_id(H1, H1, 123), 0)),
                 ),
             )
-                .to_klvm(a)
+                .to_clvk(a)
                 .unwrap();
 
             for _ in 0..count {

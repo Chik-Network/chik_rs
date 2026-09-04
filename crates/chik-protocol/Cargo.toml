@@ -24,11 +24,11 @@ pyo3 = { workspace = true, features = ["multiple-pymethods", "num-bigint"], opti
 hex = { workspace = true }
 chik_streamable_macro = { workspace = true }
 chik_py_streamable_macro = { workspace = true, optional = true }
-klvmr = { workspace = true }
+clvkr = { workspace = true }
 chik-traits = { workspace = true }
 chik-sha2 = { workspace = true }
-klvm-traits = { workspace = true, features = ["derive"] }
-klvm-utils = { workspace = true }
+clvk-traits = { workspace = true, features = ["derive"] }
+clvk-utils = { workspace = true }
 chik-bls = { workspace = true }
 chik-pos2 = { workspace = true }
 arbitrary = { workspace = true, features = ["derive"], optional = true }

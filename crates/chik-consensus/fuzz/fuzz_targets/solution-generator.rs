@@ -1,7 +1,7 @@
 #![no_main]
 use chik_consensus::solution_generator::{calculate_generator_length, solution_generator};
 use chik_protocol::{Coin, CoinSpend};
-use klvmr::{
+use clvkr::{
     Allocator,
     serde::{node_from_bytes_backrefs, node_to_bytes},
 };

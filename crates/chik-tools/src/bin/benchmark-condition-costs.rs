@@ -7,8 +7,8 @@ use chik_consensus::opcodes::ConditionOpcode;
 use chik_protocol::Bytes32;
 use chik_protocol::Coin;
 use chik_sha2::Sha256;
+use clvkr::allocator::{Allocator, NodePtr};
 use hex_literal::hex;
-use klvmr::allocator::{Allocator, NodePtr};
 use std::fs;
 use std::io::Write;
 use std::time::Instant;
@@ -476,7 +476,7 @@ pub fn main() {
     let sk = SecretKey::from_bytes(SECRET_KEY).expect("secret key");
     let pk = sk.public_key();
     let parent_id = allocator.new_atom(H1).expect("atom");
-    let puzzle_hash = Bytes32::from(klvm_utils::tree_hash_from_bytes(&[1_u8]).expect("tree_hash"));
+    let puzzle_hash = Bytes32::from(clvk_utils::tree_hash_from_bytes(&[1_u8]).expect("tree_hash"));
     let puz_hash_node_ptr = allocator.new_atom(puzzle_hash.as_slice()).expect("bytes");
     let coin = Coin {
         parent_coin_info: H1.into(),

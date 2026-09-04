@@ -3,9 +3,9 @@ use chik_consensus::additions_and_removals::additions_and_removals;
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::flags::ConsensusFlags;
 use chik_consensus::run_block_generator::{run_block_generator, run_block_generator2};
+use clvkr::Allocator;
+use clvkr::serde::{node_from_bytes, node_to_bytes_backrefs};
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
-use klvmr::Allocator;
-use klvmr::serde::{node_from_bytes, node_to_bytes_backrefs};
 use std::fs;
 use std::time::Instant;
 

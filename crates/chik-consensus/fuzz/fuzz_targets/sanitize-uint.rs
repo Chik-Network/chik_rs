@@ -3,7 +3,7 @@ use libfuzzer_sys::fuzz_target;
 
 use chik_consensus::sanitize_int::{SanitizedUint, sanitize_uint};
 use chik_consensus::validation_error::{ErrorCode, ValidationErr};
-use klvmr::allocator::Allocator;
+use clvkr::allocator::Allocator;
 
 fuzz_target!(|data: &[u8]| {
     let mut a = Allocator::new();

@@ -15,7 +15,7 @@ pub type ValidationPair = ([u8; 32], GTElement);
 // currently in mempool_manager.py
 // called in threads from pre_validate_spend_bundle()
 // pybinding returns (error, cached_results, new_cache_entries, duration)
-pub fn validate_klvm_and_signature(
+pub fn validate_clvk_and_signature(
     spend_bundle: &SpendBundle,
     max_cost: u64,
     constants: &ConsensusConstants,
@@ -74,7 +74,7 @@ pub fn get_flags_for_height_and_constants(
     //    negative infinity
     //  * AGG_SIG_* conditions are allowed to have unknown additional
     //    arguments
-    //  * Allow the block generator to be serialized with the improved klvm
+    //  * Allow the block generator to be serialized with the improved clvk
     //   serialization format (with back-references)
 
     // The soft fork initiated with 2.5.0. The activation date is still TBD.
@@ -120,9 +120,9 @@ mod tests {
     };
     use chik_bls::{G2Element, PublicKey, SecretKey, Signature, sign};
     use chik_protocol::{Bytes, Coin, CoinSpend, Program};
+    use clvk_utils::tree_hash_atom;
     use hex::FromHex;
     use hex_literal::hex;
-    use klvm_utils::tree_hash_atom;
     use rstest::rstest;
 
     fn mk_spend(puzzle: &[u8], solution: &[u8]) -> CoinSpend {
@@ -336,9 +336,9 @@ ff01\
             aggregated_signature: Signature::default(),
         };
         assert_eq!(
-            validate_klvm_and_signature(
+            validate_clvk_and_signature(
                 &spend_bundle,
-                TEST_CONSTANTS.max_block_cost_klvm,
+                TEST_CONSTANTS.max_block_cost_clvk,
                 &TEST_CONSTANTS,
                 MEMPOOL_MODE,
             )
@@ -363,9 +363,9 @@ ff01\
             coin_spends: vec![spend],
             aggregated_signature: Signature::default(),
         };
-        validate_klvm_and_signature(
+        validate_clvk_and_signature(
             &spend_bundle,
-            TEST_CONSTANTS.max_block_cost_klvm,
+            TEST_CONSTANTS.max_block_cost_clvk,
             &TEST_CONSTANTS,
             MEMPOOL_MODE,
         )
@@ -387,9 +387,9 @@ ff843B9ACA00\
             coin_spends: vec![spend],
             aggregated_signature: Signature::default(),
         };
-        let (conds, _pks) = validate_klvm_and_signature(
+        let (conds, _pks) = validate_clvk_and_signature(
             &spend_bundle,
-            TEST_CONSTANTS.max_block_cost_klvm,
+            TEST_CONSTANTS.max_block_cost_clvk,
             &TEST_CONSTANTS,
             MEMPOOL_MODE | ConsensusFlags::COMPUTE_FINGERPRINT,
         )
@@ -417,11 +417,11 @@ ff843B9ACA00\
         let expected_cost = 5_527_116_044;
         let max_cost = expected_cost;
         let (conds, _) =
-            validate_klvm_and_signature(&spend_bundle, max_cost, &TEST_CONSTANTS, MEMPOOL_MODE)
-                .expect("validate_klvm_and_signature failed");
+            validate_clvk_and_signature(&spend_bundle, max_cost, &TEST_CONSTANTS, MEMPOOL_MODE)
+                .expect("validate_clvk_and_signature failed");
         assert_eq!(conds.cost, expected_cost);
         let result =
-            validate_klvm_and_signature(&spend_bundle, max_cost - 1, &TEST_CONSTANTS, MEMPOOL_MODE);
+            validate_clvk_and_signature(&spend_bundle, max_cost - 1, &TEST_CONSTANTS, MEMPOOL_MODE);
         assert!(matches!(
             result,
             Err(ValidationErr::Err(ErrorCode::CostExceeded))
@@ -453,9 +453,9 @@ ff843B9ACA00\
             coin_spends: vec![spend],
             aggregated_signature: sig,
         };
-        validate_klvm_and_signature(
+        validate_clvk_and_signature(
             &spend_bundle,
-            TEST_CONSTANTS.max_block_cost_klvm,
+            TEST_CONSTANTS.max_block_cost_clvk,
             &TEST_CONSTANTS,
             MEMPOOL_MODE,
         )
@@ -501,9 +501,9 @@ ff843B9ACA00\
             coin_spends: vec![spend],
             aggregated_signature: sig,
         };
-        let result = validate_klvm_and_signature(
+        let result = validate_clvk_and_signature(
             &spend_bundle,
-            TEST_CONSTANTS.max_block_cost_klvm,
+            TEST_CONSTANTS.max_block_cost_clvk,
             &TEST_CONSTANTS,
             MEMPOOL_MODE,
         );

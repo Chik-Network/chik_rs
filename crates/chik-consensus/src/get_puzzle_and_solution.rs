@@ -1,8 +1,8 @@
 use crate::condition_sanitizers::parse_amount;
 use crate::validation_error::{ErrorCode, ValidationErr, atom, check_nil, first, next, rest};
 use chik_protocol::Coin;
-use klvm_utils::{TreeCache, tree_hash_cached};
-use klvmr::allocator::{Allocator, Atom, NodePtr};
+use clvk_utils::{TreeCache, tree_hash_cached};
+use clvkr::allocator::{Allocator, Atom, NodePtr};
 
 /// returns parent-coin ID, amount, puzzle-reveal and solution
 pub fn parse_coin_spend(
@@ -68,11 +68,11 @@ mod test {
     use chik_bls::Signature;
     use chik_protocol::Bytes32;
     use chik_sha2::Sha256;
-    use klvm_traits::FromKlvm;
-    use klvm_utils::tree_hash;
-    use klvmr::reduction::Reduction;
-    use klvmr::serde::node_from_bytes_backrefs;
-    use klvmr::{ChikDialect, run_program};
+    use clvk_traits::FromClvk;
+    use clvk_utils::tree_hash;
+    use clvkr::reduction::Reduction;
+    use clvkr::serde::node_from_bytes_backrefs;
+    use clvkr::{ChikDialect, run_program};
     use rstest::rstest;
     use std::collections::HashSet;
     use std::fs;
@@ -252,7 +252,7 @@ mod test {
                 .map(|c| (c.puzzle_hash, c.amount))
                 .collect();
 
-            let dialect = &ChikDialect::new(MEMPOOL_MODE.to_klvm_flags());
+            let dialect = &ChikDialect::new(MEMPOOL_MODE.to_clvk_flags());
             let args = setup_generator_args(&mut a2, blocks, ConsensusFlags::empty())
                 .expect("setup_generator_args");
             let Reduction(_, result) =
@@ -277,7 +277,7 @@ mod test {
                 iter = next;
                 // 51 is CREATE_COIN
                 if let Ok((_create_coin, (puzzle_hash, (amount, _rest)))) =
-                    <(klvm_traits::MatchByte<51>, (Bytes32, (u64, NodePtr)))>::from_klvm(&a2, c)
+                    <(clvk_traits::MatchByte<51>, (Bytes32, (u64, NodePtr)))>::from_clvk(&a2, c)
                 {
                     assert!(expected_additions.contains(&(puzzle_hash, amount)));
                     expected_additions.remove(&(puzzle_hash, amount));

@@ -1,7 +1,7 @@
 use super::validation_error::ValidationErr;
-use klvmr::allocator::{Allocator, NodePtr, SExp};
+use clvkr::allocator::{Allocator, NodePtr, SExp};
 
-use klvmr::op_utils::u64_from_bytes;
+use clvkr::op_utils::u64_from_bytes;
 
 #[derive(PartialEq, Debug)]
 pub enum SanitizedUint {

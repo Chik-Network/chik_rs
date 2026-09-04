@@ -1,12 +1,12 @@
 use chik_protocol::Bytes32;
-use klvm_traits::{FromKlvm, ToKlvm};
-use klvmr::NodePtr;
+use clvk_traits::{FromClvk, ToClvk};
+use clvkr::NodePtr;
 
 use crate::Memos;
 
-#[derive(Debug, Clone, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(transparent)]
+#[clvk(transparent)]
 pub struct SettlementPaymentsSolution<T = NodePtr> {
     pub notarized_payments: Vec<NotarizedPayment<T>>,
 }
@@ -17,12 +17,12 @@ impl SettlementPaymentsSolution {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(list)]
+#[clvk(list)]
 pub struct NotarizedPayment<T = NodePtr> {
     pub nonce: Bytes32,
-    #[klvm(rest)]
+    #[clvk(rest)]
     pub payments: Vec<Payment<T>>,
 }
 
@@ -32,13 +32,13 @@ impl NotarizedPayment {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(list)]
+#[clvk(list)]
 pub struct Payment<T = NodePtr> {
     pub puzzle_hash: Bytes32,
     pub amount: u64,
-    #[klvm(rest)]
+    #[clvk(rest)]
     pub memos: Memos<T>,
 }
 
@@ -54,9 +54,9 @@ impl Payment {
 
 #[cfg(test)]
 mod tests {
+    use clvk_utils::tree_hash;
+    use clvkr::{Allocator, serde::node_from_bytes};
     use hex_literal::hex;
-    use klvm_utils::tree_hash;
-    use klvmr::{Allocator, serde::node_from_bytes};
 
     use super::*;
 
@@ -93,7 +93,7 @@ mod tests {
             nonce,
             payments: vec![payment],
         }])
-        .to_klvm(&mut allocator)?;
+        .to_clvk(&mut allocator)?;
 
         assert_eq!(
             tree_hash(&allocator, solution),
@@ -136,7 +136,7 @@ mod tests {
             nonce,
             payments: vec![payment],
         }])
-        .to_klvm(&mut allocator)?;
+        .to_clvk(&mut allocator)?;
 
         assert_eq!(
             tree_hash(&allocator, solution),

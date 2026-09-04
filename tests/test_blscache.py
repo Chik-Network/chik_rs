@@ -10,7 +10,7 @@ from chik_rs import (
     BLSCache,
     Coin,
     ConsensusConstants,
-    validate_klvm_and_signature,
+    validate_clvk_and_signature,
     ENABLE_KECCAK_OPS_OUTSIDE_GUARD,
     COST_CONDITIONS,
 )
@@ -206,7 +206,7 @@ def test_bad_cache_size() -> None:
     )
 
 
-def test_validate_klvm_and_sig() -> None:
+def test_validate_clvk_and_sig() -> None:
     cache = BLSCache()
     puz_reveal = Program.to(1)
     coin = Coin(
@@ -235,9 +235,9 @@ def test_validate_klvm_and_sig() -> None:
 
     new_spend = SpendBundle(coin_spends, sig)
 
-    sbc, additions, duration = validate_klvm_and_signature(
+    sbc, additions, duration = validate_clvk_and_signature(
         new_spend,
-        DEFAULT_CONSTANTS.MAX_BLOCK_COST_KLVM,
+        DEFAULT_CONSTANTS.MAX_BLOCK_COST_CLVK,
         DEFAULT_CONSTANTS,
         ENABLE_KECCAK_OPS_OUTSIDE_GUARD | COST_CONDITIONS,
     )

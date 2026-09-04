@@ -774,7 +774,7 @@ mod tests {
         }
     }
 
-    // test cases from klvm_rs
+    // test cases from clvk_rs
     #[rstest]
     #[case(
         "abcdef0123456789",
@@ -785,7 +785,7 @@ mod tests {
         assert_eq!(hex::encode(g1.to_bytes()), expect);
     }
 
-    // test cases from klvm_rs
+    // test cases from clvk_rs
     #[rstest]
     #[case(
         "abcdef0123456789",

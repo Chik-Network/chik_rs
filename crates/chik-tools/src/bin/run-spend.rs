@@ -11,10 +11,10 @@ use chik_puzzles::P2_DELEGATED_PUZZLE_OR_HIDDEN_PUZZLE_HASH;
 use chik_puzzles::SINGLETON_TOP_LAYER_V1_1_HASH;
 use chik_traits::Streamable;
 use clap::Parser;
-use klvm_traits::{FromKlvm, ToKlvm};
-use klvm_utils::CurriedProgram;
-use klvm_utils::tree_hash;
-use klvmr::{Allocator, allocator::NodePtr};
+use clvk_traits::{FromClvk, ToClvk};
+use clvk_utils::CurriedProgram;
+use clvk_utils::tree_hash;
+use clvkr::{Allocator, allocator::NodePtr};
 
 /// Run a puzzle given a solution and print the resulting conditions
 #[derive(Parser, Debug)]
@@ -134,7 +134,7 @@ impl DebugPrint for Condition {
 fn print_puzzle_info(a: &Allocator, puzzle: NodePtr, solution: NodePtr) {
     println!("Puzzle: {}", hex::encode(tree_hash(a, puzzle)));
     // exit if this puzzle is not curried
-    let Ok(uncurried) = CurriedProgram::<NodePtr, NodePtr>::from_klvm(a, puzzle) else {
+    let Ok(uncurried) = CurriedProgram::<NodePtr, NodePtr>::from_clvk(a, puzzle) else {
         println!("   puzzle has no curried parameters");
         return;
     };
@@ -142,13 +142,13 @@ fn print_puzzle_info(a: &Allocator, puzzle: NodePtr, solution: NodePtr) {
     match tree_hash(a, uncurried.program).to_bytes() {
         P2_DELEGATED_PUZZLE_OR_HIDDEN_PUZZLE_HASH => {
             println!("p2_delegated_puzzle_or_hidden_puzzle.clsp");
-            let Ok(uncurried) = CurriedProgram::<NodePtr, StandardArgs>::from_klvm(a, puzzle)
+            let Ok(uncurried) = CurriedProgram::<NodePtr, StandardArgs>::from_clvk(a, puzzle)
             else {
                 println!("-- failed to uncurry standard transaction");
                 return;
             };
             println!("    synthetic-key: {:?}", uncurried.args.synthetic_key);
-            let Ok(sol) = StandardSolution::<NodePtr, NodePtr>::from_klvm(a, solution) else {
+            let Ok(sol) = StandardSolution::<NodePtr, NodePtr>::from_clvk(a, solution) else {
                 println!("-- failed to parse solution");
                 return;
             };
@@ -159,14 +159,14 @@ fn print_puzzle_info(a: &Allocator, puzzle: NodePtr, solution: NodePtr) {
         }
         CAT_PUZZLE_HASH => {
             println!("cat_v2.clsp");
-            let Ok(uncurried) = CurriedProgram::<NodePtr, CatArgs<NodePtr>>::from_klvm(a, puzzle)
+            let Ok(uncurried) = CurriedProgram::<NodePtr, CatArgs<NodePtr>>::from_clvk(a, puzzle)
             else {
                 println!("-- failed to uncurry CAT transaction");
                 return;
             };
             println!("    mod-hash: {:?}", uncurried.args.mod_hash);
             println!("    asset-id: {:?}", uncurried.args.asset_id);
-            let Ok(sol) = CatSolution::<NodePtr>::from_klvm(a, solution) else {
+            let Ok(sol) = CatSolution::<NodePtr>::from_clvk(a, solution) else {
                 println!("-- failed to parse solution");
                 return;
             };
@@ -185,7 +185,7 @@ fn print_puzzle_info(a: &Allocator, puzzle: NodePtr, solution: NodePtr) {
         DID_INNERPUZ_HASH => {
             println!("did_innerpuz.clsp");
             let Ok(uncurried) =
-                CurriedProgram::<NodePtr, DidArgs<NodePtr, NodePtr>>::from_klvm(a, puzzle)
+                CurriedProgram::<NodePtr, DidArgs<NodePtr, NodePtr>>::from_clvk(a, puzzle)
             else {
                 println!("-- failed to uncurry DID transaction");
                 return;
@@ -203,7 +203,7 @@ fn print_puzzle_info(a: &Allocator, puzzle: NodePtr, solution: NodePtr) {
                 uncurried.args.singleton_struct
             );
             println!("    metadata: {:?}", uncurried.args.metadata);
-            let Ok(sol) = DidSolution::<NodePtr>::from_klvm(a, solution) else {
+            let Ok(sol) = DidSolution::<NodePtr>::from_clvk(a, solution) else {
                 println!("-- failed to parse solution");
                 return;
             };
@@ -217,7 +217,7 @@ fn print_puzzle_info(a: &Allocator, puzzle: NodePtr, solution: NodePtr) {
         SINGLETON_TOP_LAYER_V1_1_HASH => {
             println!("singleton_top_layer_1_1.clsp");
             let Ok(uncurried) =
-                CurriedProgram::<NodePtr, SingletonArgs<NodePtr>>::from_klvm(a, puzzle)
+                CurriedProgram::<NodePtr, SingletonArgs<NodePtr>>::from_clvk(a, puzzle)
             else {
                 println!("-- failed to uncurry singleton");
                 return;
@@ -236,7 +236,7 @@ fn print_puzzle_info(a: &Allocator, puzzle: NodePtr, solution: NodePtr) {
                 uncurried.args.singleton_struct.launcher_puzzle_hash
             );
 
-            let Ok(sol) = SingletonSolution::<NodePtr>::from_klvm(a, solution) else {
+            let Ok(sol) = SingletonSolution::<NodePtr>::from_clvk(a, solution) else {
                 println!("-- failed to parse solution");
                 return;
             };
@@ -267,9 +267,9 @@ fn main() {
     use chik_consensus::opcodes::parse_opcode;
     use chik_consensus::validation_error::{first, rest};
     use chik_protocol::CoinSpend;
-    use klvmr::chik_dialect::KlvmFlags;
-    use klvmr::reduction::Reduction;
-    use klvmr::{ChikDialect, run_program};
+    use clvkr::chik_dialect::ClvkFlags;
+    use clvkr::reduction::Reduction;
+    use clvkr::{ChikDialect, run_program};
     use std::fs::read;
 
     let args = Args::parse();
@@ -280,17 +280,17 @@ fn main() {
 
     let puzzle = spend
         .puzzle_reveal
-        .to_klvm(&mut a)
+        .to_clvk(&mut a)
         .expect("deserialize puzzle");
     let solution = spend
         .solution
-        .to_klvm(&mut a)
+        .to_clvk(&mut a)
         .expect("deserialize solution");
 
     println!("Spending {:?}", spend.coin);
     println!("   coin-id: {}\n", hex::encode(spend.coin.coin_id()));
-    let dialect = ChikDialect::new(KlvmFlags::empty());
-    let Reduction(_klvm_cost, conditions) =
+    let dialect = ChikDialect::new(ClvkFlags::empty());
+    let Reduction(_clvk_cost, conditions) =
         match run_program(&mut a, &dialect, puzzle, solution, 11_000_000_000) {
             Ok(r) => r,
             Err(eval_err) => {

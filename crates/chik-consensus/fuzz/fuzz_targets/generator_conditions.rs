@@ -6,8 +6,8 @@ use chik_consensus::{
 };
 use chik_protocol::{Bytes, Coin, CoinSpend, Program, SpendBundle};
 use chik_traits::Streamable;
-use klvm_traits::ToKlvm;
-use klvmr::{Allocator, NodePtr, serde::node_to_bytes};
+use clvk_traits::ToClvk;
+use clvkr::{Allocator, NodePtr, serde::node_to_bytes};
 use libfuzzer_sys::fuzz_target;
 use std::io::{Cursor, Read};
 
@@ -32,7 +32,7 @@ fuzz_target!(|data: &[u8]| {
     // A puzzle of `1` returns the solution exactly,
     // so we can make the solution a list of conditions
     let one_puz = Program::new(Bytes::from(bytes));
-    let Ok(one_puzhash) = klvm_utils::tree_hash_from_bytes(&one_puz) else {
+    let Ok(one_puzhash) = clvk_utils::tree_hash_from_bytes(&one_puz) else {
         return;
     };
     let mut coinspend_conditions = Vec::<(CoinSpend, Vec<(u8, Vec<NodePtr>)>)>::new();
@@ -61,7 +61,7 @@ fuzz_target!(|data: &[u8]| {
                 return;
             };
             let opcode: u8 = (buf[0] % 100) + 1;
-            cond_vec.push(opcode.to_klvm(&mut a).expect("opcode"));
+            cond_vec.push(opcode.to_clvk(&mut a).expect("opcode"));
 
             let mut buf = [0u8; 1];
             let Ok(()) = data.read_exact(&mut buf) else {
@@ -82,7 +82,7 @@ fuzz_target!(|data: &[u8]| {
             conds_for_later_comparison.push((opcode, cond_vec[1..].to_vec()));
         }
 
-        let solution = conds.to_klvm(&mut a).expect("vec of nodes");
+        let solution = conds.to_clvk(&mut a).expect("vec of nodes");
         let solution_bytes = node_to_bytes(&a, solution).expect("node to bytes");
 
         let coinspend = CoinSpend {

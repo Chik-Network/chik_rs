@@ -11,11 +11,11 @@ use chik_traits::streamable::Streamable;
 
 use chik_bls::G2Element;
 use chik_protocol::{Bytes32, Coin, CoinSpend, Program, SpendBundle};
+use clvk_traits::FromClvk;
+use clvk_utils::{CurriedProgram, tree_hash};
+use clvkr::Allocator;
+use clvkr::allocator::NodePtr;
 use core::sync::atomic::Ordering;
-use klvm_traits::FromKlvm;
-use klvm_utils::{CurriedProgram, tree_hash};
-use klvmr::Allocator;
-use klvmr::allocator::NodePtr;
 use std::collections::HashSet;
 use std::fs::{File, write};
 use std::io::Write;
@@ -119,7 +119,7 @@ fn main() {
                         |a, parent_coin_info, amount, puzzle, solution| {
                             let puzzle_hash = Bytes32::from(tree_hash(a, puzzle));
                             let mod_hash =
-                                match CurriedProgram::<NodePtr, NodePtr>::from_klvm(a, puzzle) {
+                                match CurriedProgram::<NodePtr, NodePtr>::from_clvk(a, puzzle) {
                                     Ok(uncurried) => Bytes32::from(tree_hash(a, uncurried.program)),
                                     _ => puzzle_hash,
                                 };
@@ -137,8 +137,8 @@ fn main() {
                                 return;
                             }
                             let puzzle_reveal =
-                                Program::from_klvm(a, puzzle).expect("puzzle reveal");
-                            let solution = Program::from_klvm(a, solution).expect("solution");
+                                Program::from_clvk(a, puzzle).expect("puzzle reveal");
+                            let solution = Program::from_clvk(a, solution).expect("solution");
                             let coin = Coin {
                                 parent_coin_info,
                                 puzzle_hash,

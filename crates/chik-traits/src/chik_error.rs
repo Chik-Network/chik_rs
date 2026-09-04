@@ -16,8 +16,8 @@ pub enum Error {
     SequenceTooLarge,
     #[error("invalid enum value")]
     InvalidEnum,
-    #[error("invalid KLVM serialization")]
-    InvalidKlvm,
+    #[error("invalid CLVK serialization")]
+    InvalidClvk,
     #[error("invalid pot iteration")]
     InvalidPotIteration,
     #[error("Invalid ProofOfSpace")]

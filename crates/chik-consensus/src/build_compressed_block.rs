@@ -2,8 +2,8 @@ use crate::consensus_constants::ConsensusConstants;
 use crate::error::Result;
 use chik_bls::Signature;
 use chik_protocol::SpendBundle;
-use klvmr::allocator::{Allocator, NodePtr};
-use klvmr::serde::{Serializer, node_from_bytes_backrefs};
+use clvkr::allocator::{Allocator, NodePtr};
+use clvkr::serde::{Serializer, node_from_bytes_backrefs};
 use std::borrow::Borrow;
 
 #[cfg(feature = "py-bindings")]
@@ -55,7 +55,7 @@ pub struct BlockBuilder {
     // large, we give up
     num_skipped: u32,
 
-    // the serializer for the generator KLVM
+    // the serializer for the generator CLVK
     ser: Serializer,
 }
 
@@ -100,7 +100,7 @@ impl BlockBuilder {
     }
 
     /// add a batch of spend bundles to the generator. The cost for each bundle
-    /// must be *only* the KLVM execution cost + the cost of the conditions.
+    /// must be *only* the CLVK execution cost + the cost of the conditions.
     /// It must not include the byte cost of the bundle. The byte cost is
     /// unpredictible as the generator is being / compressed. The true byte cost
     /// is computed by this function. / returns true if the bundles could be added
@@ -119,12 +119,12 @@ impl BlockBuilder {
     {
         // if we're very close to a full block, we're done. It's very unlikely
         // any transaction will be smallar than MIN_COST_THRESHOLD
-        if self.byte_cost + self.block_cost + MIN_COST_THRESHOLD > constants.max_block_cost_klvm {
+        if self.byte_cost + self.block_cost + MIN_COST_THRESHOLD > constants.max_block_cost_clvk {
             self.num_skipped += 1;
             return Ok((false, BuildBlockResult::Done));
         }
 
-        if self.byte_cost + self.block_cost + cost > constants.max_block_cost_klvm {
+        if self.byte_cost + self.block_cost + cost > constants.max_block_cost_clvk {
             self.num_skipped += 1;
             return Ok((false, result(self.num_skipped)));
         }
@@ -157,7 +157,7 @@ impl BlockBuilder {
 
         // closing the lists at the end needs 2 extra bytes
         self.byte_cost = (self.ser.size() + 2) * constants.cost_per_byte;
-        if self.byte_cost + self.block_cost + cost > constants.max_block_cost_klvm {
+        if self.byte_cost + self.block_cost + cost > constants.max_block_cost_clvk {
             // Undo the last add() call.
             // It might be tempting to reset the allocator as well, however,
             // the incremental serializer will have already cached the tree we
@@ -175,7 +175,7 @@ impl BlockBuilder {
         // if we're very close to a full block, we're done. It's very unlikely
         // any transaction will be smallar than MIN_COST_THRESHOLD
         let result = if done
-            || self.byte_cost + self.block_cost + MIN_COST_THRESHOLD > constants.max_block_cost_klvm
+            || self.byte_cost + self.block_cost + MIN_COST_THRESHOLD > constants.max_block_cost_clvk
         {
             BuildBlockResult::Done
         } else {
@@ -196,7 +196,7 @@ impl BlockBuilder {
         // add the size cost before returning it
         self.block_cost += self.ser.size() * constants.cost_per_byte;
 
-        assert!(self.block_cost <= constants.max_block_cost_klvm);
+        assert!(self.block_cost <= constants.max_block_cost_clvk);
         Ok((self.ser.into_inner(), self.signature, self.block_cost))
     }
 }
@@ -427,7 +427,7 @@ mod tests {
                 let (a, conds) = run_block_generator2::<&[u8], _>(
                     generator.as_slice(),
                     [],
-                    TEST_CONSTANTS.max_block_cost_klvm,
+                    TEST_CONSTANTS.max_block_cost_clvk,
                     MEMPOOL_MODE,
                     &signature,
                     None,

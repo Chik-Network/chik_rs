@@ -13,9 +13,9 @@ workspace = true
 
 [dependencies]
 libfuzzer-sys = { workspace = true }
-klvmr = { workspace = true }
+clvkr = { workspace = true }
 chik-puzzle-types = { workspace = true, features = ["arbitrary"] }
-klvm-traits = { workspace = true }
+clvk-traits = { workspace = true }
 
 [[bin]]
 name = "roundtrip"

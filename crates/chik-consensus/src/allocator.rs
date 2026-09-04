@@ -1,4 +1,4 @@
-use klvmr::allocator::Allocator;
+use clvkr::allocator::Allocator;
 
 use crate::flags::ConsensusFlags;
 

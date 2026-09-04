@@ -5,14 +5,14 @@ use chik_consensus::generator_cost::interned_vbytes;
 use chik_consensus::serde_2026::{
     SERDE_2026_COMPRESSION_LEVEL, max_canonical_blob_size, node_from_bytes_auto,
 };
-use klvm_fuzzing::make_tree;
-use klvmr::Allocator;
-use klvmr::serde::{SERDE_2026_MAGIC_PREFIX, intern_tree, serialize_2026};
+use clvk_fuzzing::make_tree;
+use clvkr::Allocator;
+use clvkr::serde::{SERDE_2026_MAGIC_PREFIX, intern_tree, serialize_2026};
 
 // Empirically checks the theorem behind `max_canonical_blob_size` (see the
 // proof on that function; this target hunts for counterexamples):
 //
-// 1. Encoding bound: for ANY KLVM tree, the canonical serde_2026 wire
+// 1. Encoding bound: for ANY CLVK tree, the canonical serde_2026 wire
 //    encoding is at most interned_vbytes(tree) + 5 bytes plus the magic
 //    prefix.
 // 2. Corollary, at fuzzed cost constants: if the tree is affordable under

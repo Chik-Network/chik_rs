@@ -137,7 +137,7 @@ The following crates have fuzzers:
 - chik-consensus
 - chik-protocol
 - chik-puzzle-types
-- klvm-utils
+- clvk-utils
 
 To list and run fuzzers:
 

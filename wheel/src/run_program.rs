@@ -2,11 +2,11 @@ use crate::error::map_pyerr;
 use chik_consensus::allocator::make_allocator;
 use chik_consensus::flags::ConsensusFlags;
 use chik_protocol::LazyNode;
-use klvmr::chik_dialect::ChikDialect;
-use klvmr::cost::Cost;
-use klvmr::reduction::Response;
-use klvmr::run_program::run_program;
-use klvmr::serde::{
+use clvkr::chik_dialect::ChikDialect;
+use clvkr::cost::Cost;
+use clvkr::reduction::Response;
+use clvkr::run_program::run_program;
+use clvkr::serde::{
     node_from_bytes_backrefs, serialized_length_from_bytes, serialized_length_from_bytes_trusted,
 };
 use pyo3::buffer::PyBuffer;
@@ -41,7 +41,7 @@ pub fn run_chik_program(
     flags: ConsensusFlags,
 ) -> PyResult<(Cost, LazyNode)> {
     let mut allocator = make_allocator(flags);
-    let flags = flags.to_klvm_flags();
+    let flags = flags.to_clvk_flags();
 
     let reduction = (|| -> PyResult<Response> {
         let program = node_from_bytes_backrefs(&mut allocator, program).map_err(map_pyerr)?;

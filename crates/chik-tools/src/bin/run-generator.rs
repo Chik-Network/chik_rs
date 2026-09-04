@@ -83,9 +83,9 @@ fn main() {
             println!("allocated_heap: {}", allocator.allocated_heap_size());
             println!("time: {elapsed:.3?}");
             let nanos = elapsed.as_nanos() as f64;
-            let klvm_cost = conditions.execution_cost + conditions.condition_cost;
-            if klvm_cost > 0 {
-                println!("ns/cost: {:.4}", nanos / klvm_cost as f64);
+            let clvk_cost = conditions.execution_cost + conditions.condition_cost;
+            if clvk_cost > 0 {
+                println!("ns/cost: {:.4}", nanos / clvk_cost as f64);
             }
         }
         Err(err) => {

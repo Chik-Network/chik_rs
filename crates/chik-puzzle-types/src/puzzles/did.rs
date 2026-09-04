@@ -1,14 +1,14 @@
 use chik_bls::PublicKey;
 use chik_protocol::Bytes32;
 use chik_puzzles::DID_INNERPUZ_HASH;
-use klvm_traits::{FromKlvm, ToKlvm};
-use klvm_utils::{CurriedProgram, ToTreeHash, TreeHash};
+use clvk_traits::{FromClvk, ToClvk};
+use clvk_utils::{CurriedProgram, ToTreeHash, TreeHash};
 
 use crate::{CoinProof, singleton::SingletonStruct};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(curry)]
+#[clvk(curry)]
 pub struct DidArgs<I, M> {
     pub inner_puzzle: I,
     pub recovery_list_hash: Option<Bytes32>,
@@ -57,18 +57,18 @@ impl DidArgs<TreeHash, TreeHash> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(list)]
+#[clvk(list)]
 #[repr(u8)]
 pub enum DidSolution<I> {
-    Recover(#[klvm(rest)] Box<DidRecoverySolution>) = 0,
+    Recover(#[clvk(rest)] Box<DidRecoverySolution>) = 0,
     Spend(I) = 1,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(list)]
+#[clvk(list)]
 pub struct DidRecoverySolution {
     pub amount: u64,
     pub new_inner_puzzle_hash: Bytes32,
@@ -80,9 +80,9 @@ pub struct DidRecoverySolution {
 #[cfg(test)]
 mod tests {
     use chik_puzzles::DID_INNERPUZ;
-    use klvm_traits::{klvm_list, match_list};
-    use klvmr::chik_dialect::KlvmFlags;
-    use klvmr::{
+    use clvk_traits::{clvk_list, match_list};
+    use clvkr::chik_dialect::ClvkFlags;
+    use clvkr::{
         Allocator, ChikDialect, run_program,
         serde::{node_from_bytes, node_to_bytes},
     };
@@ -93,11 +93,11 @@ mod tests {
     fn did_solution() {
         let a = &mut Allocator::new();
 
-        let ptr = klvm_list!(1, klvm_list!(42, "test")).to_klvm(a).unwrap();
-        let did_solution = DidSolution::<match_list!(i32, String)>::from_klvm(a, ptr).unwrap();
+        let ptr = clvk_list!(1, clvk_list!(42, "test")).to_clvk(a).unwrap();
+        let did_solution = DidSolution::<match_list!(i32, String)>::from_clvk(a, ptr).unwrap();
         assert_eq!(
             did_solution,
-            DidSolution::Spend(klvm_list!(42, "test".to_string()))
+            DidSolution::Spend(clvk_list!(42, "test".to_string()))
         );
 
         let puzzle = node_from_bytes(a, &DID_INNERPUZ).unwrap();
@@ -105,12 +105,12 @@ mod tests {
             program: puzzle,
             args: DidArgs::new(1, None, 1, SingletonStruct::new(Bytes32::default()), ()),
         }
-        .to_klvm(a)
+        .to_clvk(a)
         .unwrap();
 
         let output = run_program(
             a,
-            &ChikDialect::new(KlvmFlags::empty()),
+            &ChikDialect::new(ClvkFlags::empty()),
             curried,
             ptr,
             u64::MAX,
@@ -126,8 +126,8 @@ mod tests {
     fn did_solution_roundtrip() {
         let a = &mut Allocator::new();
         let did_solution = DidSolution::Spend(a.nil());
-        let ptr = did_solution.to_klvm(a).unwrap();
-        let roundtrip = DidSolution::from_klvm(a, ptr).unwrap();
+        let ptr = did_solution.to_clvk(a).unwrap();
+        let roundtrip = DidSolution::from_clvk(a, ptr).unwrap();
         assert_eq!(did_solution, roundtrip);
     }
 }

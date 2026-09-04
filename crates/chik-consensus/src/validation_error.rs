@@ -1,5 +1,5 @@
-use klvmr::allocator::{Allocator, Atom, NodePtr, SExp};
-use klvmr::error::EvalErr;
+use clvkr::allocator::{Allocator, Atom, NodePtr, SExp};
+use clvkr::error::EvalErr;
 use thiserror::Error;
 
 #[cfg(feature = "py-bindings")]

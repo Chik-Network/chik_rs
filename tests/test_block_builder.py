@@ -1,6 +1,6 @@
 from chik_rs import (
     BlockBuilder,
-    validate_klvm_and_signature,
+    validate_clvk_and_signature,
     SpendBundle,
     run_block_generator,
     run_block_generator2,
@@ -25,7 +25,7 @@ def test_block_builder() -> None:
             continue
         with open(join("test-bundles", name), "rb") as f:
             sb = SpendBundle.from_bytes(f.read())
-            conds, bls_cache, duration = validate_klvm_and_signature(
+            conds, bls_cache, duration = validate_clvk_and_signature(
                 sb, 11000000000, DEFAULT_CONSTANTS, 5000000
             )
             cost = uint64(conds.execution_cost + conds.condition_cost)

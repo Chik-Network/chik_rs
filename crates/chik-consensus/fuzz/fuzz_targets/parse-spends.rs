@@ -3,11 +3,11 @@ use libfuzzer_sys::{arbitrary, fuzz_target};
 
 use chik_bls::Signature;
 use chik_consensus::conditions::{MempoolVisitor, parse_spends};
-use klvmr::{Allocator, NodePtr};
+use clvkr::{Allocator, NodePtr};
 
 use chik_consensus::consensus_constants::TEST_CONSTANTS;
 use chik_consensus::flags::ConsensusFlags;
-use klvm_fuzzing::make_list;
+use clvk_fuzzing::make_list;
 
 fuzz_target!(|data: &[u8]| {
     let mut a = Allocator::new();
@@ -24,7 +24,7 @@ fuzz_target!(|data: &[u8]| {
             &a,
             input,
             33_000_000_000,
-            0, // klvm_cost
+            0, // clvk_cost
             *flags,
             &Signature::default(),
             None,

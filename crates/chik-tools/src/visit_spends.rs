@@ -3,13 +3,13 @@ use chik_protocol::Bytes32;
 use chik_protocol::FullBlock;
 use chik_puzzles::CHIKLISP_DESERIALISATION;
 use chik_traits::streamable::Streamable;
-use klvm_traits::{FromKlvm, destructure_list, match_list};
-use klvmr::Allocator;
-use klvmr::allocator::NodePtr;
-use klvmr::chik_dialect::{ChikDialect, KlvmFlags};
-use klvmr::reduction::Reduction;
-use klvmr::run_program::run_program;
-use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs};
+use clvk_traits::{FromClvk, destructure_list, match_list};
+use clvkr::Allocator;
+use clvkr::allocator::NodePtr;
+use clvkr::chik_dialect::{ChikDialect, ClvkFlags};
+use clvkr::reduction::Reduction;
+use clvkr::run_program::run_program;
+use clvkr::serde::{node_from_bytes, node_from_bytes_backrefs};
 use rusqlite::Connection;
 
 pub fn iterate_blocks(
@@ -97,7 +97,7 @@ pub fn visit_spends<
     max_cost: u64,
     mut callback: F,
 ) -> Result<(), ValidationErr> {
-    let klvm_deserializer = node_from_bytes(a, &CHIKLISP_DESERIALISATION)?;
+    let clvk_deserializer = node_from_bytes(a, &CHIKLISP_DESERIALISATION)?;
     let program = node_from_bytes_backrefs(a, program)?;
 
     // iterate in reverse order since we're building a linked list from
@@ -111,9 +111,9 @@ pub fn visit_spends<
     // the first argument to the generator is the serializer, followed by a list
     // of the blocks it requested.
     let mut args = a.new_pair(blocks, a.nil())?;
-    args = a.new_pair(klvm_deserializer, args)?;
+    args = a.new_pair(clvk_deserializer, args)?;
 
-    let dialect = ChikDialect::new(KlvmFlags::empty());
+    let dialect = ChikDialect::new(ClvkFlags::empty());
 
     let Reduction(_, mut all_spends) = run_program(a, &dialect, program, args, max_cost)?;
 
@@ -127,7 +127,7 @@ pub fn visit_spends<
         all_spends = rest;
         // process the spend
         let destructure_list!(parent_id, puzzle, amount, solution, _spend_level_extra) =
-            <match_list!(Bytes32, NodePtr, u64, NodePtr, NodePtr)>::from_klvm(a, spend)
+            <match_list!(Bytes32, NodePtr, u64, NodePtr, NodePtr)>::from_clvk(a, spend)
                 .map_err(|_| ValidationErr::Err(ErrorCode::InvalidCondition))?;
         callback(a, parent_id, amount, puzzle, solution);
     }

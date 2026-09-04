@@ -2,9 +2,9 @@
 
 use chik_protocol::Coin;
 use chik_protocol::{Bytes32, SpendBundle};
-use klvm_traits::FromKlvm;
-use klvmr::op_utils::{first, rest};
-use klvmr::{Allocator, KlvmFlags, NodePtr};
+use clvk_traits::FromClvk;
+use clvkr::op_utils::{first, rest};
+use clvkr::{Allocator, ClvkFlags, NodePtr};
 use libfuzzer_sys::{Corpus, fuzz_target};
 use std::collections::HashSet;
 
@@ -22,7 +22,7 @@ fuzz_target!(|bundle: SpendBundle| -> Corpus {
     for cs in &bundle.coin_spends {
         let (cost, mut conds) = cs
             .puzzle_reveal
-            .run(&mut a, KlvmFlags::empty(), 11_000_000_000, &cs.solution)
+            .run(&mut a, ClvkFlags::empty(), 11_000_000_000, &cs.solution)
             .expect("run");
         total_cost += cost;
 
@@ -38,7 +38,7 @@ fuzz_target!(|bundle: SpendBundle| -> Corpus {
             }
             if buf.as_ref()[0] == 51 {
                 let (puzzle_hash, (amount, _)) =
-                    <(Bytes32, (u64, NodePtr))>::from_klvm(&a, c).expect("parse spend");
+                    <(Bytes32, (u64, NodePtr))>::from_clvk(&a, c).expect("parse spend");
                 expected.insert(Coin {
                     parent_coin_info,
                     puzzle_hash,

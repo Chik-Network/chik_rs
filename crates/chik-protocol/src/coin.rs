@@ -1,9 +1,9 @@
 use crate::{Bytes32, BytesImpl};
 use chik_sha2::Sha256;
 use chik_streamable_macro::streamable;
-use klvm_traits::{
-    FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder, ToKlvm, ToKlvmError, destructure_list,
-    klvm_list, match_list,
+use clvk_traits::{
+    ClvkDecoder, ClvkEncoder, FromClvk, FromClvkError, ToClvk, ToClvkError, clvk_list,
+    destructure_list, match_list,
 };
 
 #[cfg(feature = "py-bindings")]
@@ -71,16 +71,16 @@ impl Coin {
     }
 }
 
-impl<N, E: KlvmEncoder<Node = N>> ToKlvm<E> for Coin {
-    fn to_klvm(&self, encoder: &mut E) -> Result<N, ToKlvmError> {
-        klvm_list!(self.parent_coin_info, self.puzzle_hash, self.amount).to_klvm(encoder)
+impl<N, E: ClvkEncoder<Node = N>> ToClvk<E> for Coin {
+    fn to_clvk(&self, encoder: &mut E) -> Result<N, ToClvkError> {
+        clvk_list!(self.parent_coin_info, self.puzzle_hash, self.amount).to_clvk(encoder)
     }
 }
 
-impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for Coin {
-    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
+impl<N, D: ClvkDecoder<Node = N>> FromClvk<D> for Coin {
+    fn from_clvk(decoder: &D, node: N) -> Result<Self, FromClvkError> {
         let destructure_list!(parent_coin_info, puzzle_hash, amount) =
-            <match_list!(BytesImpl<32>, BytesImpl<32>, u64)>::from_klvm(decoder, node)?;
+            <match_list!(BytesImpl<32>, BytesImpl<32>, u64)>::from_clvk(decoder, node)?;
         Ok(Coin {
             parent_coin_info,
             puzzle_hash,
@@ -92,7 +92,7 @@ impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for Coin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use klvmr::{
+    use clvkr::{
         Allocator,
         serde::{node_from_bytes, node_to_bytes},
     };
@@ -138,9 +138,9 @@ mod tests {
         let expected_bytes = hex::decode(expected).unwrap();
 
         let ptr = node_from_bytes(a, &expected_bytes).unwrap();
-        let coin = Coin::from_klvm(a, ptr).unwrap();
+        let coin = Coin::from_clvk(a, ptr).unwrap();
 
-        let round_trip = coin.to_klvm(a).unwrap();
+        let round_trip = coin.to_clvk(a).unwrap();
         assert_eq!(expected, hex::encode(node_to_bytes(a, round_trip).unwrap()));
     }
 }

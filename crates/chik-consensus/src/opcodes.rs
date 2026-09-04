@@ -1,5 +1,5 @@
-use klvmr::allocator::{Allocator, NodePtr, SExp};
-use klvmr::cost::Cost;
+use clvkr::allocator::{Allocator, NodePtr, SExp};
+use clvkr::cost::Cost;
 
 pub type ConditionOpcode = u16;
 

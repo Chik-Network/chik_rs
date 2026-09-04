@@ -1,8 +1,8 @@
 use chik_sha2::Sha256;
 use chik_traits::{Streamable, chik_error, read_bytes};
-use klvm_traits::{FromKlvm, FromKlvmError, KlvmDecoder, KlvmEncoder, ToKlvm, ToKlvmError};
-use klvm_utils::TreeHash;
-use klvmr::Atom;
+use clvk_traits::{ClvkDecoder, ClvkEncoder, FromClvk, FromClvkError, ToClvk, ToClvkError};
+use clvk_utils::TreeHash;
+use clvkr::Atom;
 use std::array::TryFromSliceError;
 use std::fmt;
 use std::io::Cursor;
@@ -134,14 +134,14 @@ impl FromJsonDict for Bytes {
     }
 }
 
-impl<N, E: KlvmEncoder<Node = N>> ToKlvm<E> for Bytes {
-    fn to_klvm(&self, encoder: &mut E) -> Result<N, ToKlvmError> {
+impl<N, E: ClvkEncoder<Node = N>> ToClvk<E> for Bytes {
+    fn to_clvk(&self, encoder: &mut E) -> Result<N, ToClvkError> {
         encoder.encode_atom(Atom::Borrowed(self.0.as_slice()))
     }
 }
 
-impl<N, D: KlvmDecoder<Node = N>> FromKlvm<D> for Bytes {
-    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
+impl<N, D: ClvkDecoder<Node = N>> FromClvk<D> for Bytes {
+    fn from_clvk(decoder: &D, node: N) -> Result<Self, FromClvkError> {
         let bytes = decoder.decode_atom(&node)?;
         Ok(Self(bytes.as_ref().to_vec()))
     }
@@ -298,17 +298,17 @@ impl<const N: usize> FromJsonDict for BytesImpl<N> {
     }
 }
 
-impl<N, E: KlvmEncoder<Node = N>, const LEN: usize> ToKlvm<E> for BytesImpl<LEN> {
-    fn to_klvm(&self, encoder: &mut E) -> Result<N, ToKlvmError> {
+impl<N, E: ClvkEncoder<Node = N>, const LEN: usize> ToClvk<E> for BytesImpl<LEN> {
+    fn to_clvk(&self, encoder: &mut E) -> Result<N, ToClvkError> {
         encoder.encode_atom(Atom::Borrowed(self.0.as_slice()))
     }
 }
 
-impl<N, D: KlvmDecoder<Node = N>, const LEN: usize> FromKlvm<D> for BytesImpl<LEN> {
-    fn from_klvm(decoder: &D, node: N) -> Result<Self, FromKlvmError> {
+impl<N, D: ClvkDecoder<Node = N>, const LEN: usize> FromClvk<D> for BytesImpl<LEN> {
+    fn from_clvk(decoder: &D, node: N) -> Result<Self, FromClvkError> {
         let bytes = decoder.decode_atom(&node)?;
         if bytes.as_ref().len() != LEN {
-            return Err(FromKlvmError::WrongAtomLength {
+            return Err(FromClvkError::WrongAtomLength {
                 expected: LEN,
                 found: bytes.as_ref().len(),
             });
@@ -503,7 +503,7 @@ impl<'a, 'py> FromPyObject<'a, 'py> for Bytes {
 mod tests {
     use super::*;
 
-    use klvmr::{
+    use clvkr::{
         Allocator,
         serde::{node_from_bytes, node_to_bytes},
     };
@@ -673,9 +673,9 @@ mod tests {
         let expected_bytes = hex::decode(expected).unwrap();
 
         let ptr = node_from_bytes(a, &expected_bytes).unwrap();
-        let bytes = Bytes::from_klvm(a, ptr).unwrap();
+        let bytes = Bytes::from_clvk(a, ptr).unwrap();
 
-        let round_trip = bytes.to_klvm(a).unwrap();
+        let round_trip = bytes.to_clvk(a).unwrap();
         assert_eq!(expected, hex::encode(node_to_bytes(a, round_trip).unwrap()));
     }
 
@@ -686,9 +686,9 @@ mod tests {
         let expected_bytes = hex::decode(expected).unwrap();
 
         let ptr = node_from_bytes(a, &expected_bytes).unwrap();
-        let bytes32 = Bytes32::from_klvm(a, ptr).unwrap();
+        let bytes32 = Bytes32::from_clvk(a, ptr).unwrap();
 
-        let round_trip = bytes32.to_klvm(a).unwrap();
+        let round_trip = bytes32.to_clvk(a).unwrap();
         assert_eq!(expected, hex::encode(node_to_bytes(a, round_trip).unwrap()));
     }
 
@@ -698,12 +698,12 @@ mod tests {
         let bytes =
             hex::decode("f07522495060c066f66f32acc2a77e3a3e737aca8baea4d1a64ea4cdc13da9").unwrap();
         let ptr = a.new_atom(&bytes).unwrap();
-        assert!(Bytes32::from_klvm(a, ptr).is_err());
+        assert!(Bytes32::from_clvk(a, ptr).is_err());
 
         let ptr = a.new_pair(a.one(), a.one()).unwrap();
         assert_eq!(
-            Bytes32::from_klvm(a, ptr).unwrap_err(),
-            FromKlvmError::ExpectedAtom
+            Bytes32::from_clvk(a, ptr).unwrap_err(),
+            FromClvkError::ExpectedAtom
         );
     }
 }

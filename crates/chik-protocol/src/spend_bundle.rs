@@ -4,11 +4,11 @@ use crate::coin_spend::CoinSpend;
 use chik_bls::G2Element;
 use chik_streamable_macro::streamable;
 use chik_traits::Streamable;
-use klvm_traits::FromKlvm;
-use klvmr::cost::Cost;
-use klvmr::error::EvalErr;
-use klvmr::op_utils::{first, rest};
-use klvmr::{Allocator, KlvmFlags, NodePtr, SExp};
+use clvk_traits::FromClvk;
+use clvkr::cost::Cost;
+use clvkr::error::EvalErr;
+use clvkr::op_utils::{first, rest};
+use clvkr::{Allocator, ClvkFlags, NodePtr, SExp};
 
 #[cfg(feature = "py-bindings")]
 use pyo3::prelude::*;
@@ -62,7 +62,7 @@ impl SpendBundle {
             a.restore_checkpoint(&checkpoint);
             let (cost, mut conds) =
                 cs.puzzle_reveal
-                    .run(&mut a, KlvmFlags::empty(), cost_left, &cs.solution)?;
+                    .run(&mut a, ClvkFlags::empty(), cost_left, &cs.solution)?;
             if cost > cost_left {
                 return Err(EvalErr::CostExceeded);
             }
@@ -84,7 +84,7 @@ impl SpendBundle {
                     continue;
                 }
                 if buf[0] == CREATE_COIN {
-                    let (puzzle_hash, (amount, _)) = <(Bytes32, (u64, NodePtr))>::from_klvm(&a, c)
+                    let (puzzle_hash, (amount, _)) = <(Bytes32, (u64, NodePtr))>::from_clvk(&a, c)
                         .map_err(|_| {
                             EvalErr::InvalidOpArg(c, "failed to parse spend".to_string())
                         })?;
@@ -221,7 +221,7 @@ mod tests {
         body(test_coin, bundle);
     }
 
-    // TODO: Once we have condition types that implement ToKlvm and an Encoder
+    // TODO: Once we have condition types that implement ToClvk and an Encoder
     // that serialize directly to bytes, these test solutions can be expressed
     // in a much more readable way
     #[test]

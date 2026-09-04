@@ -4,11 +4,11 @@ use chik_protocol::Coin;
 use chik_puzzle_types::Proof;
 use chik_puzzle_types::singleton::{SingletonArgs, SingletonSolution, SingletonStruct};
 use chik_puzzles::SINGLETON_TOP_LAYER_V1_1_HASH;
-use klvm_traits::{FromKlvm, ToKlvm};
-use klvm_utils::CurriedProgram;
-use klvm_utils::TreeHash;
-use klvm_utils::{tree_hash, tree_hash_atom, tree_hash_pair};
-use klvmr::allocator::{Allocator, NodePtr};
+use clvk_traits::{FromClvk, ToClvk};
+use clvk_utils::CurriedProgram;
+use clvk_utils::TreeHash;
+use clvk_utils::{tree_hash, tree_hash_atom, tree_hash_pair};
+use clvkr::allocator::{Allocator, NodePtr};
 
 // TODO: replace this with a generic function to compute the hash of curried
 // puzzles
@@ -76,8 +76,8 @@ pub fn fast_forward_singleton(
         return Err(Error::PuzzleHashMismatch);
     }
 
-    let singleton = CurriedProgram::<NodePtr, SingletonArgs<NodePtr>>::from_klvm(a, puzzle)?;
-    let mut new_solution = SingletonSolution::<NodePtr>::from_klvm(a, solution)?;
+    let singleton = CurriedProgram::<NodePtr, SingletonArgs<NodePtr>>::from_clvk(a, puzzle)?;
+    let mut new_solution = SingletonSolution::<NodePtr>::from_clvk(a, solution)?;
 
     let Proof::Lineage(lineage_proof) = &mut new_solution.lineage_proof else {
         return Err(Error::ExpectedLineageProof);
@@ -156,7 +156,7 @@ pub fn fast_forward_singleton(
         return Err(Error::CoinMismatch);
     }
 
-    Ok(new_solution.to_klvm(a)?)
+    Ok(new_solution.to_clvk(a)?)
 }
 
 #[cfg(test)]
@@ -172,14 +172,14 @@ mod tests {
     use chik_protocol::Coin;
     use chik_protocol::CoinSpend;
     use chik_traits::streamable::Streamable;
+    use clvk_traits::ToClvk;
+    use clvk_utils::tree_hash;
+    use clvkr::allocator::Allocator;
+    use clvkr::chik_dialect::{ChikDialect, ClvkFlags};
+    use clvkr::reduction::Reduction;
+    use clvkr::run_program::run_program;
+    use clvkr::serde::{node_from_bytes, node_to_bytes};
     use hex_literal::hex;
-    use klvm_traits::ToKlvm;
-    use klvm_utils::tree_hash;
-    use klvmr::allocator::Allocator;
-    use klvmr::chik_dialect::{ChikDialect, KlvmFlags};
-    use klvmr::reduction::Reduction;
-    use klvmr::run_program::run_program;
-    use klvmr::serde::{node_from_bytes, node_to_bytes};
     use rstest::rstest;
     use std::fs;
     use std::sync::Arc;
@@ -194,11 +194,11 @@ mod tests {
         let puzzle = node_from_bytes(a, puzzle)?;
         let solution = node_from_bytes(a, solution)?;
 
-        let dialect = ChikDialect::new(KlvmFlags::empty());
+        let dialect = ChikDialect::new(ClvkFlags::empty());
         let max_cost = 11_000_000_000;
         let atoms_before = a.atom_count();
         let pairs_before = a.pair_count();
-        let Reduction(klvm_cost, conditions) =
+        let Reduction(clvk_cost, conditions) =
             run_program(a, &dialect, puzzle, solution, max_cost)?;
         let atom_count = (a.atom_count() - atoms_before) as u64;
         let pair_count = (a.pair_count() - pairs_before) as u64;
@@ -224,14 +224,14 @@ mod tests {
             amount,
             a.new_atom(&puzzle_hash)?,
             coin_id,
-            klvm_cost,
+            clvk_cost,
             atom_count,
             pair_count,
         );
 
         let mut visitor = MempoolVisitor::new_spend(&mut spend);
 
-        let mut cost_left = max_cost - klvm_cost;
+        let mut cost_left = max_cost - clvk_cost;
         parse_conditions(
             a,
             &mut ret,
@@ -268,8 +268,8 @@ mod tests {
         let new_parents_parent = hex::decode(new_parents_parent).unwrap();
 
         let mut a = Allocator::new_limited(500_000_000);
-        let puzzle = spend.puzzle_reveal.to_klvm(&mut a).expect("to_klvm");
-        let solution = spend.solution.to_klvm(&mut a).expect("to_klvm");
+        let puzzle = spend.puzzle_reveal.to_clvk(&mut a).expect("to_clvk");
+        let solution = spend.solution.to_clvk(&mut a).expect("to_clvk");
         let puzzle_hash = Bytes32::from(tree_hash(&a, puzzle));
 
         // fast-forwarding must not change the coin amounts, so the new parent
@@ -335,7 +335,7 @@ mod tests {
             &hex!("abababababababababababababababababababababababababababababababab");
 
         let mut a = Allocator::new_limited(500_000_000);
-        let puzzle = spend.puzzle_reveal.to_klvm(&mut a).expect("to_klvm");
+        let puzzle = spend.puzzle_reveal.to_clvk(&mut a).expect("to_clvk");
         let puzzle_hash = Bytes32::from(tree_hash(&a, puzzle));
 
         let mut new_parent_coin = Coin {
@@ -361,8 +361,8 @@ mod tests {
             &mut solution,
         );
 
-        let puzzle = node_from_bytes(&mut a, puzzle.as_slice()).expect("to_klvm");
-        let solution = node_from_bytes(&mut a, solution.as_slice()).expect("to_klvm");
+        let puzzle = node_from_bytes(&mut a, puzzle.as_slice()).expect("to_clvk");
+        let solution = node_from_bytes(&mut a, solution.as_slice()).expect("to_clvk");
 
         // attempt fast-forward
         assert_eq!(
@@ -439,13 +439,13 @@ mod tests {
 
     fn parse_solution(a: &mut Allocator, solution: &[u8]) -> SingletonSolution<NodePtr> {
         let new_solution = node_from_bytes(a, solution).expect("parse solution");
-        let solution = SingletonSolution::from_klvm(a, new_solution).expect("parse solution");
+        let solution = SingletonSolution::from_clvk(a, new_solution).expect("parse solution");
         assert!(matches!(solution.lineage_proof, Proof::Lineage(_)));
         solution
     }
 
     fn serialize_solution(a: &mut Allocator, solution: &SingletonSolution<NodePtr>) -> Vec<u8> {
-        let new_solution = solution.to_klvm(a).expect("to_klvm");
+        let new_solution = solution.to_clvk(a).expect("to_clvk");
         node_to_bytes(a, new_solution).expect("serialize solution")
     }
 
@@ -454,14 +454,14 @@ mod tests {
         puzzle: &[u8],
     ) -> CurriedProgram<NodePtr, SingletonArgs<NodePtr>> {
         let puzzle = node_from_bytes(a, puzzle).expect("parse puzzle");
-        CurriedProgram::<NodePtr, SingletonArgs<NodePtr>>::from_klvm(a, puzzle).expect("uncurry")
+        CurriedProgram::<NodePtr, SingletonArgs<NodePtr>>::from_clvk(a, puzzle).expect("uncurry")
     }
 
     fn serialize_singleton(
         a: &mut Allocator,
         singleton: &CurriedProgram<NodePtr, SingletonArgs<NodePtr>>,
     ) -> Vec<u8> {
-        let puzzle = singleton.to_klvm(a).expect("to_klvm");
+        let puzzle = singleton.to_clvk(a).expect("to_clvk");
         node_to_bytes(a, puzzle).expect("serialize puzzle")
     }
 

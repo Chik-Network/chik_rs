@@ -16,7 +16,7 @@ use std::io::Cursor;
 // Similar to ProofOfSpace, we use unused bits in the Option<> prefix byte
 // for transactions_generator to encode a version flag. Bit 1 (0b10) indicates
 // the "raw bytes" format where the generator is serialized as length-prefixed
-// bytes (like Bytes) instead of a self-describing KLVM Program, and
+// bytes (like Bytes) instead of a self-describing CLVK Program, and
 // transactions_generator_ref_list is omitted entirely.
 #[streamable(no_streamable)]
 pub struct FullBlock {

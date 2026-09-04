@@ -15,13 +15,13 @@ use crate::validation_error::ValidationErr;
 use chik_bls::PublicKey;
 use chik_protocol::{Bytes, SpendBundle};
 
-use klvm_utils::tree_hash;
-use klvmr::allocator::Allocator;
-use klvmr::chik_dialect::ChikDialect;
-use klvmr::reduction::Reduction;
-use klvmr::run_program::run_program;
-use klvmr::serde::intern_tree_limited;
-use klvmr::serde::node_from_bytes;
+use clvk_utils::tree_hash;
+use clvkr::allocator::Allocator;
+use clvkr::chik_dialect::ChikDialect;
+use clvkr::reduction::Reduction;
+use clvkr::run_program::run_program;
+use clvkr::serde::intern_tree_limited;
+use clvkr::serde::node_from_bytes;
 
 const QUOTE_BYTES: usize = 2;
 
@@ -87,7 +87,7 @@ pub fn run_spendbundle(
     // below is an adapted version of the code from run_block_generators::run_block_generator2()
     // it assumes no block references are passed in
     let mut cost_left = max_cost;
-    let dialect = ChikDialect::new(flags.to_klvm_flags());
+    let dialect = ChikDialect::new(flags.to_clvk_flags());
     let mut ret = SpendBundleConditions::default();
     let mut state = ParseState::default();
     let base_cost = calculate_base_cost(spend_bundle, flags, constants)?;
@@ -107,10 +107,10 @@ pub fn run_spendbundle(
         let amount = a.new_number(coin_spend.coin.amount.into())?;
         let atoms_before = a.atom_count();
         let pairs_before = a.pair_count();
-        let Reduction(klvm_cost, conditions) = run_program(a, &dialect, puz, sol, cost_left)?;
+        let Reduction(clvk_cost, conditions) = run_program(a, &dialect, puz, sol, cost_left)?;
 
-        ret.execution_cost += klvm_cost;
-        subtract_cost(&mut cost_left, klvm_cost)?;
+        ret.execution_cost += clvk_cost;
+        subtract_cost(&mut cost_left, clvk_cost)?;
         let atom_count = (a.atom_count() - atoms_before) as u64;
         let pair_count = (a.pair_count() - pairs_before) as u64;
 
@@ -129,7 +129,7 @@ pub fn run_spendbundle(
             conditions,
             flags,
             &mut cost_left,
-            klvm_cost,
+            clvk_cost,
             atom_count,
             pair_count,
             constants,
@@ -184,7 +184,7 @@ mod tests {
         .expect("run_spendbundle");
 
         let mut a2 = make_allocator(ConsensusFlags::LIMIT_HEAP);
-        let dialect = ChikDialect::new(flags.to_klvm_flags());
+        let dialect = ChikDialect::new(flags.to_clvk_flags());
 
         let mut spend_list = a2.nil();
         for coin_spend in spend_bundle.coin_spends.iter().rev() {
@@ -334,7 +334,7 @@ mod tests {
         assert_run_spendbundle_matches_parse_spends(&bundle);
     }
 
-    fn make_list(a: &mut Allocator, items: &[klvmr::NodePtr]) -> klvmr::NodePtr {
+    fn make_list(a: &mut Allocator, items: &[clvkr::NodePtr]) -> clvkr::NodePtr {
         let mut result = a.nil();
         for &item in items.iter().rev() {
             result = a.new_pair(item, result).unwrap();
@@ -345,26 +345,26 @@ mod tests {
     fn condition_node(
         a: &mut Allocator,
         opcode: crate::opcodes::ConditionOpcode,
-        args: &[klvmr::NodePtr],
-    ) -> klvmr::NodePtr {
+        args: &[clvkr::NodePtr],
+    ) -> clvkr::NodePtr {
         let op = a.new_number(opcode.into()).unwrap();
         let mut items = vec![op];
         items.extend_from_slice(args);
         make_list(a, &items)
     }
 
-    // The identity puzzle (KLVM atom 1): returns its solution as output.
+    // The identity puzzle (CLVK atom 1): returns its solution as output.
     const IDENTITY_PUZZLE: &[u8] = &[1];
 
     fn identity_puzzle_hash() -> [u8; 32] {
-        use klvm_utils::tree_hash_atom;
+        use clvk_utils::tree_hash_atom;
         tree_hash_atom(&[1]).to_bytes()
     }
 
     fn make_coin_spend(parent: [u8; 32], amount: u64, extra_conditions: &[&[u8]]) -> CoinSpend {
         use crate::opcodes::{ASSERT_MY_AMOUNT, CREATE_COIN};
         use chik_protocol::{Coin, Program};
-        use klvmr::serde::{node_from_bytes, node_to_bytes};
+        use clvkr::serde::{node_from_bytes, node_to_bytes};
 
         let mut a = Allocator::new();
         let puzzle_hash = identity_puzzle_hash();
@@ -392,10 +392,10 @@ mod tests {
 
     fn serialize_condition(
         opcode: crate::opcodes::ConditionOpcode,
-        args: &[klvmr::NodePtr],
+        args: &[clvkr::NodePtr],
         a: &Allocator,
     ) -> Vec<u8> {
-        use klvmr::serde::node_to_bytes;
+        use clvkr::serde::node_to_bytes;
         let mut a2 = Allocator::new();
         let op = a2.new_number(opcode.into()).unwrap();
         let mut items = vec![op];
@@ -465,7 +465,7 @@ mod tests {
 
         let a = Allocator::new();
         let nil = a.nil();
-        let empty_solution = klvmr::serde::node_to_bytes(&a, nil).unwrap();
+        let empty_solution = clvkr::serde::node_to_bytes(&a, nil).unwrap();
 
         let spend_b = CoinSpend::new(
             ephemeral_coin,
@@ -494,18 +494,18 @@ mod tests {
         use chik_protocol::Bytes32;
         use chik_protocol::Coin;
         use chik_protocol::Program;
-        use klvm_traits::{FromKlvm, destructure_tuple, match_tuple};
-        use klvm_utils::tree_hash_from_bytes;
-        use klvmr::NodePtr;
-        use klvmr::op_utils::first;
-        use klvmr::serde::node_from_bytes_backrefs;
+        use clvk_traits::{FromClvk, destructure_tuple, match_tuple};
+        use clvk_utils::tree_hash_from_bytes;
+        use clvkr::NodePtr;
+        use clvkr::op_utils::first;
+        use clvkr::serde::node_from_bytes_backrefs;
 
         let mut a = make_allocator(MEMPOOL_MODE);
 
         let generator = node_from_bytes_backrefs(&mut a, generator).expect("node_from_bytes");
         let args = setup_generator_args(&mut a, block_refs, ConsensusFlags::empty())
             .expect("setup_generator_args");
-        let dialect = ChikDialect::new(MEMPOOL_MODE.to_klvm_flags());
+        let dialect = ChikDialect::new(MEMPOOL_MODE.to_clvk_flags());
         let Reduction(_, mut all_spends) =
             run_program(&mut a, &dialect, generator, args, 11_000_000_000).expect("run_program");
 
@@ -520,8 +520,8 @@ mod tests {
             all_spends = rest;
             // process the spend
             let destructure_tuple!(parent_id, puzzle, amount, solution, _) =
-                <match_tuple!(Bytes32, Program, u64, Program, NodePtr)>::from_klvm(&a, spend)
-                    .expect("parsing KLVM");
+                <match_tuple!(Bytes32, Program, u64, Program, NodePtr)>::from_clvk(&a, spend)
+                    .expect("parsing CLVK");
             spends.push(CoinSpend::new(
                 Coin::new(
                     parent_id,
@@ -723,7 +723,7 @@ mod tests {
         let puzzle_hash = identity_puzzle_hash();
         let a = Allocator::new();
         let nil = a.nil();
-        let solution = klvmr::serde::node_to_bytes(&a, nil).unwrap();
+        let solution = clvkr::serde::node_to_bytes(&a, nil).unwrap();
 
         CoinSpend::new(
             Coin::new(parent.into(), puzzle_hash.into(), amount),

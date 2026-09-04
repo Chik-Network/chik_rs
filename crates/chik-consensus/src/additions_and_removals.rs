@@ -8,13 +8,13 @@ use crate::consensus_constants::ConsensusConstants;
 use crate::flags::ConsensusFlags;
 use crate::validation_error::{ErrorCode, ValidationErr, atom, first, next, rest};
 use chik_protocol::{Bytes, Bytes32};
-use klvm_traits::FromKlvm;
-use klvm_utils::{TreeCache, tree_hash_cached};
-use klvmr::allocator::{NodePtr, SExp};
-use klvmr::chik_dialect::ChikDialect;
-use klvmr::reduction::Reduction;
-use klvmr::run_program::run_program;
-use klvmr::serde::node_from_bytes_backrefs;
+use clvk_traits::FromClvk;
+use clvk_utils::{TreeCache, tree_hash_cached};
+use clvkr::allocator::{NodePtr, SExp};
+use clvkr::chik_dialect::ChikDialect;
+use clvkr::reduction::Reduction;
+use clvkr::run_program::run_program;
+use clvkr::serde::node_from_bytes_backrefs;
 
 /// Run a *trusted* block generator and return its additions and removals. This
 /// function does not validate the block, it is assumed to be valid.
@@ -34,16 +34,16 @@ where
     let mut additions = Vec::<(Coin, Option<Bytes>)>::new();
     let mut removals = Vec::<(Bytes32, Coin)>::new();
 
-    let mut cost_left = constants.max_block_cost_klvm;
+    let mut cost_left = constants.max_block_cost_clvk;
 
     let program = node_from_bytes_backrefs(&mut a, program)?;
 
     let args = setup_generator_args(&mut a, block_refs, flags)?;
-    let dialect = ChikDialect::new(flags.to_klvm_flags());
+    let dialect = ChikDialect::new(flags.to_clvk_flags());
 
-    let Reduction(klvm_cost, all_spends) = run_program(&mut a, &dialect, program, args, cost_left)?;
+    let Reduction(clvk_cost, all_spends) = run_program(&mut a, &dialect, program, args, cost_left)?;
 
-    subtract_cost(&mut cost_left, klvm_cost)?;
+    subtract_cost(&mut cost_left, clvk_cost)?;
     let all_spends = first(&a, all_spends)?;
 
     let mut cache = TreeCache::default();
@@ -58,7 +58,7 @@ where
     while let Some((spend, rest)) = a.next(iter) {
         iter = rest;
         let (_parent_id, (puzzle, _rest)) =
-            <(NodePtr, (NodePtr, NodePtr))>::from_klvm(&a, spend)
+            <(NodePtr, (NodePtr, NodePtr))>::from_clvk(&a, spend)
                 .map_err(|_| ValidationErr::Err(ErrorCode::InvalidCondition))?;
         cache.visit_tree(&a, puzzle);
     }
@@ -68,14 +68,14 @@ where
         iter = tail;
         // process the spend
         let (parent_id, (puzzle, (amount, (solution, _spend_level_extra)))) =
-            <(Bytes32, (NodePtr, (NodePtr, (NodePtr, NodePtr))))>::from_klvm(&a, spend)
+            <(Bytes32, (NodePtr, (NodePtr, (NodePtr, NodePtr))))>::from_clvk(&a, spend)
                 .map_err(|_| ValidationErr::Err(ErrorCode::InvalidCondition))?;
         let amount = parse_amount(&a, amount, ErrorCode::InvalidCoinAmount)?;
 
-        let Reduction(klvm_cost, mut iter) =
+        let Reduction(clvk_cost, mut iter) =
             run_program(&mut a, &dialect, puzzle, solution, cost_left)?;
 
-        subtract_cost(&mut cost_left, klvm_cost)?;
+        subtract_cost(&mut cost_left, clvk_cost)?;
 
         let puzzle_hash = tree_hash_cached(&a, puzzle, &mut cache);
 
@@ -107,7 +107,7 @@ where
             c = rest(&a, c)?;
 
             let (puzzle_hash, (amount, hint)) =
-                <(Bytes32, (NodePtr, NodePtr))>::from_klvm(&a, c)
+                <(Bytes32, (NodePtr, NodePtr))>::from_clvk(&a, c)
                     .map_err(|_| ValidationErr::Err(ErrorCode::InvalidCondition))?;
             let amount = parse_amount(&a, amount, ErrorCode::InvalidCoinAmount)?;
 
@@ -122,7 +122,7 @@ where
             // side, the list element
 
             let hint =
-                if let Ok(((hint, _), _)) = <((NodePtr, NodePtr), NodePtr)>::from_klvm(&a, hint) {
+                if let Ok(((hint, _), _)) = <((NodePtr, NodePtr), NodePtr)>::from_clvk(&a, hint) {
                     if let SExp::Atom = a.sexp(hint) {
                         if a.atom_len(hint) <= 32 {
                             Some(Into::<Bytes>::into(a.atom(hint).as_ref()))
@@ -261,9 +261,9 @@ mod test {
 
     fn make_create_coin_generator(hint_size: usize) -> Vec<u8> {
         use crate::solution_generator::solution_generator;
-        use klvm_traits::ToKlvm;
-        use klvmr::allocator::Allocator;
-        use klvmr::serde::node_to_bytes;
+        use clvk_traits::ToClvk;
+        use clvkr::allocator::Allocator;
+        use clvkr::serde::node_to_bytes;
 
         let mut a = Allocator::new();
 
@@ -272,7 +272,7 @@ mod test {
 
         // ((51 puzzle_hash amount (hint)))
         let conditions = ((51u8, (ph, (1000u64, ((hint, ()), ())))), ())
-            .to_klvm(&mut a)
+            .to_clvk(&mut a)
             .unwrap();
 
         let solution_bytes = node_to_bytes(&a, conditions).unwrap();
@@ -303,18 +303,18 @@ mod test {
     #[test]
     fn test_pair_hint_is_ignored() {
         use crate::solution_generator::solution_generator;
-        use klvm_traits::ToKlvm;
-        use klvmr::allocator::Allocator;
-        use klvmr::serde::node_to_bytes;
+        use clvk_traits::ToClvk;
+        use clvkr::allocator::Allocator;
+        use clvkr::serde::node_to_bytes;
 
         let mut a = Allocator::new();
 
-        let pair_hint = (1u8, 2u8).to_klvm(&mut a).unwrap();
+        let pair_hint = (1u8, 2u8).to_clvk(&mut a).unwrap();
         let ph = Bytes32::from([0xab; 32]);
 
         // ((51 puzzle_hash amount ((1 . 2))))
         let conditions = ((51u8, (ph, (1000u64, ((pair_hint, ()), ())))), ())
-            .to_klvm(&mut a)
+            .to_clvk(&mut a)
             .unwrap();
 
         let solution_bytes = node_to_bytes(&a, conditions).unwrap();

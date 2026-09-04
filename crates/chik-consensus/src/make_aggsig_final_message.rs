@@ -79,8 +79,8 @@ mod tests {
     use crate::allocator::make_allocator;
     use crate::consensus_constants::TEST_CONSTANTS;
     use crate::flags::ConsensusFlags;
+    use clvkr::Allocator;
     use hex_literal::hex;
-    use klvmr::Allocator;
     use rstest::rstest;
 
     #[test]

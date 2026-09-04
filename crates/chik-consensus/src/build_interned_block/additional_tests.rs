@@ -44,7 +44,7 @@ fn assert_generator_cost_accuracy(bundle: &SpendBundle) {
     let (_, conds) = run_block_generator2::<&[u8], _>(
         generator.as_slice(),
         [],
-        TEST_CONSTANTS.max_block_cost_klvm,
+        TEST_CONSTANTS.max_block_cost_clvk,
         MEMPOOL_MODE | ConsensusFlags::INTERNED_GENERATOR,
         &signature,
         None,
@@ -103,9 +103,9 @@ fn test_basic_functionality() {
 
 fn make_test_coin_spend(parent: [u8; 32], amount: u64) -> chik_protocol::CoinSpend {
     use chik_protocol::{Coin, Program};
-    use klvm_utils::tree_hash_from_bytes;
+    use clvk_utils::tree_hash_from_bytes;
 
-    let puzzle = Program::from(vec![0x01]); // KLVM atom 1
+    let puzzle = Program::from(vec![0x01]); // CLVK atom 1
     let solution = Program::from(vec![0x80]); // nil
     let puzzle_hash = tree_hash_from_bytes(puzzle.as_ref())
         .expect("puzzle hash")
@@ -118,8 +118,8 @@ fn make_test_coin_spend(parent: [u8; 32], amount: u64) -> chik_protocol::CoinSpe
     )
 }
 
-/// KLVM execution + conditions cost only (excludes generator byte cost).
-fn klvm_execution_cost(bundle: &SpendBundle) -> u64 {
+/// CLVK execution + conditions cost only (excludes generator byte cost).
+fn clvk_execution_cost(bundle: &SpendBundle) -> u64 {
     let mut a = Allocator::new();
     let conds = run_spendbundle(
         &mut a,
@@ -151,7 +151,7 @@ fn test_finalize_cost_matches_consensus() {
         .collect();
 
     for bundle in &bundles {
-        let exec_cost = klvm_execution_cost(bundle);
+        let exec_cost = clvk_execution_cost(bundle);
         let (added, _) = builder
             .add_spend_bundles([bundle], exec_cost)
             .expect("add_spend_bundles");
@@ -169,7 +169,7 @@ fn test_finalize_cost_matches_consensus() {
     let (_, conds) = run_block_generator2::<&[u8], _>(
         generator.as_slice(),
         [],
-        TEST_CONSTANTS.max_block_cost_klvm,
+        TEST_CONSTANTS.max_block_cost_clvk,
         MEMPOOL_MODE | ConsensusFlags::INTERNED_GENERATOR,
         &signature,
         None,
@@ -269,7 +269,7 @@ fn test_num_skipped() {
     let coin_spend = make_test_coin_spend([1u8; 32], 1000);
     let bundle = SpendBundle::new(vec![coin_spend], Signature::default());
 
-    // Declared KLVM cost alone exceeds max (rejected before parsing spends).
+    // Declared CLVK cost alone exceeds max (rejected before parsing spends).
     let declared_cost = max - WRAPPER_VBYTES * cost_per_byte - 20 + 1;
 
     for _ in 0..MAX_SKIPPED_ITEMS {

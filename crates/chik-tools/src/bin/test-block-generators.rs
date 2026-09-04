@@ -9,10 +9,10 @@ use chik_consensus::run_block_generator::{
 };
 use chik_protocol::Program;
 use chik_tools::iterate_blocks;
-use klvmr::Allocator;
-use klvmr::allocator::NodePtr;
-use klvmr::serde::Serializer;
-use klvmr::serde::{is_canonical_serialization, node_from_bytes_backrefs};
+use clvkr::Allocator;
+use clvkr::allocator::NodePtr;
+use clvkr::serde::Serializer;
+use clvkr::serde::{is_canonical_serialization, node_from_bytes_backrefs};
 use std::collections::HashSet;
 use std::io::Write;
 use std::thread::available_parallelism;
@@ -49,7 +49,7 @@ struct Args {
 
     /// Compare the output from the default ROM running in consensus mode
     /// against the hard-fork rules for executing block generators. After the
-    /// hard fork, the KLVM ROM implementation is no longer expected to work, so
+    /// hard fork, the CLVK ROM implementation is no longer expected to work, so
     /// this option also implies max-height=hard-fork-height.
     #[arg(short, long, default_value_t = false)]
     original_generator: bool,
@@ -235,13 +235,13 @@ fn main() {
 
                 if args.test_canonical_encoding {
                     if !is_canonical_serialization(generator) {
-                        println!("generator at height {height} uses overlong KLVM encoding");
+                        println!("generator at height {height} uses overlong CLVK encoding");
                     }
                     return;
                 }
 
                 // after the hard fork, we run blocks without paying for the
-                // KLVM generator ROM
+                // CLVK generator ROM
                 let block_runner = if args.original_generator || height >= args.hard_fork_height {
                     run_block_generator2
                 } else {

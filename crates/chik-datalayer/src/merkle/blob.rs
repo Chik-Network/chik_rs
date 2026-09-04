@@ -1794,9 +1794,9 @@ mod tests {
         assert_eq!(
             internal_hash(&left, &right),
             Hash(Bytes32::new(
-                klvm_utils::tree_hash_pair(
-                    klvm_utils::TreeHash::new(left.0.to_bytes()),
-                    klvm_utils::TreeHash::new(right.0.to_bytes()),
+                clvk_utils::tree_hash_pair(
+                    clvk_utils::TreeHash::new(left.0.to_bytes()),
+                    clvk_utils::TreeHash::new(right.0.to_bytes()),
                 )
                 .to_bytes()
             )),

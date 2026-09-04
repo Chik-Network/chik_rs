@@ -10,9 +10,9 @@ use super::opcodes::{
 use crate::flags::{ConsensusFlags, MEMPOOL_MODE};
 use crate::validation_error::{ErrorCode, ValidationErr, first};
 use chik_sha2::Sha256;
-use klvmr::{Allocator, NodePtr, SExp};
+use clvkr::{Allocator, NodePtr, SExp};
 
-/// computes a hash of the atoms in a KLVM list. Only the `count` first items
+/// computes a hash of the atoms in a CLVK list. Only the `count` first items
 /// are considered. Returns the NodePtr to the remainder of the list (may be
 /// NIL)
 fn hash_atom_list(

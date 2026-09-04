@@ -13,10 +13,10 @@ workspace = true
 
 [dependencies]
 libfuzzer-sys = { workspace = true }
-klvmr = { workspace = true }
+clvkr = { workspace = true }
 chik-sha2 = { workspace = true }
 chik-traits = { workspace = true }
-klvm-traits = { workspace = true }
+clvk-traits = { workspace = true }
 chik-protocol = { workspace = true, features = ["arbitrary"] }
 arbitrary = { workspace = true }
 hex = { workspace = true }

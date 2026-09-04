@@ -14,21 +14,21 @@ tag = sys.argv[2]
 
 our_crates = [
     "crates/chik-bls",
-    "crates/klvm-traits",
+    "crates/clvk-traits",
     "crates/chik-traits",
     "crates/chik_py_streamable_macro",
     "crates/chik_streamable_macro",
     "crates/chik-protocol",
     "crates/chik-tools",
-    "crates/klvm-utils",
-    "crates/klvm-derive",
+    "crates/clvk-utils",
+    "crates/clvk-derive",
     "crates/chik-puzzle-types",
     "crates/chik-client",
     "crates/chik-ssl",
     "crates/chik-consensus",
     "crates/chik-consensus/fuzz",
     "crates/chik-puzzle-types/fuzz",
-    "crates/klvm-utils/fuzz",
+    "crates/clvk-utils/fuzz",
 ]
 
 

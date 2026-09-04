@@ -1,12 +1,12 @@
 use chik_bls::PublicKey;
 use chik_puzzles::P2_DELEGATED_PUZZLE_OR_HIDDEN_PUZZLE_HASH;
+use clvk_traits::{FromClvk, ToClvk, clvk_quote};
+use clvk_utils::{CurriedProgram, ToTreeHash, TreeHash};
 use hex_literal::hex;
-use klvm_traits::{FromKlvm, ToKlvm, klvm_quote};
-use klvm_utils::{CurriedProgram, ToTreeHash, TreeHash};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(curry)]
+#[clvk(curry)]
 pub struct StandardArgs {
     pub synthetic_key: PublicKey,
 }
@@ -25,9 +25,9 @@ impl StandardArgs {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToKlvm, FromKlvm)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvk, FromClvk)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[klvm(list)]
+#[clvk(list)]
 pub struct StandardSolution<P, S> {
     pub original_public_key: Option<PublicKey>,
     pub delegated_puzzle: P,
@@ -39,7 +39,7 @@ impl<T> StandardSolution<(u8, T), ()> {
     pub fn from_conditions(conditions: T) -> Self {
         Self {
             original_public_key: None,
-            delegated_puzzle: klvm_quote!(conditions),
+            delegated_puzzle: clvk_quote!(conditions),
             solution: (),
         }
     }
@@ -58,9 +58,9 @@ pub const DEFAULT_HIDDEN_PUZZLE_HASH: [u8; 32] = hex!(
 #[cfg(test)]
 mod tests {
     use chik_puzzles::P2_DELEGATED_PUZZLE_OR_HIDDEN_PUZZLE;
-    use klvm_traits::ToKlvm;
-    use klvm_utils::tree_hash;
-    use klvmr::{Allocator, serde::node_from_bytes};
+    use clvk_traits::ToClvk;
+    use clvk_utils::tree_hash;
+    use clvkr::{Allocator, serde::node_from_bytes};
 
     use super::*;
 
@@ -75,7 +75,7 @@ mod tests {
             program: mod_ptr,
             args: StandardArgs::new(synthetic_key),
         }
-        .to_klvm(&mut a)
+        .to_clvk(&mut a)
         .unwrap();
 
         let allocated_tree_hash = hex::encode(tree_hash(&a, curried_ptr));

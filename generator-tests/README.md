@@ -19,7 +19,7 @@ example puzzle:
 )
 ```
 
-To compile it to KLVM:
+To compile it to CLVK:
 
 ```
 run puzzle.cl

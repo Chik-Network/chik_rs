@@ -1,6 +1,6 @@
+use clvkr::Allocator;
+use clvkr::serde::{node_from_bytes, node_from_bytes_backrefs, node_to_bytes_backrefs};
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
-use klvmr::Allocator;
-use klvmr::serde::{node_from_bytes, node_from_bytes_backrefs, node_to_bytes_backrefs};
 use std::fs::read_to_string;
 use std::time::Instant;
 
@@ -37,7 +37,7 @@ fn run(c: &mut Criterion) {
             group.bench_function(format!("tree-hash {name}{name_suffix}"), |b| {
                 b.iter(|| {
                     let start = Instant::now();
-                    let _ = black_box(klvm_utils::tree_hash(&a, generator));
+                    let _ = black_box(clvk_utils::tree_hash(&a, generator));
                     start.elapsed()
                 });
             });
@@ -48,7 +48,7 @@ fn run(c: &mut Criterion) {
             group.bench_function(format!("tree-hash-from-stream {name}{name_suffix}"), |b| {
                 b.iter(|| {
                     let start = Instant::now();
-                    let _ = black_box(klvm_utils::tree_hash_from_bytes(generator));
+                    let _ = black_box(clvk_utils::tree_hash_from_bytes(generator));
                     start.elapsed()
                 });
             });
