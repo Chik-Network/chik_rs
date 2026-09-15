@@ -18,7 +18,7 @@ use pyo3::types::PyList;
 /// block we're trying to create.
 const MAX_SKIPPED_ITEMS: u32 = 6;
 
-/// Typical cost of a standard XCH spend. It's used as a heuristic to help
+/// Typical cost of a standard XCK spend. It's used as a heuristic to help
 /// determine how close to the block size limit we're willing to go.
 const MIN_COST_THRESHOLD: u64 = 6_000_000;
 
@@ -330,6 +330,7 @@ mod tests {
                 11_000_000_000,
                 ConsensusFlags::empty(),
                 &TEST_CONSTANTS,
+                None,
             )
             .expect("run_spendbundle")
             .0;
