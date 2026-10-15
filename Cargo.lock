@@ -302,9 +302,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chik"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
- "chik-bls 0.51.0",
+ "chik-bls 0.52.0",
  "chik-client",
  "chik-consensus",
  "chik-datalayer",
@@ -312,9 +312,9 @@ dependencies = [
  "chik-puzzle-types",
  "chik-secp",
  "chik-serde",
- "chik-sha2 0.51.0",
+ "chik-sha2 0.52.0",
  "chik-ssl",
- "chik-traits 0.51.0",
+ "chik-traits 0.52.0",
  "clvk-traits",
  "clvk-utils",
  "clvkr",
@@ -339,13 +339,13 @@ dependencies = [
 
 [[package]]
 name = "chik-bls"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "arbitrary",
  "blst",
  "chik-serde",
- "chik-sha2 0.51.0",
- "chik-traits 0.51.0",
+ "chik-sha2 0.52.0",
+ "chik-traits 0.52.0",
  "chik_py_streamable_macro",
  "criterion",
  "hex",
@@ -361,18 +361,18 @@ dependencies = [
 
 [[package]]
 name = "chik-bls-fuzz"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
- "chik-bls 0.51.0",
+ "chik-bls 0.52.0",
  "libfuzzer-sys",
 ]
 
 [[package]]
 name = "chik-client"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "chik-protocol",
- "chik-traits 0.51.0",
+ "chik-traits 0.52.0",
  "futures-util",
  "thiserror 2.0.18",
  "tokio",
@@ -382,19 +382,19 @@ dependencies = [
 
 [[package]]
 name = "chik-consensus"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "arbitrary",
  "bitflags",
  "blocking-threadpool",
- "chik-bls 0.51.0",
+ "chik-bls 0.52.0",
  "chik-protocol",
  "chik-puzzle-types",
  "chik-puzzles",
- "chik-sha2 0.51.0",
- "chik-traits 0.51.0",
+ "chik-sha2 0.52.0",
+ "chik-traits 0.52.0",
  "chik_py_streamable_macro",
- "chik_streamable_macro 0.51.0",
+ "chik_streamable_macro 0.52.0",
  "clvk-fuzzing",
  "clvk-traits",
  "clvk-utils",
@@ -412,13 +412,13 @@ dependencies = [
 
 [[package]]
 name = "chik-consensus-fuzz"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
- "chik-bls 0.51.0",
+ "chik-bls 0.52.0",
  "chik-consensus",
  "chik-protocol",
- "chik-sha2 0.51.0",
- "chik-traits 0.51.0",
+ "chik-sha2 0.52.0",
+ "chik-traits 0.52.0",
  "clvk-fuzzing",
  "clvk-traits",
  "clvk-utils",
@@ -429,16 +429,16 @@ dependencies = [
 
 [[package]]
 name = "chik-datalayer"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "arbitrary",
  "bitvec",
  "chik-datalayer-macro",
  "chik-protocol",
- "chik-sha2 0.51.0",
- "chik-traits 0.51.0",
+ "chik-sha2 0.52.0",
+ "chik-traits 0.52.0",
  "chik_py_streamable_macro",
- "chik_streamable_macro 0.51.0",
+ "chik_streamable_macro 0.52.0",
  "clvk-utils",
  "expect-test",
  "hex",
@@ -458,7 +458,7 @@ dependencies = [
 
 [[package]]
 name = "chik-datalayer-fuzz"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "chik-datalayer",
  "libfuzzer-sys",
@@ -466,7 +466,7 @@ dependencies = [
 
 [[package]]
 name = "chik-datalayer-macro"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -486,17 +486,17 @@ dependencies = [
 
 [[package]]
 name = "chik-protocol"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "anyhow",
  "arbitrary",
- "chik-bls 0.51.0",
+ "chik-bls 0.52.0",
  "chik-pos2",
  "chik-serde",
- "chik-sha2 0.51.0",
- "chik-traits 0.51.0",
+ "chik-sha2 0.52.0",
+ "chik-traits 0.52.0",
  "chik_py_streamable_macro",
- "chik_streamable_macro 0.51.0",
+ "chik_streamable_macro 0.52.0",
  "clvk-traits",
  "clvk-utils",
  "clvkr",
@@ -512,12 +512,12 @@ dependencies = [
 
 [[package]]
 name = "chik-protocol-fuzz"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "arbitrary",
  "chik-protocol",
- "chik-sha2 0.51.0",
- "chik-traits 0.51.0",
+ "chik-sha2 0.52.0",
+ "chik-traits 0.52.0",
  "clvk-traits",
  "clvkr",
  "hex",
@@ -526,14 +526,14 @@ dependencies = [
 
 [[package]]
 name = "chik-puzzle-types"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "anyhow",
  "arbitrary",
- "chik-bls 0.51.0",
+ "chik-bls 0.52.0",
  "chik-protocol",
  "chik-puzzles",
- "chik-sha2 0.51.0",
+ "chik-sha2 0.52.0",
  "clvk-traits",
  "clvk-utils",
  "clvkr",
@@ -545,7 +545,7 @@ dependencies = [
 
 [[package]]
 name = "chik-puzzle-types-fuzz"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "chik-puzzle-types",
  "clvk-traits",
@@ -565,11 +565,11 @@ dependencies = [
 
 [[package]]
 name = "chik-secp"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "anyhow",
  "arbitrary",
- "chik-sha2 0.51.0",
+ "chik-sha2 0.52.0",
  "hex",
  "k256",
  "p256",
@@ -579,7 +579,7 @@ dependencies = [
 
 [[package]]
 name = "chik-serde"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "anyhow",
  "bincode",
@@ -600,7 +600,7 @@ dependencies = [
 
 [[package]]
 name = "chik-sha2"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "openssl",
  "sha2 0.10.9",
@@ -608,7 +608,7 @@ dependencies = [
 
 [[package]]
 name = "chik-ssl"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "getrandom 0.4.2",
  "rcgen",
@@ -619,17 +619,17 @@ dependencies = [
 
 [[package]]
 name = "chik-tools"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "bitflags",
  "blocking-threadpool",
- "chik-bls 0.51.0",
+ "chik-bls 0.52.0",
  "chik-consensus",
  "chik-protocol",
  "chik-puzzle-types",
  "chik-puzzles",
- "chik-sha2 0.51.0",
- "chik-traits 0.51.0",
+ "chik-sha2 0.52.0",
+ "chik-traits 0.52.0",
  "clap",
  "clvk-traits",
  "clvk-utils",
@@ -653,17 +653,17 @@ dependencies = [
 
 [[package]]
 name = "chik-traits"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
- "chik-sha2 0.51.0",
- "chik_streamable_macro 0.51.0",
+ "chik-sha2 0.52.0",
+ "chik_streamable_macro 0.52.0",
  "pyo3",
  "thiserror 2.0.18",
 ]
 
 [[package]]
 name = "chik_py_streamable_macro"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "proc-macro-crate 1.3.1",
  "proc-macro2",
@@ -673,18 +673,18 @@ dependencies = [
 
 [[package]]
 name = "chik_rs"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "bincode",
- "chik-bls 0.51.0",
+ "chik-bls 0.52.0",
  "chik-client",
  "chik-consensus",
  "chik-datalayer",
  "chik-pos2",
  "chik-protocol",
- "chik-sha2 0.51.0",
+ "chik-sha2 0.52.0",
  "chik-ssl",
- "chik-traits 0.51.0",
+ "chik-traits 0.52.0",
  "clvk-utils",
  "clvkr",
  "pyo3",
@@ -704,7 +704,7 @@ dependencies = [
 
 [[package]]
 name = "chik_streamable_macro"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "proc-macro-crate 1.3.1",
  "proc-macro2",
@@ -714,7 +714,7 @@ dependencies = [
 
 [[package]]
 name = "chik_wasm"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "wasm-bindgen",
 ]
@@ -788,7 +788,7 @@ checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 
 [[package]]
 name = "clvk-derive"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -813,9 +813,9 @@ dependencies = [
 
 [[package]]
 name = "clvk-traits"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
- "chik-bls 0.51.0",
+ "chik-bls 0.52.0",
  "chik-secp",
  "clvk-derive",
  "clvkr",
@@ -829,7 +829,7 @@ dependencies = [
 
 [[package]]
 name = "clvk-traits-fuzz"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "clvk-traits",
  "clvkr",
@@ -839,9 +839,9 @@ dependencies = [
 
 [[package]]
 name = "clvk-utils"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
- "chik-sha2 0.51.0",
+ "chik-sha2 0.52.0",
  "clvk-traits",
  "clvkr",
  "hex",
@@ -851,7 +851,7 @@ dependencies = [
 
 [[package]]
 name = "clvk-utils-fuzz"
-version = "0.51.0"
+version = "0.52.0"
 dependencies = [
  "clvk-fuzzing",
  "clvk-traits",
