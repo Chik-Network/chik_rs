@@ -1,5 +1,5 @@
 use crate::condition_sanitizers::parse_amount;
-use crate::run_block_generator::setup_generator_args;
+use crate::run_block_generator::spend_list_wrapper_for_trusted_block;
 use crate::run_block_generator::subtract_cost;
 use chik_protocol::Coin;
 
@@ -14,8 +14,6 @@ use clvkr::allocator::{NodePtr, SExp};
 use clvkr::chik_dialect::ChikDialect;
 use clvkr::reduction::Reduction;
 use clvkr::run_program::run_program;
-use clvkr::serde::node_from_bytes_backrefs;
-
 /// Run a *trusted* block generator and return its additions and removals. This
 /// function does not validate the block, it is assumed to be valid.
 /// The returned vectors are additions (with hints) and removals (with
@@ -36,16 +34,11 @@ where
 
     let mut cost_left = constants.max_block_cost_clvk;
 
-    let program = node_from_bytes_backrefs(&mut a, program)?;
-
-    let args = setup_generator_args(&mut a, block_refs, flags)?;
     let dialect = ChikDialect::new(flags.to_clvk_flags());
 
-    let Reduction(clvk_cost, all_spends) = run_program(&mut a, &dialect, program, args, cost_left)?;
-
-    subtract_cost(&mut cost_left, clvk_cost)?;
-    let all_spends = first(&a, all_spends)?;
-
+    let spend_list_wrapper =
+        spend_list_wrapper_for_trusted_block(&mut a, program, block_refs, flags, cost_left)?;
+    let all_spends = first(&a, spend_list_wrapper)?;
     let mut cache = TreeCache::default();
     // at this point all_spends is a list of:
     // (parent-coin-id puzzle-reveal amount solution . extra)
