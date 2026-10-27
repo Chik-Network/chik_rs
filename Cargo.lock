@@ -475,9 +475,9 @@ dependencies = [
 
 [[package]]
 name = "chik-pos2"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37d3d3cc08a8922d97d63121508143e3c16b8c37326b2c228104cdb1ee45b8b1"
+checksum = "1ad6507967b5e3013756865bd91ea351416694766c6085c4e3d81fd79036673c"
 dependencies = [
  "cc",
  "serde",

@@ -136,7 +136,7 @@ chik-serde = { path = "./crates/chik-serde", version = "0.53.0" }
 clvk-traits = { path = "./crates/clvk-traits", version = "0.53.0" }
 clvk-utils = { path = "./crates/clvk-utils", version = "0.53.0" }
 clvk-derive = { path = "./crates/clvk-derive", version = "0.53.0" }
-chik-pos2 = "1.0.0"
+chik-pos2 = "1.0.1"
 chik-consensus-fuzz = { path = "./crates/chik-consensus/fuzz", version = "0.53.0" }
 chik-bls-fuzz = { path = "./crates/chik-bls/fuzz", version = "0.53.0" }
 chik-datalayer-fuzz = { path = "./crates/chik-datalayer/fuzz", version = "0.53.0" }
