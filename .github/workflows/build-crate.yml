@@ -3,7 +3,7 @@ name: Rust crate
 on:
   push:
     branches:
-      - main1
+      - main
     tags:
       - "**"
   pull_request:

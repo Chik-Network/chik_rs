@@ -6,11 +6,12 @@ use chik_consensus::generator_cost::interned_vbytes;
 use chik_consensus::owned_conditions::OwnedSpendBundleConditions;
 use chik_consensus::run_block_generator::run_block_generator as native_run_block_generator;
 use chik_consensus::run_block_generator::run_block_generator2 as native_run_block_generator2;
+use chik_consensus::serde_2026::node_from_bytes_2026_trusted;
 use chik_protocol::{Bytes, Bytes32, Coin};
 
 use clvkr::allocator::Allocator;
 use clvkr::cost::Cost;
-use clvkr::serde::{intern_tree_limited, node_from_bytes_backrefs};
+use clvkr::serde::intern_tree_limited;
 
 use pyo3::PyResult;
 use pyo3::buffer::PyBuffer;
@@ -136,17 +137,17 @@ pub fn additions_and_removals(
     })
 }
 
-/// Return the byte-weight-equivalent of a serialized generator program.
+/// Return the byte-weight-equivalent of a trusted serde_2026 generator buffer.
 ///
-/// Deserializes (with back-refs), interns the tree, and returns
+/// Deserializes (serde_2026), interns the tree, and returns
 /// `atom_bytes + 2*atom_count + 3*pair_count`.  Multiply by
 /// `cost_per_byte` from consensus constants to get the full generator size cost.
 #[pyfunction]
-pub fn generator_interned_vbytes(py: Python<'_>, program: PyBuffer<u8>) -> PyResult<u64> {
+pub fn generator_interned_vbytes_trusted(py: Python<'_>, program: PyBuffer<u8>) -> PyResult<u64> {
     let program = py_to_slice(&program);
     py.detach(|| {
         let mut a = Allocator::new();
-        let node = node_from_bytes_backrefs(&mut a, program)
+        let node = node_from_bytes_2026_trusted(&mut a, program)
             .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("bad generator: {e}")))?;
         let tree = intern_tree_limited(&a, node, u32::MAX as usize)
             .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("intern failed: {e}")))?;

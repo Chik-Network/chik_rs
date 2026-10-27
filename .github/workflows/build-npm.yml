@@ -3,7 +3,7 @@ name: NPM package
 on:
   push:
     branches:
-      - main1
+      - main
     tags:
       - "**"
   pull_request:

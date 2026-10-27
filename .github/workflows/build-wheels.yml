@@ -3,7 +3,7 @@ name: Python wheels
 on:
   push:
     branches:
-      - main1
+      - main
   release:
     types: [published]
   pull_request:
